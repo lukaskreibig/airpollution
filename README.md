@@ -1,6 +1,7 @@
 # Air Pollution Charts
 
-**Air Pollution Charts** is a **Website** built with **React** / Node using JS / Typescript, react-spring for animations and Plotly to draw data. Get up-to-date real life Air Pollution Data!
+Get worldwide and up-to-date real life Air Pollution Data!
+**Air Pollution Charts** is built with **React** / Node using JS / Typescript, react-spring for animations and Plotly to draw data. 
 
 ---
 
