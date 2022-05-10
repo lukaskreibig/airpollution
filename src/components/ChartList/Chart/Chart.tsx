@@ -68,10 +68,16 @@ const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
           useResizeHandler: true,
           width: 1400,
           height: 600,
-          title: `Air Pollution Data - Average of ${refineData.reduce(
-            (partialSum: any, a: any) => partialSum + a.measurement_count,
-            0
-          )} Measurements from all Stations in Chosen Time Span and Country`,
+          title: `Air Pollution Data - Average of ${refineData
+            .reduce(
+              (partialSum: any, a: any) => partialSum + a.measurement_count,
+              0
+            )
+            .toString()
+            .replace(
+              /(\d)(?=(\d{3})+(?!\d))/g,
+              "$1."
+            )} Measurements from all Stations in Chosen Time Span and Country`,
           margin: {
             l: 240,
             r: 240,
