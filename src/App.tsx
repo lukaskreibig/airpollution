@@ -15,7 +15,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>("");
 
   const [time, setTime] = useState<string>("month");
-  const [chart, setChart] = useState<number>(1);
+  const [chart, setChart] = useState<string>("1");
   const [country, setCountry] = useState<string>("DE");
 
   const [open, setOpen] = useState<boolean>(true);
@@ -144,7 +144,7 @@ const App: React.FC = () => {
             countries={countriesList}
           />
         )}
-        {chart === 2 ? (
+        {chart === "2" ? (
           <Dropdown
             handleSelect={handleSelect}
             dataValue={time}

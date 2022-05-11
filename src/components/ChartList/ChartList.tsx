@@ -2,7 +2,7 @@ import Chart from "./Chart/Chart";
 
 type Props = {
   locations: results;
-  chart: number;
+  chart: string;
   average: data | null;
 };
 

@@ -1,32 +1,42 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
-import "../../../App.css";
 import ChartFunction from "./ChartFunction";
 
 type Props = {
   average: results;
-  chart: number;
+  chart: string;
   locations: results;
 };
 const Chart: React.FC<Props> = ({ average, chart, locations }) => {
   
+  const [data, setData] = useState([])
+  const [layout, setLayout] = useState({})
+
   const {
     calculateBarChart,
     calculateBigChart,
     calculateBarLayout,
     calculateBigLayout,
   } = ChartFunction();
+
+
+
+
+  useEffect(() => {
+    let dataCalculation:any
+    chart === "2" ? dataCalculation = calculateBarChart(average) : dataCalculation = calculateBigChart(chart, locations)
+   
+    let layoutCalculation:any
+    chart === "2" ? layoutCalculation = calculateBarLayout(average) : layoutCalculation = calculateBigLayout(chart, locations)
+    
+    setData(dataCalculation)
+    setLayout(layoutCalculation)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chart]);
   
 
-  let data: any =
-    chart === 2
-      ? calculateBarChart(average)
-      : calculateBigChart(chart, locations);
-  let layout: any =
-    chart === 2
-      ? calculateBarLayout(average)
-      : calculateBigLayout(chart, locations);
+
 
   /**
    * react-spring chart animation when reloading or changing the chart data
@@ -41,7 +51,7 @@ const Chart: React.FC<Props> = ({ average, chart, locations }) => {
    * @param data react-spring will listen to the variable data and animate the object values whenever there is a change
    */
 
-  const [style, api] = useSpring({ x: 0, y: 50}, [data]);
+  const [style, api] = useSpring({ x: 0, y: 50}, [chart]);
   useEffect(() => {
     api.start({
       x: 0,
@@ -49,7 +59,7 @@ const Chart: React.FC<Props> = ({ average, chart, locations }) => {
       delay: 150,
       config: { mass: 1, tension: 280, friction: 60 },
     });
-  }, [data, api]);
+  }, [chart, api]);
 
   return (
     <animated.div style={style}>

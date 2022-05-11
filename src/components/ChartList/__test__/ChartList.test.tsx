@@ -3,7 +3,7 @@ import ChartList from "../ChartList";
 
 describe("ChartList Failure Messages", () => {
   test("Testing Failure Message without Data in ChartList", () => {
-    render(<ChartList chart={0} locations={[{ average: 2}]} average={null} />);
+    render(<ChartList chart={"0"} locations={[{ average: 2}]} average={null} />);
     const NoDataFound = screen.getByText(/No Data found./i);
     expect(NoDataFound).toBeInTheDocument();
   });
@@ -12,7 +12,7 @@ describe("ChartList Failure Messages", () => {
     render(
       <ChartList
         locations={[{ parameters: [ "test" ] }]}
-        chart={0}
+        chart={"0"}
         average={{ results: [{ parameter: "pm25" }] }}
       />
     );

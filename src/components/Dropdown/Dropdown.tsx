@@ -2,11 +2,11 @@ import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
 
 type Props = {
-  handleSelect: any;
-  dataValue: number | string;
+  handleSelect: (event: SelectChangeEvent) => void;
+  dataValue: string | undefined;
   dropdown: string;
   countries?: countries[];
 };
@@ -24,9 +24,9 @@ const Dropdown: React.FC<Props> = ({
   ];
 
   let chartData = [
-    { input: 1, description: "Detailed Air Pollution Data" },
-    { input: 3, description: "Latest Air Pollution Data" },
-    { input: 2, description: "Average Air Pollution Data" },
+    { input: "1", description: "Detailed Air Pollution Data" },
+    { input: "3", description: "Latest Air Pollution Data" },
+    { input: "2", description: "Average Air Pollution Data" },
   ];
 
   return (
