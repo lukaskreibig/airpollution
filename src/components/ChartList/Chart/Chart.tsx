@@ -33,7 +33,7 @@ const Chart: React.FC<Props> = ({ average, chart, locations }) => {
     setData(dataCalculation)
     setLayout(layoutCalculation)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chart]);
+  }, [average, chart, locations]);
   
 
 
