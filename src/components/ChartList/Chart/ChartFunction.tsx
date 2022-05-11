@@ -1,5 +1,31 @@
+import { useEffect, useState } from "react";
+
 const ChartFunction = () => {
+
+  const getWindowDimensions = () => {
+    const { innerWidth: width, innerHeight: height } = window;
+    return {
+      width,
+      height
+    };
+  }
   
+  const useWindowDimensions = () => {
+    const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
+  
+    useEffect(() => {
+      function handleResize() {
+        setWindowDimensions(getWindowDimensions());
+      }
+  
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
+  
+    return windowDimensions;
+  }
+
+  const { height, width } = useWindowDimensions();
   
   /**
    * Calculates The Plotly DATA Settings for Detailed / Latest Air Pollution Chart
@@ -95,8 +121,8 @@ const ChartFunction = () => {
   
   const calculateBigLayout = (chart:number, dataPoints:number, locations:results) => {
     return {
-      width: 1400,
-      height: 600,
+      width: width - 40,
+      height: height - 150,
       title: `Air Pollution - Showing the ${
         chart === 1 ? "Average" : "Latest"
       } Data from ${dataPoints} ${
@@ -148,8 +174,8 @@ const ChartFunction = () => {
   const calculateBarLayout = (average:results) => {
     return {
       useResizeHandler: true,
-      width: 1400,
-      height: 600,
+      width: width - 40,
+      height: height - 150,
       title: `Air Pollution Data - Average of ${average
         .reduce(
           (partialSum: any, a: any) => partialSum + a.measurement_count,
@@ -168,12 +194,14 @@ const ChartFunction = () => {
       },
     }
   }
+  
 
   return {
     calculateBarChart,
     calculateBarLayout,
     calculateBigChart,
     calculateBigLayout,
+    useWindowDimensions
   };
 
 }

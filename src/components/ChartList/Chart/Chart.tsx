@@ -1,3 +1,4 @@
+import { blue, red } from "@mui/material/colors";
 import { useEffect } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
@@ -18,8 +19,7 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
     calculateBarLayout,
     calculateBigLayout,
   } = ChartFunction();
-
-  let config = { responsive: true };
+  
 
   let data: any =
     chart === 2
@@ -29,6 +29,9 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
     chart === 2
       ? calculateBarLayout(average)
       : calculateBigLayout(chart, dataPoints, locations);
+
+
+  // let config = { responsive: true };
 
   /**
    * react-spring chart animation when reloading or changing the chart data
@@ -42,11 +45,12 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
    * @param data react-spring will listen to the variable data and animate whenever there is a change
    */
 
-  const [style, api] = useSpring({ x: 0, y: 50 }, [data]);
+  const [style, api] = useSpring({ x: 0, y: 50, opacity: 0.4}, [data]);
   useEffect(() => {
     api.start({
       x: 0,
       y: 0,
+      opacity: 1,
       delay: 150,
       config: { mass: 1, tension: 280, friction: 60 },
     });
@@ -54,7 +58,7 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
 
   return (
     <animated.div style={style}>
-      <Plot data={data} layout={layout} config={config} />
+      <Plot data={data} layout={layout} />
     </animated.div>
   );
 };
