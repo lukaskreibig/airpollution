@@ -125,7 +125,7 @@ const ChartFunction = () => {
       height: height - 150,
       title: `Air Pollution - Showing the ${
         chart === 1 ? "Average" : "Latest"
-      } Data from ${dataPoints} ${
+      } Data <br> from ${dataPoints} ${
         dataPoints === 1 ? "Station" : "Stations"
       } ${
         chart === 1
@@ -173,7 +173,6 @@ const ChartFunction = () => {
 
   const calculateBarLayout = (average:results) => {
     return {
-      useResizeHandler: true,
       width: width - 40,
       height: height - 150,
       title: `Air Pollution Data - Average of ${average
@@ -185,7 +184,7 @@ const ChartFunction = () => {
         .replace(
           /(\d)(?=(\d{3})+(?!\d))/g,
           "$1."
-        )} Measurements from all Stations in Chosen Time Span and Country`,
+        )} Measurements <br> from all Stations in Chosen Time Span and Country`,
       margin: {
         l: 240,
         r: 240,
