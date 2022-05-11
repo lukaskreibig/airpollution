@@ -65,6 +65,9 @@ type data = {
     sources: number
   }
 
+  type parameter = { name: string, 
+                  value: string }
+
   type parameters = [
    string
   ]

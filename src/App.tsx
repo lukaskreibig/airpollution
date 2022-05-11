@@ -21,6 +21,20 @@ const App: React.FC = () => {
   const [open, setOpen] = useState<boolean>(true);
   const handleClose = (): void => setOpen(false);
 
+   /**
+   * Fetching Data of the OpenAQ API
+   * <p>
+   * Fetch from three Endpoints from the OpenAQ Air Pollution API:
+   * /averages - fetch the average data according to the chosen Time Span in the Dropdown Menu.
+   * /locations - fetch the individual data of all Stations in the chosen Country in the Dropdown Menu.
+   * /countries - fetch the countries which have Air Pollution Data so we can chose from them later.
+   * 
+   * The function checks for Error Messages and Shows them to the User.
+   * If no Errors occur, each fetch will be stored in its own State.
+   *
+   * @author Lukas Kreibig
+   */
+
   useEffect((): void => {
     const getData = async (): Promise<void> => {
       try {
@@ -71,6 +85,19 @@ const App: React.FC = () => {
     getData();
   }, [dateRange, country]);
 
+  /**
+   * Handles the User Selection of the Dropdown Menus
+   * <p>
+   * handleSelect is being passed down to every Dropdown Menu.
+   * If the User Selects an entry in the Dropdown Menu, handle Select 
+   * is being fired in App.tsx with the Parameter of the Dropdown Choice.
+   * 
+   * The event.targe.name is being checked, to identify the Dropdown Menu
+   * in App.tsx. The new value is then accordingly stored in a State in App.tsx
+   * and passed down children components.
+   *
+   * @author Lukas Kreibig
+   */
 
   const handleSelect = (event: SelectChangeEvent) => {
     if (event.target.name === "Country") {
