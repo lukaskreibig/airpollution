@@ -8,7 +8,7 @@ type Props = {
   handleSelect: any;
   dataValue: number | string;
   dropdown: string;
-  countries?: any;
+  countries?: countries[];
 };
 
 const Dropdown: React.FC<Props> = ({
@@ -43,9 +43,9 @@ const Dropdown: React.FC<Props> = ({
         >
           {(dropdown === "Time"
             ? timeData
-            : dropdown === "Chart"
-            ? chartData
-            : countries
+            : dropdown === "Country"
+            ? countries!
+            : chartData
           ).map((data: any, index: any) => (
             <MenuItem value={!countries ? data.input : data.code} key={index}>
               {!countries ? data.description : data.name}

@@ -10,11 +10,11 @@ import Modal from "@mui/material/Modal";
 const App: React.FC = () => {
   const [data, setData] = useState<data | null>(null);
   const [average, setAverage] = useState<data | null>(null);
-  const [countriesList, setCountriesList] = useState<countries | null>(null);
+  const [countriesList, setCountriesList] = useState<countries[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>("");
 
-  const [dateRange, setDateRange] = useState<string>("month");
+  const [time, setTime] = useState<string>("month");
   const [chart, setChart] = useState<number>(1);
   const [country, setCountry] = useState<string>("DE");
 
@@ -46,7 +46,7 @@ const App: React.FC = () => {
                 new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
                 new Date(Date.now()).toISOString().split(".")[0]
-              }&spatial=country&temporal=${dateRange}`
+              }&spatial=country&temporal=${time}`
             ),
             fetch(
               `https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
@@ -83,7 +83,7 @@ const App: React.FC = () => {
       }
     };
     getData();
-  }, [dateRange, country]);
+  }, [time, country]);
 
   /**
    * Handles the User Selection of the Dropdown Menus
@@ -105,7 +105,7 @@ const App: React.FC = () => {
     } else if (event.target.name === "Chart") {
       setChart(event.target.value as any);
     } else if (event.target.name === "Time") {
-      setDateRange(event.target.value as any);
+      setTime(event.target.value as any);
     }
   };
 
@@ -133,8 +133,8 @@ const App: React.FC = () => {
           <Dropdown
             handleSelect={handleSelect}
             dataValue={chart}
-            dropdown={"Chart"}
-          />
+            dropdown={"Chart"}          
+            />
         }
         {data && (
           <Dropdown
@@ -147,7 +147,7 @@ const App: React.FC = () => {
         {chart === 2 ? (
           <Dropdown
             handleSelect={handleSelect}
-            dataValue={dateRange}
+            dataValue={time}
             dropdown={"Time"}
           />
         ) : null}

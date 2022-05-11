@@ -42,13 +42,17 @@ describe("Dropdown", () => {
         handleSelect={undefined}
         dataValue={"DE"}
         dropdown={"Country"}
-        countries={[
-          {
-            cities: "Berlin",
-            code: "DE",
-            name: "Germany",
-          },
-        ]}
+        countries={[{
+          cities: "Berlin",
+          code: "DE",
+          count: 10,
+          firstUpdated: 12-10-2001,
+          localUpdated: 12-10-2001,
+          locations: 12,
+          name: "Germany",
+          parameters: ["test"],
+          sources: 12
+        },]}
       />
     );
     const CountryDropdown = screen.getByText(/Germany/i);

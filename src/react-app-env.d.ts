@@ -54,11 +54,11 @@ type data = {
   }
 
   type countries = {
-    cities: number,
+    cities: string,
     code: string,
     count: number,
-    firstUpdated: date,
-    localUpdated: date,
+    firstUpdated: number,
+    localUpdated: number,
     locations: number,
     name: string,
     parameters: parameters,
