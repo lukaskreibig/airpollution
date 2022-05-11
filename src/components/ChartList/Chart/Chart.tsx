@@ -1,5 +1,3 @@
-import { blue, red } from "@mui/material/colors";
-import { config } from "process";
 import { useEffect } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
@@ -8,11 +6,10 @@ import ChartFunction from "./ChartFunction";
 
 type Props = {
   average: results;
-  dataPoints: number;
   chart: number;
   locations: results;
 };
-const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
+const Chart: React.FC<Props> = ({ average, chart, locations }) => {
   
   const {
     calculateBarChart,
@@ -29,10 +26,7 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
   let layout: any =
     chart === 2
       ? calculateBarLayout(average)
-      : calculateBigLayout(chart, dataPoints, locations);
-
-
-  // let config = { responsive: true };
+      : calculateBigLayout(chart, locations);
 
   /**
    * react-spring chart animation when reloading or changing the chart data
@@ -43,15 +37,15 @@ const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
    * App is being loaded or the Chart is changed.
    *
    * @author Lukas Kreibig
-   * @param data react-spring will listen to the variable data and animate whenever there is a change
+   * @param objectvalues { x: 0, y: 50, opacity: 0.1} useSpring start settings for first and rerender render
+   * @param data react-spring will listen to the variable data and animate the object values whenever there is a change
    */
 
-  const [style, api] = useSpring({ x: 0, y: 50, opacity: 0.1}, [data]);
+  const [style, api] = useSpring({ x: 0, y: 50}, [data]);
   useEffect(() => {
     api.start({
       x: 0,
       y: 0,
-      opacity: 1,
       delay: 150,
       config: { mass: 1, tension: 280, friction: 60 },
     });

@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 
 const ChartFunction = () => {
 
+   /**
+   * Gets and Returns the Interior Width and Interior Height of the User.
+   * This data is crucial for the self-build responsive function which follows up.
+   *
+   * @author Lukas Kreibig
+   */
+
   const getWindowDimensions = () => {
     const { innerWidth: width, innerHeight: height } = window;
     return {
@@ -9,12 +16,20 @@ const ChartFunction = () => {
       height
     };
   }
+
+    /**
+   * Updates the Interior Width and Height 
+   * <p>
+   * This data is crucial for the self-build responsive function which follows up.
+   *
+   * @author Lukas Kreibig
+   */
   
   const useWindowDimensions = () => {
     const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
   
-    useEffect(() => {
-      function handleResize() {
+    useEffect(() =>  {
+      const handleResize = () => {
         setWindowDimensions(getWindowDimensions());
       }
   
@@ -37,6 +52,7 @@ const ChartFunction = () => {
    *
    * @author Lukas Kreibig
    * @param chart The Chart Number recieved from the Dropdown Choice by User
+   * @return Returns an Array of Objects with Setting Options for the X and Y Axis of Plotly Data
    */
 
    const calculateBigChart = (chart:number, locations:results) =>  {
@@ -54,7 +70,7 @@ const ChartFunction = () => {
       return {
         type: "scatter",
         x: locations.map(
-          (data: any) =>
+          (data:any) =>
             data.name +
             (data.city
               ? `, ${data.city}, Latest Update: ${data.lastUpdated.split("T")[0]}`
@@ -93,14 +109,15 @@ const ChartFunction = () => {
    * be fed into the Plotly Component.
    *
    * @author Lukas Kreibig
+   * @return Returns an Array of Objects with Setting Options for the X and Y Axis of Plotly Data
    */
 
   const calculateBarChart = (average:results) => {
     return [
       {
         type: "bar",
-        x: average.map((data: any) => data.displayName + " " + data.unit),
-        y: average.map((data: any) => data.average),
+        x: average.map((data:any) => data.displayName + " " + data.unit),
+        y: average.map((data:any) => data.average),
         marker: { color: "#f4a261" },
       },
     ]
@@ -117,16 +134,18 @@ const ChartFunction = () => {
    *
    * @author Lukas Kreibig
    * @param chart The Chart Number recieved from the Dropdown Choice by User
+   * @param locations Array of API Data for all Stations and Measurements
+   * @return Returns a Layout Options Object for the X and Y Axis of Plotly Layout Data
    */
   
-  const calculateBigLayout = (chart:number, dataPoints:number, locations:results) => {
+  const calculateBigLayout = (chart:number, locations:results) => {
     return {
       width: width - 40,
       height: height - 150,
       title: `Air Pollution - Showing the ${
         chart === 1 ? "Average" : "Latest"
-      } Data <br> from ${dataPoints} ${
-        dataPoints === 1 ? "Station" : "Stations"
+      } Data <br> from ${locations.length} ${
+        locations.length === 1 ? "Station" : "Stations"
       } ${
         chart === 1
           ? `using ${locations.reduce(
@@ -169,6 +188,8 @@ const ChartFunction = () => {
    * be fed into the Plotly Component.
    *
    * @author Lukas Kreibig
+   * @param average contains the average API Data which is being used in the title
+   * @return Returns a Layout Options Object for the X and Y Axis of Plotly Layout Data
    */
 
   const calculateBarLayout = (average:results) => {
