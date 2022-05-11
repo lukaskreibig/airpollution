@@ -9,7 +9,7 @@ import Modal from "@mui/material/Modal";
 
 const App: React.FC = () => {
   const [data, setData] = useState<data | null>(null);
-  const [average, setAverage] = useState<any>(null);
+  const [average, setAverage] = useState<data | null>(null);
   const [countriesList, setCountriesList] = useState<countries | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>("");
@@ -54,8 +54,8 @@ const App: React.FC = () => {
             }`
           );
         }
-        let airQualityData: data = await locationFetch.json();
-        let averageData = await averageFetch.json();
+        let airQualityData:data = await locationFetch.json();
+        let averageData:data = await averageFetch.json();
         let countriesData = await countriesFetch.json();
         setAverage(averageData);
         setData(airQualityData);
@@ -71,9 +71,6 @@ const App: React.FC = () => {
     getData();
   }, [dateRange, country]);
 
-  console.log("data", data);
-  console.log("average", average);
-  console.log("countriesList", countriesList);
 
   const handleSelect = (event: SelectChangeEvent) => {
     if (event.target.name === "Country") {
@@ -145,7 +142,7 @@ const App: React.FC = () => {
         </div>
       )}
       {data && (
-        <ChartList dataAPI={data.results} chart={chart} average={average} />
+        <ChartList locations={data.results} chart={chart} average={average} />
       )}
     </div>
   );

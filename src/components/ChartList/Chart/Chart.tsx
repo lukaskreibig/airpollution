@@ -4,12 +4,13 @@ import { animated, useSpring } from "react-spring";
 import "../../../App.css";
 
 type Props = {
-  refineData: any;
+  average: results;
   dataPoints: number;
   chart: number;
-  dataAPI: any;
+  locations: results;
 };
-const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
+const Chart: React.FC<Props> = ({ average, dataPoints, chart, locations }) => {
+
   let parameter = [
     { name: "PM 10 µg/m³", value: "pm10" },
     { name: "PM 2.5 µg/m³", value: "pm25" },
@@ -19,14 +20,14 @@ const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
   let dataSettings = parameter.map((para: any, index: number) => {
     return {
       type: "scatter",
-      x: dataAPI.map(
+      x: locations.map(
         (data: any) =>
           data.name +
           (data.city
             ? `, ${data.city}, Latest Update: ${data.lastUpdated.split("T")[0]}`
             : "")
       ),
-      y: dataAPI
+      y: locations
         .map((data: any) =>
           data.parameters
             .filter((pm: any) => pm.parameter === para.value)
@@ -52,8 +53,8 @@ const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
   let barSettings = [
     {
       type: "bar",
-      x: refineData.map((data: any) => data.displayName + " " + data.unit),
-      y: refineData.map((data: any) => data.average),
+      x: average.map((data: any) => data.displayName + " " + data.unit),
+      y: average.map((data: any) => data.average),
       marker: { color: "#f4a261" },
     },
   ];
@@ -68,7 +69,7 @@ const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
           useResizeHandler: true,
           width: 1400,
           height: 600,
-          title: `Air Pollution Data - Average of ${refineData
+          title: `Air Pollution Data - Average of ${average
             .reduce(
               (partialSum: any, a: any) => partialSum + a.measurement_count,
               0
@@ -94,7 +95,7 @@ const Chart: React.FC<Props> = ({ refineData, dataPoints, chart, dataAPI }) => {
             dataPoints === 1 ? "Station" : "Stations"
           } ${
             chart === 1
-              ? `using ${dataAPI.reduce(
+              ? `using ${locations.reduce(
                   (partialSum: any, a: any) => partialSum + a.measurements,
                   0
                 )} Measurements`
