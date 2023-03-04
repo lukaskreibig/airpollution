@@ -42,17 +42,17 @@ const App: React.FC = () => {
         const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
           [
             fetch(
-              `https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/averages?parameter=pm10&parameter=pm25&parameter=um010&parameter=pm1&parameter=um025&country=${country}&date_from=${
+              `https://api.openaq.org/v2/averages?parameter=pm10&parameter=pm25&parameter=um010&parameter=pm1&parameter=um025&country=${country}&date_from=${
                 new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
                 new Date(Date.now()).toISOString().split(".")[0]
               }&spatial=country&temporal=${time}`
             ),
             fetch(
-              `https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
+              `https://api.openaq.org/v2/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
             ),
             fetch(
-              `https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/countries`
+              `https://api.openaq.org/v2/countries`
             ),
           ]
         );
