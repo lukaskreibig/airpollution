@@ -1,7 +1,6 @@
 # Air Pollution Charts
 
-Get worldwide and up-to-date real life Air Pollution Data!
-**Air Pollution Charts** is built with **React** / Node using JS / Typescript, react-spring for animations and Plotly to draw data. 
+Introducing Air Pollution Charts - a personal project and tech challenge I took on to explore the possibilities of React, Node, JavaScript, and TypeScript. Using these powerful tools, I built a platform that provides real-time global air pollution data through rich and interactive data visualizations. The platform incorporates Plotly, a versatile data visualization library that offers a wide range of chart types, from basic line graphs to 3D visualizations. I've also utilized react-spring technology to enhance animations and provide a seamless user experience. 
 
 ---
 
