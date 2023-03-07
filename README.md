@@ -24,9 +24,15 @@ Introducing Air Pollution Charts - a personal project and tech challenge I took 
 
 ## Installation
 
-Clone this repository.
+To install this project, follow the steps below:
 
-Make sure you have [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/) and [node](https://nodejs.org/en/) installed on your machine, then run in the terminal:
+Clone this repository to your local machine.
+
+Ensure that you have Node.js and either npm or yarn installed on your machine.
+
+Open a terminal window and navigate to the root directory of the project.
+
+Run either of the following commands:
 
 ```bash
 npm install
@@ -38,20 +44,20 @@ or
 yarn install
 ```
 
-This command will install all the neccessary modules.
+This will install all the necessary modules and dependencies required to run the project.
 
 ---
 
-## How to run :computer:
+## Steps to Run :computer:
 
 ```bash
 npm start *or* yarn run
 ```
 
-## How to run tests
+## Steps to Run Tests
 
 ```bash
 npm test
 ```
 
-Have fun playing around! :movie_camera:
+Enjoy exploring! :movie_camera:
