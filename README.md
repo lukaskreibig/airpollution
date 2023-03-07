@@ -4,15 +4,12 @@ Introducing Air Pollution Charts - a personal project and tech challenge I took 
 
 ---
 
-## Built with
+## The platform is built on a foundation of four key technologies:
 
-• [React](https://reactjs.org/)
-
-• [TypeScript](https://www.typescriptlang.org/)
-
-• [Plotly](https://plotly.com/graphing-libraries/)
-
-• [react-spring](https://react-spring.io/)
+• [React](https://reactjs.org/) - A popular and widely-used JavaScript library for building user interfaces.
+• [TypeScript](https://www.typescriptlang.org/) - A superset of JavaScript that adds static type definitions to improve code safety and maintainability.
+• [Plotly](https://plotly.com/graphing-libraries/) - A data visualization library that allows users to create a wide range of chart types, from basic line graphs to 3D visualizations.
+• [react-spring](https://react-spring.io/) - A powerful animation library for React that allows us to create smooth, fluid animations that enhance the user experience.
 
 ---
 
