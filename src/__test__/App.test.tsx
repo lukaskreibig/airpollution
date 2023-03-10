@@ -6,19 +6,19 @@ import App from "../App";
 
 const server = setupServer(
   rest.get(
-    "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/locations",
+    "https://api.openaq.org/v2/locations",
     (req, res, ctx) => {
       return res(ctx.json({ test: "test" }));
     }
   ),
   rest.get(
-    "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/averages",
+    "https://api.openaq.org/v2/averages",
     (req, res, ctx) => {
       return res(ctx.json({ test: "test" }));
     }
   ),
   rest.get(
-    "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/countries",
+    "https://api.openaq.org/v2/countries",
     (req, res, ctx) => {
       return res(ctx.json({ test: "test" }));
     }
@@ -42,7 +42,7 @@ describe("Server Error Tests", () => {
   test("Server Error Locations Fetch", async () => {
     server.use(
       rest.get(
-        "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/locations",
+        "https://api.openaq.org/v2/locations",
         (req, res, ctx) => {
           return res(ctx.status(500));
         }
@@ -58,7 +58,7 @@ describe("Server Error Tests", () => {
   test("Server Error Averages Fetch", async () => {
     server.use(
       rest.get(
-        "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/averages",
+        "https://api.openaq.org/v2/averages",
         (req, res, ctx) => {
           return res(ctx.status(500));
         }
@@ -74,7 +74,7 @@ describe("Server Error Tests", () => {
   test("Server Error Countries Fetch", async () => {
     server.use(
       rest.get(
-        "https://u50g7n0cbj.execute-api.us-east-1.amazonaws.com/v2/countries",
+        "https://api.openaq.org/v2/countries",
         (req, res, ctx) => {
           return res(ctx.status(500));
         }
