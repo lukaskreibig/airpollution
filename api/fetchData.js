@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
     try {
-        // Extract the dynamic path after /api/fetchData, if any
-        const path = req.url.replace('/api/fetchData', '');
+        // Get the dynamic path from the query parameter
+        const { path = '' } = req.query; // Default to empty string if not provided
         const apiUrl = `https://api.openaq.org/v2${path}`;
         console.log('Forwarding request to:', apiUrl);
 
