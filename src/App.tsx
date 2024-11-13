@@ -35,7 +35,7 @@ const App: React.FC = () => {
    * @author Lukas Kreibig
    */
 
-   const baseUrl = 'airpollution-mocha.vercel.app/api/fetchData' 
+   const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData' 
 
 
   useEffect((): void => {
