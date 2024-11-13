@@ -4,19 +4,16 @@ import { animated, useSpring } from "react-spring";
 import ChartFunction from "./ChartFunction";
 
 type Props = {
-  average: results;
   chart: string;
   locations: results;
 };
-const Chart: React.FC<Props> = ({ average, chart, locations }) => {
+const Chart: React.FC<Props> = ({ chart, locations }) => {
   
   const [data, setData] = useState([])
   const [layout, setLayout] = useState({})
 
   const {
-    calculateBarChart,
     calculateBigChart,
-    calculateBarLayout,
     calculateBigLayout,
   } = ChartFunction();
 
@@ -25,19 +22,19 @@ const Chart: React.FC<Props> = ({ average, chart, locations }) => {
 
   useEffect(() => {
     let dataCalculation:any
-    chart === "2" ? dataCalculation = calculateBarChart(average) : dataCalculation = calculateBigChart(chart, locations)
+    // chart === "2" ? dataCalculation = calculateBarChart(average) : dataCalculation = calculateBigChart(chart, locations)
+    dataCalculation = calculateBigChart(chart, locations)
    
     let layoutCalculation:any
-    chart === "2" ? layoutCalculation = calculateBarLayout(average) : layoutCalculation = calculateBigLayout(chart, locations)
+    // chart === "2" ? layoutCalculation = calculateBarLayout(average) : layoutCalculation = calculateBigLayout(chart, locations)
+    layoutCalculation = calculateBigLayout(chart, locations)
+
     
     setData(dataCalculation)
     setLayout(layoutCalculation)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [average, chart, locations]);
+  }, [locations]);
   
-
-
-
   /**
    * react-spring chart animation when reloading or changing the chart data
    * <p>
