@@ -35,9 +35,8 @@ const App: React.FC = () => {
    * @author Lukas Kreibig
    */
 
-   const baseUrl = process.env.NODE_ENV === 'production' 
-  ? 'https://airpollution-lukaskreibig-lukaskreibigs-projects.vercel.app/api/fetchData' 
-  : 'http://localhost:3001/api/openaq';
+   const baseUrl = 'airpollution-mocha.vercel.app/api/fetchData' 
+
 
   useEffect((): void => {
     const getData = async (): Promise<void> => {
