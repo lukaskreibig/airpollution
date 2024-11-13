@@ -1,11 +1,9 @@
 export default async function handler(req, res) {
     try {
-        // Get the dynamic path from the query parameter
-        const { path = '' } = req.query; // Default to empty string if not provided
+        const { path = '' } = req.query;
         const apiUrl = `https://api.openaq.org/v2${path}`;
         console.log('Forwarding request to:', apiUrl);
 
-        // Make the request to the OpenAQ API using fetch
         const response = await fetch(apiUrl, {
             headers: {
                 'X-API-Key': '7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3',
@@ -13,6 +11,8 @@ export default async function handler(req, res) {
         });
 
         if (!response.ok) {
+            const errorText = await response.text(); // Capture the HTML or error response
+            console.error('Error fetching data from OpenAQ API:', errorText);
             throw new Error(`Error fetching data: ${response.statusText}`);
         }
 
