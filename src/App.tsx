@@ -35,6 +35,10 @@ const App: React.FC = () => {
    * @author Lukas Kreibig
    */
 
+   const baseUrl = process.env.NODE_ENV === 'production' 
+  ? 'https://<your-vercel-project>.vercel.app/api/openaq' 
+  : 'http://localhost:3001/api/openaq';
+
   useEffect((): void => {
     const getData = async (): Promise<void> => {
       try {
@@ -42,34 +46,16 @@ const App: React.FC = () => {
         const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
           [
             fetch(
-              `http://localhost:3001/api/openaq/averages?parameters_id=1&parameters_id=2&country=${country}&date_from=${
+              `${baseUrl}/averages?parameters_id=1&parameters_id=2&country=${country}&date_from=${
                 new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
                 new Date(Date.now()).toISOString().split(".")[0]
               }&spatial=country&temporal=${time}`
-              , {
-                headers: {
-                  "method": "GET",
-                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
-                },
-              }
             ),
             fetch(
-              `http://localhost:3001/api/openaq/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`, {
-                headers: {
-                  "method": "GET",
-                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
-                },
-              }
+              `${baseUrl}/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
             ),
-            fetch(
-              `http://localhost:3001/api/openaq/countries`, {
-                headers: {
-                  "method": "GET",
-                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
-                },
-              }
-            ),
+            fetch(`${baseUrl}/countries`)
           ]
         );
         if (!locationFetch.ok || !countriesFetch.ok || !averageFetch.ok) {
