@@ -36,7 +36,7 @@ const App: React.FC = () => {
    */
 
    const baseUrl = process.env.NODE_ENV === 'production' 
-  ? 'https://<your-vercel-project>.vercel.app/api/openaq' 
+  ? 'https://airpollution-lukaskreibig-lukaskreibigs-projects.vercel.app/api/fetchData' 
   : 'http://localhost:3001/api/openaq';
 
   useEffect((): void => {
