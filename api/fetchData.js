@@ -1,7 +1,8 @@
 export default async function handler(req, res) {
     try {
-        // Construct the OpenAQ API URL
-        const apiUrl = `https://api.openaq.org/v2${req.url.replace('/api/openaq', '')}`;
+        // Extract the dynamic path after /api/fetchData, if any
+        const path = req.url.replace('/api/fetchData', '');
+        const apiUrl = `https://api.openaq.org/v2${path}`;
         console.log('Forwarding request to:', apiUrl);
 
         // Make the request to the OpenAQ API using fetch
@@ -11,15 +12,11 @@ export default async function handler(req, res) {
             },
         });
 
-        // Check if the response is okay (status in the range 200-299)
         if (!response.ok) {
             throw new Error(`Error fetching data: ${response.statusText}`);
         }
 
-        // Parse the JSON data
         const data = await response.json();
-
-        // Set CORS headers and respond with the data
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).json(data);
     } catch (error) {
