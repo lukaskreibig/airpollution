@@ -42,17 +42,33 @@ const App: React.FC = () => {
         const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
           [
             fetch(
-              `https://api.openaq.org/v2/averages?parameter=pm10&parameter=pm25&parameter=um010&parameter=pm1&parameter=um025&country=${country}&date_from=${
+              `http://localhost:3001/api/openaq/averages?parameters_id=1&parameters_id=2&country=${country}&date_from=${
                 new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
                 new Date(Date.now()).toISOString().split(".")[0]
               }&spatial=country&temporal=${time}`
+              , {
+                headers: {
+                  "method": "GET",
+                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
+                },
+              }
             ),
             fetch(
-              `https://api.openaq.org/v2/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
+              `http://localhost:3001/api/openaq/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`, {
+                headers: {
+                  "method": "GET",
+                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
+                },
+              }
             ),
             fetch(
-              `https://api.openaq.org/v2/countries`
+              `http://localhost:3001/api/openaq/countries`, {
+                headers: {
+                  "method": "GET",
+                  "X-API-Key": "7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3",
+                },
+              }
             ),
           ]
         );
@@ -71,6 +87,9 @@ const App: React.FC = () => {
         let airQualityData:data = await locationFetch.json();
         let averageData:data = await averageFetch.json();
         let countriesData = await countriesFetch.json();
+        console.log("airQuality", airQualityData)
+        console.log("averageData", averageData)
+        console.log("countriesData", countriesData)
         setAverage(averageData);
         setData(airQualityData);
         setCountriesList(countriesData.results);

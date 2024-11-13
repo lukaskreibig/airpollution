@@ -8,7 +8,9 @@ type Props = {
 
 const ChartList: React.FC<Props> = ({ locations, chart, average }) => {
 
-  return !average?.results.length || !locations.length ? (
+  // console.log("average in chartlist", average)
+
+  return !locations.length ? (
     <div className="charts" id="message">
       No Data found. Probably there is no up-to-date data from the given
       country.
@@ -17,7 +19,7 @@ const ChartList: React.FC<Props> = ({ locations, chart, average }) => {
     <div className="charts">
       {
         <Chart
-          average={average.results}
+          // average={average.results}
           locations={locations}
           chart={chart}
         />
