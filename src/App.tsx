@@ -45,16 +45,16 @@ const App: React.FC = () => {
         const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
           [
             fetch(
-              `${baseUrl}/averages?parameters_id=1&parameters_id=2&country=${country}&date_from=${
-                new Date(Date.now() - 1).toISOString().split(".")[0]
+              `${baseUrl}?path=/averages&parameters_id=1&parameters_id=2&country=${country}&date_from=${
+                  new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
-                new Date(Date.now()).toISOString().split(".")[0]
+                  new Date(Date.now()).toISOString().split(".")[0]
               }&spatial=country&temporal=${time}`
-            ),
-            fetch(
-              `${baseUrl}/locations?parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
-            ),
-            fetch(`${baseUrl}/countries`)
+          ),
+          fetch(
+              `${baseUrl}?path=/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
+          ),
+          fetch(`${baseUrl}?path=/countries`)
           ]
         );
         if (!locationFetch.ok || !countriesFetch.ok || !averageFetch.ok) {
