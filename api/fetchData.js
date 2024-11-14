@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
     try {
         const { path = '' } = req.query;
-        const apiUrl = `https://api.openaq.org/v2${path}`;
+        const apiUrl = `https://api.openaq.org${path}`;
         console.log('Forwarding request to:', apiUrl);
 
         const response = await fetch(apiUrl, {
