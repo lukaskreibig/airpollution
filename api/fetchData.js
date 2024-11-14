@@ -1,10 +1,16 @@
 export default async function handler(req, res) {
     try {
-        const { path = '' } = req.query;
-        const apiUrl = `https://api.openaq.org${path}`;
-        console.log('Forwarding request to:', apiUrl);
+        // Extract the path and any additional query parameters
+        const { path = '', ...query } = req.query;
 
-        const response = await fetch(apiUrl, {
+        // Build the OpenAQ API URL with path and query parameters
+        const apiUrl = new URL(`https://api.openaq.org${path}`);
+        Object.keys(query).forEach((key) => apiUrl.searchParams.append(key, query[key]));
+
+        console.log('Forwarding request to:', apiUrl.toString());
+
+        // Make the request to the OpenAQ API using fetch
+        const response = await fetch(apiUrl.toString(), {
             headers: {
                 'X-API-Key': '7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3',
             },
