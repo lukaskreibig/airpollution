@@ -72,9 +72,6 @@ const App: React.FC = () => {
         let airQualityData:data = await locationFetch.json();
         let averageData:data = await averageFetch.json();
         let countriesData = await countriesFetch.json();
-        console.log("airQuality", airQualityData)
-        console.log("averageData", averageData)
-        console.log("countriesData", countriesData)
         setAverage(averageData);
         setData(airQualityData);
         setCountriesList(countriesData.results);
@@ -88,6 +85,18 @@ const App: React.FC = () => {
     };
     getData();
   }, [time, country]);
+
+  useEffect(() => {
+    console.log("average", average)
+  },[average])
+
+  useEffect(() => {
+    console.log("data", data)
+  },[data])
+
+  useEffect(() => {
+    console.log("countriesList", countriesList)
+  },[countriesList])
 
   /**
    * Handles the User Selection of the Dropdown Menus
