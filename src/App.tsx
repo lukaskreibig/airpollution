@@ -16,7 +16,7 @@ const App: React.FC = () => {
 
   const [time, setTime] = useState<string>("month");
   const [chart, setChart] = useState<string>("1");
-  const [country, setCountry] = useState<string>("DE");
+  const [country, setCountry] = useState<string>("50");
 
   const [open, setOpen] = useState<boolean>(true);
   const handleClose = (): void => setOpen(false);
@@ -45,15 +45,18 @@ const App: React.FC = () => {
         const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
           [
             fetch(
-              `${baseUrl}?path=/v2/averages&parameters_id=1&parameters_id=2&country=${country}&date_from=${
+              `${baseUrl}?path=/averages&parameters_id=1&parameters_id=2&country=${country}&date_from=${
                   new Date(Date.now() - 1).toISOString().split(".")[0]
               }&date_to=${
                   new Date(Date.now()).toISOString().split(".")[0]
               }&spatial=country&temporal=${time}`
           ),
+          // fetch(
+          //     `${baseUrl}?path=/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
+          // ),
           fetch(
-              `${baseUrl}?path=/v2/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
-          ),
+            `${baseUrl}?path=/locations&countries_id=${country}&order_by=lastUpdated&dumpRaw=false`
+        ),
           fetch(`${baseUrl}?path=/v3/countries`)
           ]
         );
@@ -98,6 +101,11 @@ const App: React.FC = () => {
     console.log("countriesList", countriesList)
   },[countriesList])
 
+
+  useEffect(() => {
+    console.log("country", country)
+  },[country])
+
   /**
    * Handles the User Selection of the Dropdown Menus
    * <p>
@@ -113,6 +121,8 @@ const App: React.FC = () => {
    */
 
   const handleSelect = (event: SelectChangeEvent) => {
+    console.log("event.target.value", event.target.value)
+    console.log("event.target.name", event.target.name)
     if (event.target.name === "Country") {
       setCountry(event.target.value as string);
     } else if (event.target.name === "Chart") {
