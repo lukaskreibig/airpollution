@@ -3,9 +3,21 @@ export default async function handler(req, res) {
         // Extract the path and any additional query parameters
         const { path = '', ...query } = req.query;
 
-        // Build the OpenAQ API URL with path and query parameters
+        // Build the OpenAQ API URL with path
         const apiUrl = new URL(`https://api.openaq.org${path}`);
-        Object.keys(query).forEach((key) => apiUrl.searchParams.append(key, query[key]));
+
+        // Append query parameters, handling cases where parameters may contain multiple values
+        Object.keys(query).forEach((key) => {
+            // If the query parameter contains multiple values separated by commas, split and add each separately
+            if (Array.isArray(query[key])) {
+                query[key].forEach(value => apiUrl.searchParams.append(key, value));
+            } else if (typeof query[key] === 'string' && query[key].includes(',')) {
+                query[key].split(',').forEach(value => apiUrl.searchParams.append(key, value));
+            } else {
+                // Add single-value parameters as-is
+                apiUrl.searchParams.append(key, query[key]);
+            }
+        });
 
         console.log('Forwarding request to:', apiUrl.toString());
 
