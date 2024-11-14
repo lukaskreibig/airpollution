@@ -55,7 +55,7 @@ const App: React.FC = () => {
           //     `${baseUrl}?path=/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
           // ),
           fetch(
-            `${baseUrl}?path=/v3/locations&countries_id=${country}&order_by=lastUpdated&dumpRaw=false`
+            `${baseUrl}?path=/v3/locations&countries_id=${country}`
         ),
           fetch(`${baseUrl}?path=/v3/countries`)
           ]
