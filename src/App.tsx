@@ -42,15 +42,15 @@ const App: React.FC = () => {
     const getData = async (): Promise<void> => {
       try {
         setLoading(true);
-        const [averageFetch, locationFetch, countriesFetch] = await Promise.all(
+        const [locationFetch, countriesFetch] = await Promise.all(
           [
-            fetch(
-              `${baseUrl}?path=/v2/averages&parameters_id=1&parameters_id=2&country=DE&date_from=${
-                  new Date(Date.now() - 1).toISOString().split(".")[0]
-              }&date_to=${
-                  new Date(Date.now()).toISOString().split(".")[0]
-              }&spatial=country&temporal=${time}`
-          ),
+          //   fetch(
+          //     `${baseUrl}?path=/v2/averages&parameters_id=1&parameters_id=2&country=DE&date_from=${
+          //         new Date(Date.now() - 1).toISOString().split(".")[0]
+          //     }&date_to=${
+          //         new Date(Date.now()).toISOString().split(".")[0]
+          //     }&spatial=country&temporal=${time}`
+          // ),
           // fetch(
           //     `${baseUrl}?path=/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
           // ),
@@ -60,22 +60,18 @@ const App: React.FC = () => {
           fetch(`${baseUrl}?path=/v3/countries`)
           ]
         );
-        if (!locationFetch.ok || !countriesFetch.ok || !averageFetch.ok) {
+        if (!locationFetch.ok || !countriesFetch.ok) {
           setLoading(false);
           throw new Error(
             `Oh No! A failure occured fetching ${
               !locationFetch.ok
                 ? `Location Data ${locationFetch.status}`
-                : !countriesFetch.ok
-                ? `Country Data: ${countriesFetch.status}`
-                : `Average Data: ${averageFetch.status}`
+                :  `Country Data: ${countriesFetch.status}`
             }`
           );
         }
         let airQualityData:data = await locationFetch.json();
-        let averageData:data = await averageFetch.json();
         let countriesData = await countriesFetch.json();
-        setAverage(averageData);
         setData(airQualityData);
         setCountriesList(countriesData.results);
         setError(null);
