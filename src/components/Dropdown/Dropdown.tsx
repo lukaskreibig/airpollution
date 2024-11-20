@@ -12,6 +12,7 @@ type Props = {
   countries?: Country[];
 };
 
+
 const Dropdown: React.FC<Props> = ({
   handleSelect,
   dataValue,
@@ -30,7 +31,7 @@ const Dropdown: React.FC<Props> = ({
     { input: "2", description: "Average Air Pollution Data" },
   ];
 
-  let options: { value: string | number; label: string }[] = [];
+  let options: { value: string; label: string }[] = [];
 
   if (dropdown === "Time") {
     options = timeData.map((data) => ({
@@ -39,7 +40,7 @@ const Dropdown: React.FC<Props> = ({
     }));
   } else if (dropdown === "Country" && countries) {
     options = countries.map((country) => ({
-      value: country.id,
+      value: country.id.toString(),
       label: country.name,
     }));
   } else {
