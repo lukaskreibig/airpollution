@@ -1,5 +1,3 @@
-// App.tsx
-
 import { useEffect, useState } from "react";
 import "./App.css";
 import ChartList from "./components/ChartList/ChartList";
@@ -33,7 +31,7 @@ const App: React.FC = () => {
           fetch(
             `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=1000`
           ),
-          fetch(`${baseUrl}?path=/v2/countries`),
+          fetch(`${baseUrl}?path=/v3/countries`),
         ]);
 
         if (!latestFetch.ok || !countriesFetch.ok) {
