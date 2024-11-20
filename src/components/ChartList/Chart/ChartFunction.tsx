@@ -1,6 +1,6 @@
-// In ChartFunction.tsx
-
 import { useEffect, useState } from "react";
+import { PlotData, Layout } from "plotly.js";
+import { LatestResult, Parameter } from "../../../react-app-env";
 
 const ChartFunction = () => {
   const getWindowDimensions = () => {
@@ -12,9 +12,7 @@ const ChartFunction = () => {
   };
 
   const useWindowDimensions = () => {
-    const [windowDimensions, setWindowDimensions] = useState(
-      getWindowDimensions()
-    );
+    const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
 
     useEffect(() => {
       const handleResize = () => {
@@ -30,15 +28,15 @@ const ChartFunction = () => {
 
   const { height, width } = useWindowDimensions();
 
-  const calculateBigChart = (chart: string, locations: LatestResult[]) => {
-    let parameter: parameter[] = [
+  const calculateBigChart = (chart: string, locations: LatestResult[]): Partial<PlotData>[] => {
+    const parameters: Parameter[] = [
       { name: "PM10 µg/m³", value: "pm10" },
       { name: "PM2.5 µg/m³", value: "pm25" },
     ];
 
-    let color = ["#e9c46a", "#2a9d8f"];
+    const colors = ["#e9c46a", "#2a9d8f"];
 
-    return parameter.map((para: parameter, index: number) => {
+    return parameters.map((para: Parameter, index: number) => {
       return {
         type: "scatter",
         x: locations.map((data) => {
@@ -62,9 +60,9 @@ const ChartFunction = () => {
         mode: "markers",
         name: para.name,
         marker: {
-          color: color[index],
+          color: colors[index],
           line: {
-            color: color[index],
+            color: colors[index],
             width: 1,
           },
           symbol: "circle",
@@ -74,7 +72,7 @@ const ChartFunction = () => {
     });
   };
 
-  const calculateBigLayout = (chart: string, locations: LatestResult[]) => {
+  const calculateBigLayout = (chart: string, locations: LatestResult[]): Partial<Layout> => {
     return {
       width: width - 40,
       height: height - 150,

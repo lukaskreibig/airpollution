@@ -1,5 +1,4 @@
-// In ChartList.tsx
-
+import { LatestResult } from "../../react-app-env";
 import Chart from "./Chart/Chart";
 
 type Props = {
@@ -10,7 +9,7 @@ type Props = {
 const ChartList: React.FC<Props> = ({ locations, chart }) => {
   return !locations.length ? (
     <div className="charts" id="message">
-      No Data found. Probably there is no up-to-date data from the given country.
+      No data found. There might be no up-to-date data from the selected country.
     </div>
   ) : (
     <div className="charts">
