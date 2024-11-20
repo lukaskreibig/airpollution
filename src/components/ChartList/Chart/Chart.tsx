@@ -1,10 +1,7 @@
-// Chart.tsx
-
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
 import ChartFunction from "./ChartFunction";
-import { PlotData, Layout } from "plotly.js";
 import { LatestResult } from "../../../react-app-env";
 
 type Props = {
@@ -13,8 +10,8 @@ type Props = {
 };
 
 const Chart: React.FC<Props> = ({ chart, locations }) => {
-  const [data, setData] = useState<Partial<PlotData>[]>([]);
-  const [layout, setLayout] = useState<Partial<Layout>>({});
+  const [data, setData] = useState<any>([]);
+  const [layout, setLayout] = useState<any>({});
 
   const {
     calculateBigChart,
@@ -24,15 +21,17 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
   } = ChartFunction();
 
   useEffect(() => {
-    let dataCalculation: Partial<any>[];
-    let layoutCalculation: Partial<Layout>;
+    let dataCalculation;
+    let layoutCalculation;
 
-    if (chart === "2") {
-      dataCalculation = calculateAverageChart(locations);
-      layoutCalculation = calculateAverageLayout();
-    } else {
+    if (chart === "1") {
       dataCalculation = calculateBigChart(chart, locations);
       layoutCalculation = calculateBigLayout(chart, locations);
+    } else if (chart === "2") {
+      // Destructure data and averages from calculateAverageChart
+      const { data: averageData, averages } = calculateAverageChart(locations);
+      dataCalculation = averageData;
+      layoutCalculation = calculateAverageLayout(averages);
     }
 
     setData(dataCalculation);
@@ -43,7 +42,7 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
 
   return (
     <animated.div style={style}>
-      <Plot data={data} layout={layout} />
+      <Plot data={data} layout={layout} config={{ responsive: true }} />
     </animated.div>
   );
 };

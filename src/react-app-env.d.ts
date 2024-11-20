@@ -49,6 +49,7 @@ export interface DateType {
 }
 
 export interface Country {
+  id: number;
   cities: number;
   code: string;
   count: number;

@@ -1,5 +1,3 @@
-// Dropdown.tsx
-
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -41,7 +39,7 @@ const Dropdown: React.FC<Props> = ({
     }));
   } else if (dropdown === "Country" && countries) {
     options = countries.map((country) => ({
-      value: String(country.code),
+      value: String(country.id),
       label: country.name,
     }));
   } else {
