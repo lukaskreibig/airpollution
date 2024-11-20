@@ -1,3 +1,5 @@
+// ChartList.tsx
+
 import { LatestResult } from "../../react-app-env";
 import Chart from "./Chart/Chart";
 
