@@ -36,6 +36,9 @@ export interface Measurement {
 export interface Parameter {
   name: string;
   value: string;
+  min: number;
+  max: number;
+  guideline: number;
 }
 
 export type Parameters = string[];
@@ -46,7 +49,6 @@ export interface DateType {
 }
 
 export interface Country {
-  id: number,
   cities: number;
   code: string;
   count: number;

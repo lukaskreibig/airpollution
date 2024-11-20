@@ -1,3 +1,5 @@
+// Chart.tsx
+
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
@@ -14,11 +16,24 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
   const [data, setData] = useState<Partial<PlotData>[]>([]);
   const [layout, setLayout] = useState<Partial<Layout>>({});
 
-  const { calculateBigChart, calculateBigLayout } = ChartFunction();
+  const {
+    calculateBigChart,
+    calculateBigLayout,
+    calculateAverageChart,
+    calculateAverageLayout,
+  } = ChartFunction();
 
   useEffect(() => {
-    const dataCalculation = calculateBigChart(chart, locations);
-    const layoutCalculation = calculateBigLayout(chart, locations);
+    let dataCalculation: Partial<any>[];
+    let layoutCalculation: Partial<Layout>;
+
+    if (chart === "2") {
+      dataCalculation = calculateAverageChart(locations);
+      layoutCalculation = calculateAverageLayout();
+    } else {
+      dataCalculation = calculateBigChart(chart, locations);
+      layoutCalculation = calculateBigLayout(chart, locations);
+    }
 
     setData(dataCalculation);
     setLayout(layoutCalculation);

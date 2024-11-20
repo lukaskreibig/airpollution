@@ -1,3 +1,5 @@
+// App.tsx
+
 import { useEffect, useState } from "react";
 import "./App.css";
 import ChartList from "./components/ChartList/ChartList";
@@ -21,7 +23,7 @@ const App: React.FC = () => {
   const [open, setOpen] = useState<boolean>(true);
   const handleClose = (): void => setOpen(false);
 
-  const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData';
+  const baseUrl = "https://airpollution-mocha.vercel.app/api/fetchData";
 
   useEffect((): void => {
     const getData = async (): Promise<void> => {
@@ -31,7 +33,7 @@ const App: React.FC = () => {
           fetch(
             `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=1000`
           ),
-          fetch(`${baseUrl}?path=/v3/countries`),
+          fetch(`${baseUrl}?path=/v2/countries`),
         ]);
 
         if (!latestFetch.ok || !countriesFetch.ok) {
