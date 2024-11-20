@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Layout, PlotData, Shape } from "plotly.js";
+import { Layout, PlotData, Shape, Annotations } from "plotly.js";
 import { LatestResult, Parameter } from "../../../react-app-env";
 
 const ChartFunction = () => {
@@ -230,10 +230,18 @@ const ChartFunction = () => {
   };
 
   const calculateAverageLayout = (
-    averages: { parameter: string; guideline: number }[]
-  ) => {
+    averages: { parameter: string; guideline: number; average: number }[]
+  ): Partial<Layout> => {
+    // Calculate the maximum y-value
+    const maxYValue = Math.max(
+      ...averages.map((a) => Math.max(a.average, a.guideline))
+    );
+  
+    // Add some padding to the max value
+    const yAxisMax = maxYValue * 1.2;
+  
     // Create shapes for WHO guideline lines
-    const shapes = averages.map((a, index) => ({
+    const shapes: Partial<Shape>[] = averages.map((a, index) => ({
       type: "line",
       x0: index - 0.4, // Start slightly before the bar
       x1: index + 0.4, // End slightly after the bar
@@ -247,9 +255,9 @@ const ChartFunction = () => {
         width: 2,
       },
     }));
-
+  
     // Add annotations for guideline values
-    const annotations = averages.map((a, index) => ({
+    const annotations: Partial<Annotations>[] = averages.map((a, index) => ({
       x: a.parameter,
       y: a.guideline,
       xref: "x",
@@ -262,7 +270,7 @@ const ChartFunction = () => {
         size: 12,
       },
     }));
-
+  
     return {
       width: width - 40,
       height: height - 150,
@@ -272,6 +280,8 @@ const ChartFunction = () => {
       },
       yaxis: {
         title: "Concentration (µg/m³)",
+        autorange: false,
+        range: [0, yAxisMax], // Fixed range to prevent autoscaling
       },
       margin: {
         l: 60,
@@ -292,6 +302,7 @@ const ChartFunction = () => {
       },
     };
   };
+  
 
   return {
     calculateBigChart,
