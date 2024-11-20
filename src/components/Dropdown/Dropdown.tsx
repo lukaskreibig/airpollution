@@ -30,7 +30,7 @@ const Dropdown: React.FC<Props> = ({
     { input: "2", description: "Average Air Pollution Data" },
   ];
 
-  let options: { value: string; label: string }[] = [];
+  let options: { value: string | number; label: string }[] = [];
 
   if (dropdown === "Time") {
     options = timeData.map((data) => ({
@@ -39,7 +39,7 @@ const Dropdown: React.FC<Props> = ({
     }));
   } else if (dropdown === "Country" && countries) {
     options = countries.map((country) => ({
-      value: country.code,
+      value: country.id,
       label: country.name,
     }));
   } else {
