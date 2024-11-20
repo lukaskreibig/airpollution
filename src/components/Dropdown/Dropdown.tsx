@@ -3,12 +3,13 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
+import { Country } from "../../react-app-env";
 
 type Props = {
   handleSelect: (event: SelectChangeEvent) => void;
   dataValue: string | undefined;
   dropdown: string;
-  countries?: countries[];
+  countries?: Country[];
 };
 
 const Dropdown: React.FC<Props> = ({
@@ -17,38 +18,52 @@ const Dropdown: React.FC<Props> = ({
   dropdown,
   countries,
 }) => {
-  let timeData = [
+  const timeData = [
     { input: "day", description: "Today" },
     { input: "month", description: "This Month" },
     { input: "year", description: "This Year" },
   ];
 
-  let chartData = [
+  const chartData = [
     { input: "1", description: "Detailed Air Pollution Data" },
     { input: "3", description: "Latest Air Pollution Data" },
     { input: "2", description: "Average Air Pollution Data" },
   ];
 
+  let options: { value: string; label: string }[] = [];
+
+  if (dropdown === "Time") {
+    options = timeData.map((data) => ({
+      value: data.input,
+      label: data.description,
+    }));
+  } else if (dropdown === "Country" && countries) {
+    options = countries.map((country) => ({
+      value: country.code,
+      label: country.name,
+    }));
+  } else {
+    options = chartData.map((data) => ({
+      value: data.input,
+      label: data.description,
+    }));
+  }
+
   return (
     <Box sx={{ minWidth: 120 }}>
       <FormControl fullWidth>
-        <InputLabel id="demo-simple-select-label">{dropdown}</InputLabel>
+        <InputLabel id={`${dropdown}-select-label`}>{dropdown}</InputLabel>
         <Select
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
-          value={dataValue}
+          labelId={`${dropdown}-select-label`}
+          id={`${dropdown}-select`}
+          value={dataValue || ""}
           name={dropdown}
           label={dropdown}
           onChange={handleSelect}
         >
-          {(dropdown === "Time"
-            ? timeData
-            : dropdown === "Country"
-            ? countries!
-            : chartData
-          ).map((data: any, index: any) => (
-            <MenuItem value={!countries ? data.input : data.id} key={index}>
-              {!countries ? data.description : data.name}
+          {options.map((option, index) => (
+            <MenuItem value={option.value} key={index}>
+              {option.label}
             </MenuItem>
           ))}
         </Select>

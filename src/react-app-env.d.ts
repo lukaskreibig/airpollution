@@ -1,62 +1,58 @@
-// Existing types with minimal adjustments
-
-type data = {
-  meta?: meta;
-  results: results;
+export interface Data {
+  meta?: Meta;
+  results: LatestResult[];
   length?: number;
-};
+}
 
-type meta = {
+export interface Meta {
   found: number;
   license: string;
   limit: number;
   name: string;
   page: number;
   website: string;
-};
+}
 
-type results = LatestResult[];
-
-type LatestResult = {
+export interface LatestResult {
   location: string;
   city: string | null;
   country: string;
   coordinates: Coordinates;
   measurements: Measurement[];
-};
+}
 
-type Coordinates = {
+export interface Coordinates {
   latitude: number;
   longitude: number;
-};
+}
 
-type Measurement = {
+export interface Measurement {
   parameter: string;
   value: number;
   lastUpdated: string;
   unit: string;
-};
+}
 
-type parameter = {
+export interface Parameter {
   name: string;
   value: string;
-};
+}
 
-type parameters = string[];
+export type Parameters = string[];
 
-type date = {
+export interface DateType {
   utc: string;
   local: string;
-};
+}
 
-type countries = {
-  cities: string;
+export interface Country {
+  cities: number;
   code: string;
   count: number;
   firstUpdated: string;
   lastUpdated: string;
   locations: number;
   name: string;
-  parameters: parameters;
+  parameters: Parameters;
   sources: number;
-};
+}

@@ -1,9 +1,9 @@
-// In Chart.tsx
-
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
 import ChartFunction from "./ChartFunction";
+import { PlotData, Layout } from "plotly.js";
+import { LatestResult } from "../../../react-app-env";
 
 type Props = {
   chart: string;
@@ -11,8 +11,8 @@ type Props = {
 };
 
 const Chart: React.FC<Props> = ({ chart, locations }) => {
-  const [data, setData] = useState<any[]>([]);
-  const [layout, setLayout] = useState<any>({});
+  const [data, setData] = useState<Partial<PlotData>[]>([]);
+  const [layout, setLayout] = useState<Partial<Layout>>({});
 
   const { calculateBigChart, calculateBigLayout } = ChartFunction();
 
