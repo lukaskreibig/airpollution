@@ -47,7 +47,7 @@ const Dropdown: React.FC<Props> = ({
             ? countries!
             : chartData
           ).map((data: any, index: any) => (
-            <MenuItem value={!countries ? data.input : data.code} key={index}>
+            <MenuItem value={!countries ? data.input : data.id} key={index}>
               {!countries ? data.description : data.name}
             </MenuItem>
           ))}
