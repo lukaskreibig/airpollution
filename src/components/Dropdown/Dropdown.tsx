@@ -40,7 +40,7 @@ const Dropdown: React.FC<Props> = ({
     }));
   } else if (dropdown === "Country" && countries) {
     options = countries.map((country) => ({
-      value: country.id.toString(),
+      value: String(country.id),
       label: country.name,
     }));
   } else {
