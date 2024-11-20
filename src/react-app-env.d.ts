@@ -1,73 +1,62 @@
+// Existing types with minimal adjustments
+
 type data = {
-    meta?: meta,
-    results: results
-    length?: number
-  }
+  meta?: meta;
+  results: results;
+  length?: number;
+};
 
-  type meta = {
-    found: number,
-    license: string,
-    limit: number,
-    name: string,
-    page: number,
-    website: URL,  
-  }
+type meta = {
+  found: number;
+  license: string;
+  limit: number;
+  name: string;
+  page: number;
+  website: string;
+};
 
-  type results = [{
-    average?: number,
-    displayName?: string,
-    id?: number,
-    measurement_count?: number,
-    month?: string,
-    name?: string,
-    parameter?: string,
-    parameterId?: number,
-    subtitle?: string,
-    unit?: string,
-    coordinates?: {latitude: number, longitude: number}
-    city?: null,
-    country?: string,
-    entity?: string,
-    firstUpdated?: string,
-    id?: number,
-    isAnalysis?: boolean,
-    isMobile?: boolean,
-    lastUpdated?: string,
-    measurements?: number,
-    name?: string,
-    parameters?: parameters,
-    location?: string,
-    locationId?: number,
-    parameter?: any,
-    sensorType?: string,
-    sources?: any
-  }, length?: number | null]
+type results = LatestResult[];
 
-  type coordinates = {
-    latitude: number,
-    longitute: number
-  }
+type LatestResult = {
+  location: string;
+  city: string | null;
+  country: string;
+  coordinates: Coordinates;
+  measurements: Measurement[];
+};
 
-  type date = {
-    utc: date,
-    local: date
-  }
+type Coordinates = {
+  latitude: number;
+  longitude: number;
+};
 
-  type countries = {
-    cities: string,
-    code: string,
-    count: number,
-    firstUpdated: number,
-    localUpdated: number,
-    locations: number,
-    name: string,
-    parameters: parameters,
-    sources: number
-  }
+type Measurement = {
+  parameter: string;
+  value: number;
+  lastUpdated: string;
+  unit: string;
+};
 
-  type parameter = { name: string, 
-                  value: string }
+type parameter = {
+  name: string;
+  value: string;
+};
 
-  type parameters = [
-   string
-  ]
+type parameters = string[];
+
+type date = {
+  utc: string;
+  local: string;
+};
+
+type countries = {
+  cities: string;
+  code: string;
+  count: number;
+  firstUpdated: string;
+  lastUpdated: string;
+  locations: number;
+  name: string;
+  parameters: parameters;
+  sources: number;
+};

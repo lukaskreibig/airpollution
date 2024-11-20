@@ -1,3 +1,5 @@
+// In Chart.tsx
+
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { animated, useSpring } from "react-spring";
@@ -5,58 +7,24 @@ import ChartFunction from "./ChartFunction";
 
 type Props = {
   chart: string;
-  locations: results;
+  locations: LatestResult[];
 };
+
 const Chart: React.FC<Props> = ({ chart, locations }) => {
-  
-  const [data, setData] = useState([])
-  const [layout, setLayout] = useState({})
+  const [data, setData] = useState<any[]>([]);
+  const [layout, setLayout] = useState<any>({});
 
-  const {
-    calculateBigChart,
-    calculateBigLayout,
-  } = ChartFunction();
-
-
-
+  const { calculateBigChart, calculateBigLayout } = ChartFunction();
 
   useEffect(() => {
-    let dataCalculation:any
-    // chart === "2" ? dataCalculation = calculateBarChart(average) : dataCalculation = calculateBigChart(chart, locations)
-    dataCalculation = calculateBigChart(chart, locations)
-   
-    let layoutCalculation:any
-    // chart === "2" ? layoutCalculation = calculateBarLayout(average) : layoutCalculation = calculateBigLayout(chart, locations)
-    layoutCalculation = calculateBigLayout(chart, locations)
+    const dataCalculation = calculateBigChart(chart, locations);
+    const layoutCalculation = calculateBigLayout(chart, locations);
 
-    
-    setData(dataCalculation)
-    setLayout(layoutCalculation)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locations]);
-  
-  /**
-   * react-spring chart animation when reloading or changing the chart data
-   * <p>
-   *
-   * react-spring will animate the chart from y:50 to y:0 (bounce up and down) whenever there is a change
-   * in the passed down variable data, which contains the Plotly Settings and will change whenever the
-   * App is being loaded or the Chart is changed.
-   *
-   * @author Lukas Kreibig
-   * @param objectvalues { x: 0, y: 50, opacity: 0.1} useSpring start settings for first and rerender render
-   * @param data react-spring will listen to the variable data and animate the object values whenever there is a change
-   */
+    setData(dataCalculation);
+    setLayout(layoutCalculation);
+  }, [locations, chart]);
 
-  const [style, api] = useSpring({ x: 0, y: 50}, [chart]);
-  useEffect(() => {
-    api.start({
-      x: 0,
-      y: 0,
-      delay: 150,
-      config: { mass: 1, tension: 280, friction: 60 },
-    });
-  }, [chart, api]);
+  const style = useSpring({ from: { y: 50 }, to: { y: 0 } });
 
   return (
     <animated.div style={style}>

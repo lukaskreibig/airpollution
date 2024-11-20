@@ -9,7 +9,6 @@ import Modal from "@mui/material/Modal";
 
 const App: React.FC = () => {
   const [data, setData] = useState<data | null>(null);
-  const [average, setAverage] = useState<data | null>(null);
   const [countriesList, setCountriesList] = useState<countries[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>("");
@@ -38,56 +37,45 @@ const App: React.FC = () => {
    const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData' 
 
 
-  useEffect((): void => {
-    const getData = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        const [locationFetch, countriesFetch] = await Promise.all(
-          [
-          //   fetch(
-          //     `${baseUrl}?path=/v2/averages&parameters_id=1&parameters_id=2&country=DE&date_from=${
-          //         new Date(Date.now() - 1).toISOString().split(".")[0]
-          //     }&date_to=${
-          //         new Date(Date.now()).toISOString().split(".")[0]
-          //     }&spatial=country&temporal=${time}`
-          // ),
-          // fetch(
-          //     `${baseUrl}?path=/locations&parameter=pm10&parameter=pm25&limit=1000&page=1&offset=0&sort=desc&radius=1000&country=${country}&order_by=lastUpdated&dumpRaw=false`
-          // ),
-          fetch(
-            `${baseUrl}?path=/v3/locations&countries_id=${country}`
+  
+useEffect((): void => {
+  const getData = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const [latestFetch, countriesFetch] = await Promise.all([
+        fetch(
+          `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=month&parameter=pm10&parameter=pm25&limit=1000`
         ),
-          fetch(`${baseUrl}?path=/v3/countries`)
-          ]
-        );
-        if (!locationFetch.ok || !countriesFetch.ok) {
-          setLoading(false);
-          throw new Error(
-            `Oh No! A failure occured fetching ${
-              !locationFetch.ok
-                ? `Location Data ${locationFetch.status}`
-                :  `Country Data: ${countriesFetch.status}`
-            }`
-          );
-        }
-        let airQualityData:data = await locationFetch.json();
-        let countriesData = await countriesFetch.json();
-        setData(airQualityData);
-        setCountriesList(countriesData.results);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
-  }, [time, country]);
+        fetch(`${baseUrl}?path=/v2/countries`),
+      ]);
 
-  useEffect(() => {
-    console.log("average", average)
-  },[average])
+      if (!latestFetch.ok || !countriesFetch.ok) {
+        setLoading(false);
+        throw new Error(
+          `Oh No! A failure occurred fetching ${
+            !latestFetch.ok
+              ? `Latest Data ${latestFetch.status}`
+              : `Country Data: ${countriesFetch.status}`
+          }`
+        );
+      }
+
+      const airQualityData = await latestFetch.json();
+      const countriesData = await countriesFetch.json();
+
+      setData(airQualityData);
+      setCountriesList(countriesData.results);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  getData();
+}, [time, country]);
+
 
   useEffect(() => {
     console.log("data", data)
@@ -188,7 +176,7 @@ const App: React.FC = () => {
         </div>
       )}
       {data && (
-        <ChartList locations={data.results} chart={chart} average={average} />
+        <ChartList locations={data.results} chart={chart} />
       )}
     </div>
   );
