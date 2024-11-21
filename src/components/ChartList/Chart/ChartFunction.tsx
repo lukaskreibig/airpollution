@@ -169,7 +169,7 @@ const ChartFunction = () => {
   ): Partial<Layout> => {
     return {
       width: width - 40,
-      height: height - 47,
+      height: height - 45,
       title: `Air Pollution - Showing the Latest Data <br> from ${
         locations.length
       } ${locations.length === 1 ? "Station" : "Stations"}`,
@@ -300,7 +300,7 @@ const ChartFunction = () => {
   
     return {
       width: width - 40,
-      height: height -47,
+      height: height - 45,
       title: "Average Air Pollution with WHO Guidelines",
       xaxis: {
         title: "Parameter",
@@ -398,6 +398,7 @@ const ChartFunction = () => {
 
   const calculateMapLayout = (center: { lat: number; lon: number }): Partial<Layout> => {
     return {
+      height: height - 45,
       autosize: true,
       hovermode: 'closest',
       mapbox: {

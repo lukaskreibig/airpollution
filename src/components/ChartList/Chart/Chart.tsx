@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
-import ChartFunction from "./ChartFunction";
 import { LatestResult, Country } from "../../../react-app-env";
 import { Layout, PlotData } from "plotly.js";
+import ChartFunction from "./ChartFunction";
 
 type Props = {
   chart: string;
@@ -33,13 +33,12 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
       dataCalculation = calculateBigChart(chart, locations);
       layoutCalculation = calculateBigLayout(chart, locations);
     } else if (chart === "2") {
-      // Handle empty locations
       if (locations.length > 0) {
         const { data: averageData, averages } = calculateAverageChart(locations);
         dataCalculation = averageData;
         layoutCalculation = calculateAverageLayout(averages);
       } else {
-        // Default averages when no data is available
+        // Standardwerte, wenn keine Daten verfügbar sind
         const defaultAverages = [
           { parameter: "PM10", average: 0, guideline: 45 },
           { parameter: "PM2.5", average: 0, guideline: 15 },
@@ -63,8 +62,8 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
     } else if (chart === "3") {
       dataCalculation = calculateMapChart(locations);
 
-      // Calculate map center based on locations
-      let center = { lat: 51.1657, lon: 10.4515 }; // Default to Germany
+      // Berechne den Kartenmittelpunkt basierend auf den Standorten
+      let center = { lat: 51.1657, lon: 10.4515 }; // Standard auf Deutschland
       if (locations.length > 0) {
         let latSum = 0;
         let lonSum = 0;
@@ -87,7 +86,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
       layoutCalculation = calculateMapLayout(center);
     }
 
-    // Add transition settings to layout
+    // Übergangseinstellungen zum Layout hinzufügen
     layoutCalculation.transition = {
       duration: 200,
       easing: "cubic-in-out",
@@ -100,12 +99,14 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
   }, [locations, chart]);
 
   return (
-    <div>
+    <div style={{ width: '100%', height: '100%' }}>
       {data.length > 0 ? (
         <Plot
           data={data}
           layout={layout}
           revision={revision}
+          style={{ width: '100%', height: '100%' }}
+          useResizeHandler={true}
           config={{
             responsive: true,
             mapboxAccessToken: process.env.REACT_APP_MAPBOX_ACCESS_TOKEN,

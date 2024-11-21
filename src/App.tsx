@@ -133,7 +133,7 @@ const App: React.FC = () => {
             Loading data for the first time. This might take a while!
           </div>
         )}
-        {data && <ChartList locations={data.results} chart={chart} />}
+        {data && <ChartList locations={data.results} chart={chart} country={country} countriesList={[]} />}
       </div>
     </div>
   );
