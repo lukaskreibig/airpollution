@@ -29,7 +29,7 @@ const App: React.FC = () => {
         setLoading(true);
         const [latestFetch, countriesFetch] = await Promise.all([
           fetch(
-            `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=1000`
+            `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=2000`
           ),
           fetch(`${baseUrl}?path=/v3/countries`),
         ]);
@@ -88,44 +88,53 @@ const App: React.FC = () => {
         </Box>
       </Modal>
 
-      <div className="dropdowncontainer">
-        <Dropdown
-          handleSelect={handleSelect}
-          dataValue={chart}
-          dropdown="Chart"
-        />
-        {countriesList.length > 0 && (
-          <Dropdown
-            handleSelect={handleSelect}
-            dataValue={country}
-            dropdown="Country"
-            countries={countriesList}
-          />
+      {/* Parent container with relative positioning */}
+      <div style={{ position: "relative" }}>
+        {/* Dropdown components positioned absolutely */}
+        <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
+            <Dropdown
+              handleSelect={handleSelect}
+              dataValue={chart}
+              dropdown="Chart"
+            />
+            {countriesList.length > 0 && (
+              <Dropdown
+                handleSelect={handleSelect}
+                dataValue={country}
+                dropdown="Country"
+                countries={countriesList}
+              />
+            )}
+            {/* Uncomment if needed
+            {chart === "2" && (
+              <Dropdown
+                handleSelect={handleSelect}
+                dataValue={time}
+                dropdown="Time"
+              />
+            )} */}
+          </Box>
+        </div>
+
+        {/* The chart and other components */}
+        {loading && (
+          <Box sx={{ width: "100%" }}>
+            <LinearProgress />
+          </Box>
         )}
-        {chart === "2" && (
-          <Dropdown
-            handleSelect={handleSelect}
-            dataValue={time}
-            dropdown="Time"
-          />
+        {error && (
+          <div className="charts" id="message">
+            {`Error fetching the data - ${error}`}
+          </div>
         )}
+        {!data && !loading && (
+          <div className="charts" id="message">
+            Loading data for the first time. This might take a while!
+          </div>
+        )}
+        {data && <ChartList locations={data.results} chart={chart} />}
       </div>
-      {loading && (
-        <Box sx={{ width: "100%" }}>
-          <LinearProgress />
-        </Box>
-      )}
-      {error && (
-        <div className="charts" id="message">
-          {`Error fetching the data - ${error}`}
-        </div>
-      )}
-      {!data && !loading && (
-        <div className="charts" id="message">
-          Loading data for the first time. This might take a while!
-        </div>
-      )}
-      {data && <ChartList locations={data.results} chart={chart} />}
     </div>
   );
 };

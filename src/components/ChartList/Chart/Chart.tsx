@@ -63,6 +63,7 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
     layoutCalculation.transition = {
       duration: 500,
       easing: "cubic-in-out",
+      ordering: "traces first"
     };
 
     setData(dataCalculation);

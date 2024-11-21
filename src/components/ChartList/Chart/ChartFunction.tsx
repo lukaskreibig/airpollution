@@ -28,8 +28,8 @@ const ChartFunction = () => {
   };
 
   const { height, width } = useWindowDimensions();
+  
 
-  // Calculate Big Chart
   const calculateBigChart = (chart: string, locations: LatestResult[]) => {
     const parameters: (Parameter & { guideline: number })[] = [
       {
@@ -47,14 +47,22 @@ const ChartFunction = () => {
         guideline: 15,
       },
     ];
-
-    const colors = ["#e9c46a", "#2a9d8f"];
-
+  
+    const colors = ["#e9c46a", "#2a9d8f"]; // Farben für PM10 und PM2.5
+  
     const traces: Partial<PlotData>[] = [];
     const xValues = locations.map((_, idx) => idx);
-
+  
     parameters.forEach((para, index) => {
-      const yValues = locations.map((data) => {
+      const xWithin: number[] = [];
+      const yWithin: number[] = [];
+      const hoverWithin: string[] = [];
+  
+      const xExceeds: number[] = [];
+      const yExceeds: number[] = [];
+      const hoverExceeds: string[] = [];
+  
+      locations.forEach((data, idx) => {
         const measurement = data.measurements.find(
           (m) => m.parameter === para.value
         );
@@ -63,80 +71,105 @@ const ChartFunction = () => {
           measurement.value >= para.min &&
           measurement.value <= para.max
         ) {
-          return measurement.value;
-        } else {
-          return null;
+          const value = measurement.value;
+          const locationName =
+            data.location + (data.city ? `, ${data.city}` : "");
+  
+          const hoverText = `${locationName}<br>${para.name}: ${value.toFixed(
+            2
+          )} µg/m³${
+            value > para.guideline
+              ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)`
+              : ""
+          }`;
+  
+          if (value > para.guideline) {
+            xExceeds.push(idx);
+            yExceeds.push(value);
+            hoverExceeds.push(hoverText);
+          } else {
+            xWithin.push(idx);
+            yWithin.push(value);
+            hoverWithin.push(hoverText);
+          }
         }
+        // Fehlende oder ungültige Daten ignorieren
       });
-
-      const markerColors = yValues.map((value) => {
-        if (value === null) return "#cccccc"; // Gray for missing data
-        return value > para.guideline ? "#d62828" : colors[index];
-      });
-
-      const hoverTexts = locations.map((data) => {
-        const measurement = data.measurements.find(
-          (m) => m.parameter === para.value
-        );
-        const locationName =
-          data.location + (data.city ? `, ${data.city}` : "");
-        if (!measurement) {
-          return `${locationName}<br>${para.name}: No data`;
-        }
-        const exceeds =
-          measurement.value > para.guideline
-            ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)`
-            : "";
-        return `${locationName}<br>${para.name}: ${measurement.value.toFixed(2)} µg/m³${exceeds}`;
-      });
-
-      // Data trace
-      traces.push({
-        type: "scatter",
-        x: xValues,
-        y: yValues,
-        mode: "markers",
-        name: para.name,
-        marker: {
-          color: markerColors,
-          line: {
+  
+      // Trace für Werte innerhalb der Richtlinien
+      if (xWithin.length > 0) {
+        traces.push({
+          type: "scatter" as const,
+          x: xWithin,
+          y: yWithin,
+          mode: "markers" as const,
+          name: `${para.name} Within Guidelines`,
+          marker: {
             color: colors[index],
-            width: 1,
+            symbol: "circle" as const,
+            size: 10,
+            line: {
+              color: "#000000",
+              width: 1,
+            },
           },
-          symbol: "circle",
-          size: 10,
-        },
-        text: hoverTexts,
-        hoverinfo: "text",
-      });
-
-      // WHO guideline line
+          text: hoverWithin,
+          hoverinfo: "text",
+          showlegend: true,
+        });
+      }
+  
+      // Trace für Werte, die die Richtlinien überschreiten
+      if (xExceeds.length > 0) {
+        traces.push({
+          type: "scatter" as const,
+          x: xExceeds,
+          y: yExceeds,
+          mode: "markers" as const,
+          name: `${para.name} Exceeds Guidelines`,
+          marker: {
+            color: colors[index],
+            symbol: "triangle-up" as const,
+            size: 10,
+            line: {
+              color: "#000000",
+              width: 1,
+            },
+          },
+          text: hoverExceeds,
+          hoverinfo: "text",
+          showlegend: true,
+        });
+      }
+  
+      // WHO-Richtwert-Linie
       traces.push({
-        type: "scatter",
+        type: "scatter" as const,
         x: [0, xValues.length - 1],
         y: [para.guideline, para.guideline],
-        mode: "lines",
+        mode: "lines" as const,
         name: `WHO Guideline (${para.name})`,
         line: {
           color: colors[index],
           dash: "dash",
           width: 2,
         },
-        hoverinfo: "none",
+        hoverinfo: "none" as const,
+        showlegend: true,
       });
     });
-
+  
     return traces;
   };
+  
 
-  // Calculate Big Layout
   const calculateBigLayout = (
     chart: string,
     locations: LatestResult[]
   ): Partial<Layout> => {
     return {
       width: width - 40,
-      height: height,
+      height: height - 47,
       title: `Air Pollution - Showing the Latest Data <br> from ${
         locations.length
       } ${locations.length === 1 ? "Station" : "Stations"}`,
@@ -152,6 +185,7 @@ const ChartFunction = () => {
         l: 60,
         r: 10,
         t: 80,
+        b: 40
       },
       legend: {
         x: 0,
@@ -166,7 +200,6 @@ const ChartFunction = () => {
     };
   };
 
-  // Calculate Average Chart
   const calculateAverageChart = (locations: LatestResult[]) => {
     const parameters: (Parameter & { guideline: number })[] = [
       {
@@ -185,7 +218,6 @@ const ChartFunction = () => {
       },
     ];
 
-    // Calculate the average for each parameter
     const averages = parameters.map((para) => {
       const values = locations
         .map((data) => {
@@ -210,7 +242,6 @@ const ChartFunction = () => {
       };
     });
 
-    // Prepare data for the bar chart
     const traceAverage: Partial<PlotData> = {
       x: averages.map((a) => a.parameter),
       y: averages.map((a) => a.average),
@@ -232,15 +263,12 @@ const ChartFunction = () => {
   const calculateAverageLayout = (
     averages: { parameter: string; guideline: number; average: number }[]
   ): Partial<Layout> => {
-    // Calculate the maximum y-value
     const maxYValue = Math.max(
       ...averages.map((a) => Math.max(a.average, a.guideline))
     );
   
-    // Add some padding to the max value
     const yAxisMax = maxYValue * 1.2;
   
-    // Create shapes for WHO guideline lines
     const shapes: Partial<Shape>[] = averages.map((a, index) => ({
       type: "line",
       x0: index - 0.4, // Start slightly before the bar
@@ -256,7 +284,6 @@ const ChartFunction = () => {
       },
     }));
   
-    // Add annotations for guideline values
     const annotations: Partial<Annotations>[] = averages.map((a, index) => ({
       x: a.parameter,
       y: a.guideline,
@@ -273,7 +300,7 @@ const ChartFunction = () => {
   
     return {
       width: width - 40,
-      height: height - 150,
+      height: height -47,
       title: "Average Air Pollution with WHO Guidelines",
       xaxis: {
         title: "Parameter",
