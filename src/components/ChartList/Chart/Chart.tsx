@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
-import { animated, useSpring } from "react-spring";
 import ChartFunction from "./ChartFunction";
-import { LatestResult } from "../../../react-app-env";
+import { LatestResult, Country } from "../../../react-app-env";
 import { Layout, PlotData } from "plotly.js";
 
 type Props = {
   chart: string;
   locations: LatestResult[];
+  country: string;
+  countriesList: Country[];
 };
 
-const Chart: React.FC<Props> = ({ chart, locations }) => {
+const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) => {
   const [data, setData] = useState<Partial<PlotData>[]>([]);
   const [layout, setLayout] = useState<Partial<Layout>>({});
   const [revision, setRevision] = useState<number>(0);
@@ -20,6 +21,8 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
     calculateBigLayout,
     calculateAverageChart,
     calculateAverageLayout,
+    calculateMapChart,
+    calculateMapLayout,
   } = ChartFunction();
 
   useEffect(() => {
@@ -57,13 +60,38 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
         ];
         layoutCalculation = calculateAverageLayout(defaultAverages);
       }
+    } else if (chart === "3") {
+      dataCalculation = calculateMapChart(locations);
+
+      // Calculate map center based on locations
+      let center = { lat: 51.1657, lon: 10.4515 }; // Default to Germany
+      if (locations.length > 0) {
+        let latSum = 0;
+        let lonSum = 0;
+        let count = 0;
+        locations.forEach((loc) => {
+          if (loc.coordinates) {
+            latSum += loc.coordinates.latitude;
+            lonSum += loc.coordinates.longitude;
+            count += 1;
+          }
+        });
+        if (count > 0) {
+          center = {
+            lat: latSum / count,
+            lon: lonSum / count,
+          };
+        }
+      }
+
+      layoutCalculation = calculateMapLayout(center);
     }
 
     // Add transition settings to layout
     layoutCalculation.transition = {
-      duration: 500,
+      duration: 200,
       easing: "cubic-in-out",
-      ordering: "traces first"
+      ordering: "traces first",
     };
 
     setData(dataCalculation);
@@ -71,21 +99,22 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
     setRevision((prev) => prev + 1);
   }, [locations, chart]);
 
-  const style = useSpring({ from: { y: 50 }, to: { y: 0 } });
-
   return (
-    <animated.div style={style}>
+    <div>
       {data.length > 0 ? (
         <Plot
           data={data}
           layout={layout}
           revision={revision}
-          config={{ responsive: true }}
+          config={{
+            responsive: true,
+            mapboxAccessToken: process.env.REACT_APP_MAPBOX_ACCESS_TOKEN,
+          }}
         />
       ) : (
         <div>Loading data...</div>
       )}
-    </animated.div>
+    </div>
   );
 };
 

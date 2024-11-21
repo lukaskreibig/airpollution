@@ -329,6 +329,91 @@ const ChartFunction = () => {
       },
     };
   };
+
+  const calculateMapChart = (locations: LatestResult[]) => {
+    const lats: number[] = [];
+    const lons: number[] = [];
+    const texts: string[] = [];
+    const markerColors: string[] = [];
+    const markerSizes: number[] = [];
+
+    locations.forEach((location) => {
+      if (location.coordinates) {
+        const lat = location.coordinates.latitude;
+        const lon = location.coordinates.longitude;
+        const measurements = location.measurements;
+        const pm25Measurement = measurements.find((m) => m.parameter === 'pm25');
+        const pm10Measurement = measurements.find((m) => m.parameter === 'pm10');
+
+        let text = `<b>${location.location}</b><br>`;
+        if (pm25Measurement) {
+          text += `PM2.5: ${pm25Measurement.value.toFixed(2)} µg/m³<br>`;
+        }
+        if (pm10Measurement) {
+          text += `PM10: ${pm10Measurement.value.toFixed(2)} µg/m³<br>`;
+        }
+
+        lats.push(lat);
+        lons.push(lon);
+        texts.push(text);
+
+        // Define colors based on PM2.5 values
+        let color = 'green';
+        if (pm25Measurement) {
+          if (pm25Measurement.value > 35) {
+            color = 'red';
+          } else if (pm25Measurement.value > 15) {
+            color = 'orange';
+          }
+        }
+        markerColors.push(color);
+
+        // Define marker size based on PM10 values
+        let size = 10;
+        if (pm10Measurement) {
+          size = Math.min(pm10Measurement.value, 50); // Max size 50
+        }
+        markerSizes.push(size);
+      }
+    });
+
+    const data: Partial<PlotData>[] = [
+      {
+        type: 'scattermapbox' as const,
+        lat: lats,
+        lon: lons,
+        text: texts,
+        mode: 'markers',
+        marker: {
+          size: markerSizes,
+          color: markerColors,
+          opacity: 0.7,
+        },
+        hoverinfo: 'text',
+      },
+    ];
+
+    return data;
+  };
+
+  const calculateMapLayout = (center: { lat: number; lon: number }): Partial<Layout> => {
+    return {
+      autosize: true,
+      hovermode: 'closest',
+      mapbox: {
+        style: 'open-street-map',
+        center: center,
+        zoom: 5,
+      },
+      margin: {
+        l: 0,
+        r: 0,
+        t: 0,
+        b: 0,
+      },
+    };
+  };
+
   
 
   return {
@@ -337,6 +422,8 @@ const ChartFunction = () => {
     calculateAverageChart,
     calculateAverageLayout,
     useWindowDimensions,
+    calculateMapChart,
+    calculateMapLayout
   };
 };
 
