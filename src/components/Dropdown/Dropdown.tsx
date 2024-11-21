@@ -18,30 +18,32 @@ const Dropdown: React.FC<Props> = ({
   dropdown,
   countries,
 }) => {
-  const timeData = [
-    { input: "day", description: "Today" },
-    { input: "month", description: "This Month" },
-    { input: "year", description: "This Year" },
-  ];
+  // const timeData = [
+  //   { input: "day", description: "Today" },
+  //   { input: "month", description: "This Month" },
+  //   { input: "year", description: "This Year" },
+  // ];
 
   const chartData = [
-    { input: "1", description: "Detailed Air Pollution Data" },
-    { input: "3", description: "Latest Air Pollution Data" },
+    { input: "1", description: "Latest Air Pollution Data" },
     { input: "2", description: "Average Air Pollution Data" },
+    // { input: "3", description: "Latest Air Pollution Data" },
   ];
 
   let options: { value: string; label: string }[] = [];
 
   if (dropdown === "Time") {
-    options = timeData.map((data) => ({
-      value: data.input,
-      label: data.description,
-    }));
+    // options = timeData.map((data) => ({
+    //   value: data.input,
+    //   label: data.description,
+    // }));
   } else if (dropdown === "Country" && countries) {
-    options = countries.map((country) => ({
+    options = countries
+    .map((country) => ({
       value: String(country.id),
       label: country.name,
-    }));
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
   } else {
     options = chartData.map((data) => ({
       value: data.input,
