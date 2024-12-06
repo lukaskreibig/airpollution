@@ -95,10 +95,8 @@ const ChartFunction = () => {
             hoverWithin.push(hoverText);
           }
         }
-        // Fehlende oder ungültige Daten ignorieren
       });
   
-      // Trace für Werte innerhalb der Richtlinien
       if (xWithin.length > 0) {
         traces.push({
           type: "scatter" as const,
@@ -121,7 +119,6 @@ const ChartFunction = () => {
         });
       }
   
-      // Trace für Werte, die die Richtlinien überschreiten
       if (xExceeds.length > 0) {
         traces.push({
           type: "scatter" as const,
@@ -273,8 +270,8 @@ const ChartFunction = () => {
   
     const shapes: Partial<Shape>[] = averages.map((a, index) => ({
       type: "line",
-      x0: index - 0.4, // Start slightly before the bar
-      x1: index + 0.4, // End slightly after the bar
+      x0: index - 0.4,
+      x1: index + 0.4,
       y0: a.guideline,
       y1: a.guideline,
       xref: "x",
@@ -310,7 +307,7 @@ const ChartFunction = () => {
       yaxis: {
         title: "Concentration (µg/m³)",
         autorange: false,
-        range: [0, yAxisMax], // Fixed range to prevent autoscaling
+        range: [0, yAxisMax],
       },
       margin: {
         l: 60,
@@ -339,7 +336,6 @@ const calculateMapChart = (locations: LatestResult[]) => {
   const texts: string[] = [];
   const markerColors: string[] = [];
 
-  // Collect all PM2.5 values for color normalization
   const pm25Values: number[] = [];
   locations.forEach((location) => {
     const pm25Measurement = location.measurements.find((m) => m.parameter === 'pm25');
@@ -348,7 +344,7 @@ const calculateMapChart = (locations: LatestResult[]) => {
     }
   });
 
-  const maxPm25 = Math.max(...pm25Values, 50); // Set a maximum for the color scale
+  const maxPm25 = Math.max(...pm25Values, 50);
   const minPm25 = Math.min(...pm25Values, 0);
 
   locations.forEach((location) => {
@@ -357,7 +353,6 @@ const calculateMapChart = (locations: LatestResult[]) => {
       const lon = location.coordinates.longitude;
       const measurements = location.measurements;
 
-      // Create an object to hold all measurements by parameter
       const measurementMap: { [key: string]: any } = {};
       measurements.forEach((m) => {
         measurementMap[m.parameter] = m;
@@ -367,7 +362,6 @@ const calculateMapChart = (locations: LatestResult[]) => {
       const pm10Measurement = measurementMap['pm10'];
       const temperatureMeasurement = measurementMap['temperature'];
       const humidityMeasurement = measurementMap['relativehumidity'];
-      // Add other measurements as needed
 
       let text = `<b>${location.location}</b><br>`;
       if (location.city) {
@@ -385,7 +379,6 @@ const calculateMapChart = (locations: LatestResult[]) => {
       if (humidityMeasurement) {
         text += `Humidity: ${humidityMeasurement.value.toFixed(2)}%<br>`;
       }
-      // Include last updated time
       if (pm25Measurement || pm10Measurement) {
         const lastUpdated = pm25Measurement
           ? pm25Measurement.lastUpdated
@@ -397,8 +390,7 @@ const calculateMapChart = (locations: LatestResult[]) => {
       lons.push(lon);
       texts.push(text);
 
-      // Use color scale based on PM2.5 values
-      let color = 'green'; // Default color
+      let color = 'green';
       if (pm25Measurement) {
         const normalizedValue = (pm25Measurement.value - minPm25) / (maxPm25 - minPm25);
         color = interpolatePlasma(normalizedValue);
@@ -415,7 +407,7 @@ const calculateMapChart = (locations: LatestResult[]) => {
       text: texts,
       mode: 'markers',
       marker: {
-        size: 10, // Fixed size
+        size: 10,
         color: markerColors,
         opacity: 0.7,
       },
