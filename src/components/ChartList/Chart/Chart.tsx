@@ -31,9 +31,7 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
   const [plotKey, setPlotKey] = useState("initial-plot");
 
   useEffect(() => {
-    // Check if we are moving from map (3) to scatter or average (1 or 2)
     if (previousChartRef.current === "3" && chart !== "3") {
-      // Force a remount by changing the key
       setPlotKey(`remount-${Date.now()}`);
     }
     previousChartRef.current = chart;
@@ -50,16 +48,12 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
     let layoutCalculation: Partial<Layout> = {};
 
     if (chart === "1") {
-      // Scatter chart scenario
-      dataCalculation = calculateBigChart(chart, locations);
       layoutCalculation = calculateBigLayout(chart, locations);
     } else if (chart === "2") {
-      // Bar chart scenario
       const { data: averageData, averages } = calculateAverageChart(locations);
       dataCalculation = averageData;
       layoutCalculation = calculateAverageLayout(averages);
     } else if (chart === "3") {
-      // Map chart scenario
       dataCalculation = calculateMapChart(locations);
 
       let center = { lat: 51.1657, lon: 10.4515 };
@@ -101,7 +95,6 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
   };
 
   if (chart === "3") {
-    // Only include map token when in map view
     plotConfig.mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
   }
 
@@ -109,7 +102,7 @@ const Chart: React.FC<Props> = ({ chart, locations }) => {
     <div style={{ width: "100%", height: "100%" }}>
       {data && data.length > 0 ? (
         <Plot
-          key={plotKey} // Key changes only when leaving map view
+          key={plotKey}
           data={data}
           layout={layout}
           revision={revision}
