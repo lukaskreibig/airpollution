@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Layout, PlotData, Shape, Annotations } from "plotly.js";
 import { LatestResult, Parameter } from "../../../react-app-env";
+import { interpolatePlasma } from 'd3-scale-chromatic';
+
 
 const ChartFunction = () => {
   // Window dimensions code remains unchanged
@@ -48,7 +50,7 @@ const ChartFunction = () => {
       },
     ];
   
-    const colors = ["#e9c46a", "#2a9d8f"]; // Farben für PM10 und PM2.5
+    const colors = ["#e9c46a", "#2a9d8f"];
   
     const traces: Partial<PlotData>[] = [];
     const xValues = locations.map((_, idx) => idx);
@@ -330,71 +332,102 @@ const ChartFunction = () => {
     };
   };
 
-  const calculateMapChart = (locations: LatestResult[]) => {
-    const lats: number[] = [];
-    const lons: number[] = [];
-    const texts: string[] = [];
-    const markerColors: string[] = [];
-    const markerSizes: number[] = [];
 
-    locations.forEach((location) => {
-      if (location.coordinates) {
-        const lat = location.coordinates.latitude;
-        const lon = location.coordinates.longitude;
-        const measurements = location.measurements;
-        const pm25Measurement = measurements.find((m) => m.parameter === 'pm25');
-        const pm10Measurement = measurements.find((m) => m.parameter === 'pm10');
+const calculateMapChart = (locations: LatestResult[]) => {
+  const lats: number[] = [];
+  const lons: number[] = [];
+  const texts: string[] = [];
+  const markerColors: string[] = [];
 
-        let text = `<b>${location.location}</b><br>`;
-        if (pm25Measurement) {
-          text += `PM2.5: ${pm25Measurement.value.toFixed(2)} µg/m³<br>`;
-        }
-        if (pm10Measurement) {
-          text += `PM10: ${pm10Measurement.value.toFixed(2)} µg/m³<br>`;
-        }
+  // Collect all PM2.5 values for color normalization
+  const pm25Values: number[] = [];
+  locations.forEach((location) => {
+    const pm25Measurement = location.measurements.find((m) => m.parameter === 'pm25');
+    if (pm25Measurement) {
+      pm25Values.push(pm25Measurement.value);
+    }
+  });
 
-        lats.push(lat);
-        lons.push(lon);
-        texts.push(text);
+  const maxPm25 = Math.max(...pm25Values, 50); // Set a maximum for the color scale
+  const minPm25 = Math.min(...pm25Values, 0);
 
-        // Define colors based on PM2.5 values
-        let color = 'green';
-        if (pm25Measurement) {
-          if (pm25Measurement.value > 35) {
-            color = 'red';
-          } else if (pm25Measurement.value > 15) {
-            color = 'orange';
-          }
-        }
-        markerColors.push(color);
+  locations.forEach((location) => {
+    if (location.coordinates) {
+      const lat = location.coordinates.latitude;
+      const lon = location.coordinates.longitude;
+      const measurements = location.measurements;
 
-        // Define marker size based on PM10 values
-        let size = 10;
-        if (pm10Measurement) {
-          size = Math.min(pm10Measurement.value, 50); // Max size 50
-        }
-        markerSizes.push(size);
+      // Create an object to hold all measurements by parameter
+      const measurementMap: { [key: string]: any } = {};
+      measurements.forEach((m) => {
+        measurementMap[m.parameter] = m;
+      });
+
+      const pm25Measurement = measurementMap['pm25'];
+      const pm10Measurement = measurementMap['pm10'];
+      const temperatureMeasurement = measurementMap['temperature'];
+      const humidityMeasurement = measurementMap['relativehumidity'];
+      // Add other measurements as needed
+
+      let text = `<b>${location.location}</b><br>`;
+      if (location.city) {
+        text += `City: ${location.city}<br>`;
       }
-    });
+      if (pm25Measurement) {
+        text += `PM2.5: ${pm25Measurement.value.toFixed(2)} µg/m³<br>`;
+      }
+      if (pm10Measurement) {
+        text += `PM10: ${pm10Measurement.value.toFixed(2)} µg/m³<br>`;
+      }
+      if (temperatureMeasurement) {
+        text += `Temperature: ${temperatureMeasurement.value.toFixed(2)} °C<br>`;
+      }
+      if (humidityMeasurement) {
+        text += `Humidity: ${humidityMeasurement.value.toFixed(2)}%<br>`;
+      }
+      // Include last updated time
+      if (pm25Measurement || pm10Measurement) {
+        const lastUpdated = pm25Measurement
+          ? pm25Measurement.lastUpdated
+          : pm10Measurement.lastUpdated;
+        text += `Last Updated: ${new Date(lastUpdated).toLocaleString()}<br>`;
+      }
 
-    const data: Partial<PlotData>[] = [
-      {
-        type: 'scattermapbox' as const,
-        lat: lats,
-        lon: lons,
-        text: texts,
-        mode: 'markers',
-        marker: {
-          size: markerSizes,
-          color: markerColors,
-          opacity: 0.7,
-        },
-        hoverinfo: 'text',
+      lats.push(lat);
+      lons.push(lon);
+      texts.push(text);
+
+      // Use color scale based on PM2.5 values
+      let color = 'green'; // Default color
+      if (pm25Measurement) {
+        const normalizedValue = (pm25Measurement.value - minPm25) / (maxPm25 - minPm25);
+        color = interpolatePlasma(normalizedValue);
+      }
+      markerColors.push(color);
+    }
+  });
+
+  const data: Partial<PlotData>[] = [
+    {
+      type: 'scattermapbox' as const,
+      lat: lats,
+      lon: lons,
+      text: texts,
+      mode: 'markers',
+      marker: {
+        size: 10, // Fixed size
+        color: markerColors,
+        opacity: 0.7,
       },
-    ];
+      hoverinfo: 'text',
+      showlegend: false,
+    },
+  ];
 
-    return data;
-  };
+  return data;
+};
+ 
+  
 
   const calculateMapLayout = (center: { lat: number; lon: number }): Partial<Layout> => {
     return {
