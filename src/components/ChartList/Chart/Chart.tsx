@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Plot from "react-plotly.js";
 import { LatestResult, Country } from "../../../react-app-env";
 import { Layout, PlotData } from "plotly.js";
@@ -11,7 +11,7 @@ type Props = {
   countriesList: Country[];
 };
 
-const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) => {
+const Chart: React.FC<Props> = ({ chart, locations }) => {
   const [data, setData] = useState<Partial<PlotData>[]>([]);
   const [layout, setLayout] = useState<Partial<Layout>>({});
   const [revision, setRevision] = useState<number>(0);
@@ -25,68 +25,64 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
     calculateMapLayout,
   } = ChartFunction();
 
+  // We'll track the previous chart type to detect changes from map to scatter/bar
+  const previousChartRef = useRef(chart);
+  // plotKey used only if we want to force remount when leaving map view
+  const [plotKey, setPlotKey] = useState("initial-plot");
+
   useEffect(() => {
+    // Check if we are moving from map (3) to scatter or average (1 or 2)
+    if (previousChartRef.current === "3" && chart !== "3") {
+      // Force a remount by changing the key
+      setPlotKey(`remount-${Date.now()}`);
+    }
+    previousChartRef.current = chart;
+  }, [chart]);
+
+  useEffect(() => {
+    if (!locations || locations.length === 0) {
+      setData([]);
+      setLayout({});
+      return;
+    }
+
     let dataCalculation: Partial<PlotData>[] = [];
     let layoutCalculation: Partial<Layout> = {};
 
     if (chart === "1") {
+      // Scatter chart scenario
       dataCalculation = calculateBigChart(chart, locations);
       layoutCalculation = calculateBigLayout(chart, locations);
     } else if (chart === "2") {
-      if (locations.length > 0) {
-        const { data: averageData, averages } = calculateAverageChart(locations);
-        dataCalculation = averageData;
-        layoutCalculation = calculateAverageLayout(averages);
-      } else {
-        // Standardwerte, wenn keine Daten verfügbar sind
-        const defaultAverages = [
-          { parameter: "PM10", average: 0, guideline: 45 },
-          { parameter: "PM2.5", average: 0, guideline: 15 },
-        ];
-        dataCalculation = [
-          {
-            x: defaultAverages.map((a) => a.parameter),
-            y: defaultAverages.map((a) => a.average),
-            type: "bar",
-            name: "Average",
-            marker: {
-              color: "#2a9d8f",
-            },
-            text: defaultAverages.map((a) => a.average.toFixed(2) + " µg/m³"),
-            textposition: "auto",
-            hoverinfo: "x+y",
-          },
-        ];
-        layoutCalculation = calculateAverageLayout(defaultAverages);
-      }
+      // Bar chart scenario
+      const { data: averageData, averages } = calculateAverageChart(locations);
+      dataCalculation = averageData;
+      layoutCalculation = calculateAverageLayout(averages);
     } else if (chart === "3") {
+      // Map chart scenario
       dataCalculation = calculateMapChart(locations);
 
-      // Berechne den Kartenmittelpunkt basierend auf den Standorten
-      let center = { lat: 51.1657, lon: 10.4515 }; // Standard auf Deutschland
+      let center = { lat: 51.1657, lon: 10.4515 };
       if (locations.length > 0) {
         let latSum = 0;
         let lonSum = 0;
         let count = 0;
-        locations.forEach((loc) => {
+        for (const loc of locations) {
           if (loc.coordinates) {
             latSum += loc.coordinates.latitude;
             lonSum += loc.coordinates.longitude;
-            count += 1;
+            count++;
           }
-        });
+        }
         if (count > 0) {
-          center = {
-            lat: latSum / count,
-            lon: lonSum / count,
-          };
+          center = { lat: latSum / count, lon: lonSum / count };
         }
       }
 
       layoutCalculation = calculateMapLayout(center);
     }
 
-    // Übergangseinstellungen zum Layout hinzufügen
+    // Add transitions
     layoutCalculation.transition = {
       duration: 200,
       easing: "cubic-in-out",
@@ -95,25 +91,34 @@ const Chart: React.FC<Props> = ({ chart, locations, country, countriesList }) =>
 
     setData(dataCalculation);
     setLayout(layoutCalculation);
+
+    // Increment revision to apply transitions
     setRevision((prev) => prev + 1);
   }, [locations, chart]);
 
+  const plotConfig: Partial<Plotly.Config> = {
+    responsive: true,
+  };
+
+  if (chart === "3") {
+    // Only include map token when in map view
+    plotConfig.mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      {data.length > 0 ? (
+    <div style={{ width: "100%", height: "100%" }}>
+      {data && data.length > 0 ? (
         <Plot
+          key={plotKey} // Key changes only when leaving map view
           data={data}
           layout={layout}
           revision={revision}
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: "100%", height: "100%" }}
           useResizeHandler={true}
-          config={{
-            responsive: true,
-            mapboxAccessToken: process.env.REACT_APP_MAPBOX_ACCESS_TOKEN,
-          }}
+          config={plotConfig}
         />
       ) : (
-        <div>Loading data...</div>
+        <div>No data available to display the chart.</div>
       )}
     </div>
   );
