@@ -1,14 +1,35 @@
+/* App.css */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.App, .charts {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .App {
-  margin: 20px;
+  padding: 20px;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 }
 
 .charts {
-
+  flex: 1; /* ensures chart or map fills space */
   display: flex;
   justify-content: center;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
 
+#map-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
 }
 
 #message {
@@ -25,10 +46,46 @@
 }
 
 .dropdown {
-  flex: 1
+  flex: 1;
 }
 
 .plotly {
   width: 100%;
   height: 100%;
+}
+
+.legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255,255,255,0.8);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: sans-serif;
+  z-index: 1;
+}
+
+.legend h4 {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  justify-content: space-between;
 }
