@@ -400,19 +400,20 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
           </Drawer>
 
           {/* Toggle Button für die Sidebar */}
-          <IconButton 
+          {showSidebar ? null : <IconButton 
             onClick={toggleSidebar}
             sx={{
               position: 'absolute',
               top: 16,
               left: 16,
-              zIndex: 1300, // Höher als Mapbox Layer
+              borderRadius: 0,
+              zIndex: 1300,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
             }}
           >
             <MenuOutlined />
-          </IconButton>
+          </IconButton>}
         </>
       )}
 
