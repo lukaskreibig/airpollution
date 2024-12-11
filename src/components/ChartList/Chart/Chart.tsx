@@ -430,7 +430,6 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: chart === "3" && showSidebar ? `${drawerWidth}px` : '0',
           transition: 'margin-left 0.3s',
           height: '100%',
           position: 'relative',
