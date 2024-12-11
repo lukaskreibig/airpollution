@@ -20,7 +20,7 @@ import {
   Drawer, 
   Typography 
 } from '@mui/material';
-import { CloseCircleOutlined } from "@ant-design/icons";
+import { CloseCircleOutlined, MenuOutlined } from "@ant-design/icons";
 
 interface ProcessedLocation {
   name: string;
