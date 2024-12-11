@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+// Chart.tsx
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Plot from "react-plotly.js";
 import { LatestResult, Country } from "../../../react-app-env";
 import { Layout, PlotData } from "plotly.js";
@@ -334,7 +335,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '95vh' }}>
+    <Box sx={{ display: 'flex', height: '100%', width: '100%' }}>
       {chart === "3" && (
         <>
           {/* Sidebar Drawer */}
@@ -429,7 +430,8 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       {/* Hauptinhalt: Karte oder Plotly-Diagramm */}
       <Box
         sx={{
-          // flexGrow: 1,
+          flexGrow: 1,
+          marginLeft: chart === "3" && showSidebar ? `${drawerWidth}px` : '0',
           transition: 'margin-left 0.3s',
           height: '100%',
           position: 'relative',
@@ -439,8 +441,35 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       >
         {chart === "3" ? (
           <>
+            {/* Dropdowns innerhalb des Hauptinhalts */}
+            <Box sx={{ padding: 2 }}>
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
+                <TextField 
+                  label="Search"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                <FormControl size="small" variant="outlined" sx={{ minWidth: 120 }}>
+                  <InputLabel>Sort</InputLabel>
+                  <Select
+                    label="Sort"
+                    value={sortMode}
+                    onChange={e => setSortMode(e.target.value as 'name' | 'pm25' | 'pm10' | 'none')}
+                  >
+                    <MenuItem value="none">None</MenuItem>
+                    <MenuItem value="name">Name</MenuItem>
+                    <MenuItem value="pm25">PM2.5</MenuItem>
+                    <MenuItem value="pm10">PM10</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+
             {/* Map Container */}
-            <div id="map-container" ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+            <div id="map-container" ref={mapContainerRef} style={{ width: '100%', height: 'calc(100% - 64px)' }} />
 
             {/* Legende */}
             <Box
