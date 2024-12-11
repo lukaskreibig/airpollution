@@ -62,6 +62,9 @@ const Dropdown: React.FC<Props> = ({
           name={dropdown}
           label={dropdown}
           onChange={handleSelect}
+          sx={{            
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' }}}
         >
           {options.map((option, index) => (
             <MenuItem value={option.value} key={index}>

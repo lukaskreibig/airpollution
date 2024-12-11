@@ -409,7 +409,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
               left: 16,
               borderRadius: 2,
               borderStyle: "solid",
-              borderWidth: 1,
+              borderWidth: 0.5,
               zIndex: 1300,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
