@@ -6,9 +6,11 @@ type Props = {
   chart: string;
   country: string;
   countriesList: Country[];
+  showSidebar: boolean;
+  setShowSidebar: any;
 };
 
-const ChartList: React.FC<Props> = ({ locations, chart, country, countriesList }) => {
+const ChartList: React.FC<Props> = ({ locations, chart, country, countriesList, showSidebar, setShowSidebar }) => {
   return !locations.length ? (
     <div className="charts" id="message">
       No data found. There might be no up-to-date data from the selected country.
@@ -16,11 +18,10 @@ const ChartList: React.FC<Props> = ({ locations, chart, country, countriesList }
   ) : (
     <div className="charts" style={{ width: '100%', height: '100%' }}>
       <Chart
-        locations={locations}
-        chart={chart}
-        country={country}
-        countriesList={countriesList}
-      />
+          locations={locations}
+          chart={chart}
+          country={country}
+          countriesList={countriesList} showSidebar={showSidebar} setShowSidebar={setShowSidebar}      />
     </div>
   );
 };
