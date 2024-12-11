@@ -401,12 +401,14 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
 
           {/* Toggle Button für die Sidebar */}
           {showSidebar ? null : <IconButton 
+          
             onClick={toggleSidebar}
             sx={{
               position: 'absolute',
               top: 16,
               left: 16,
-              borderRadius: 0,
+              borderRadius: 4,
+              borderWidth: 1,
               zIndex: 1300,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
