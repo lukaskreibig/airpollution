@@ -6,7 +6,6 @@ import ChartFunction from "./ChartFunction";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-
 import { 
   Box, 
   List, 
@@ -42,6 +41,8 @@ type Props = {
   setShowSidebar: any;
 };
 
+const drawerWidth = 300; // Feste Breite für die Sidebar
+
 const INITIAL_CENTER: [number, number] = [-74.0242, 40.6941];
 const INITIAL_ZOOM = 10.12;
 
@@ -72,11 +73,10 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
   const [sortMode, setSortMode] = useState<'name'|'pm25'|'pm10'|'none'>('none');
   const [processedLocs, setProcessedLocs] = useState<ProcessedLocation[]>([]);
 
-  // Neuer useEffect zum Zurücksetzen der Suchabfrage bei Länderwechsel
+  // useEffect zum Zurücksetzen der Suchabfrage bei Länderwechsel
   useEffect(() => {
     setSearchQuery('');
   }, [country]);
-
 
   // Funktion zum Erstellen des Hover-Textes
   const buildHoverText = useCallback((loc: LatestResult): string | null => {
@@ -334,7 +334,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
   };
 
   return (
-    <Box sx={{ width: '100%', height: '95vh', display: 'flex', flexDirection: 'row' }}>
+    <Box sx={{ display: 'flex', height: '95vh' }}>
       {chart === "3" && (
         <>
           {/* Sidebar Drawer */}
@@ -343,7 +343,9 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
             anchor="left"
             open={showSidebar}
             sx={{
-              '& .MuiDrawer-paper': { width: 300, boxSizing: 'border-box' },
+              width: drawerWidth,
+              flexShrink: 0,
+              '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
             }}
           >
             {/* Header der Sidebar */}
@@ -400,17 +402,16 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
           </Drawer>
 
           {/* Toggle Button für die Sidebar */}
-          {showSidebar ? null : <IconButton 
-          
+          {!showSidebar && <IconButton 
             onClick={toggleSidebar}
             sx={{
-              position: 'absolute',
+              position: 'fixed', // Fixiere den Button
               top: 16,
-              left: 16,
+              left: drawerWidth + 16, // Positioniere den Button neben der Drawer-Breite
+              zIndex: 1300,
               borderRadius: 2,
               borderStyle: "solid",
               borderWidth: 0.5,
-              zIndex: 1300,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
             }}
@@ -421,7 +422,15 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       )}
 
       {/* Hauptinhalt: Karte oder Plotly-Diagramm */}
-      <Box sx={{ flex:1, height:'100%', position:'relative' }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          marginLeft: chart === "3" && showSidebar ? `${drawerWidth}px` : '0',
+          transition: 'margin-left 0.3s',
+          height: '100%',
+          position: 'relative'
+        }}
+      >
         {chart === "3" ? (
           <>
             {/* Map Container */}
@@ -477,3 +486,15 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
 };
 
 export default Chart;
+
+const style = {
+  position: "absolute" as "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 500,
+  bgcolor: "background.paper",
+  border: "1px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
