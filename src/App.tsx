@@ -91,7 +91,18 @@ const App: React.FC = () => {
       {/* Parent container with relative positioning */}
       <div style={{ position: "relative" }}>
         {/* Dropdown components positioned absolutely */}
-        <div style={{ position: "absolute", top: "10px", left: (chart === "3" ? "350px" : "40px"), zIndex: 1 }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >          
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
             <Dropdown
               handleSelect={handleSelect}
