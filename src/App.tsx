@@ -18,6 +18,8 @@ const App: React.FC = () => {
   const [chart, setChart] = useState<string>("1");
   const [country, setCountry] = useState<string>("50");
 
+  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+
   const [open, setOpen] = useState<boolean>(true);
   const handleClose = (): void => setOpen(false);
 
@@ -91,18 +93,7 @@ const App: React.FC = () => {
       {/* Parent container with relative positioning */}
       <div style={{ position: "relative" }}>
         {/* Dropdown components positioned absolutely */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1,
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >          
+        <div style={{ position: "absolute", top: "10px", left: (showSidebar === true ? "320px" : "40px"), zIndex: 1 }}>
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
             <Dropdown
               handleSelect={handleSelect}
@@ -127,13 +118,6 @@ const App: React.FC = () => {
             )} */}
           </Box>
         </div>
-
-        {/* The chart and other components */}
-        {loading && (
-          <Box sx={{ width: "100%" }}>
-            <LinearProgress />
-          </Box>
-        )}
         {error && (
           <div className="charts" id="message">
             {`Error fetching the data - ${error}`}
@@ -144,7 +128,12 @@ const App: React.FC = () => {
             Loading data for the first time. This might take a while!
           </div>
         )}
-        {data && <ChartList locations={data.results} chart={chart} country={country} countriesList={[]} />}
+        {data && <ChartList locations={data.results} chart={chart} country={country} countriesList={[]} showSidebar={showSidebar} setShowSidebar={setShowSidebar} />}
+        {loading && (
+          <Box sx={{ width: "100%" }}>
+            <LinearProgress />
+          </Box>
+        )}
       </div>
     </div>
   );

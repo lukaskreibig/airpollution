@@ -9,7 +9,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { 
   Box, 
-  Paper, 
   List, 
   ListItem, 
   ListItemText, 
@@ -39,6 +38,8 @@ type Props = {
   locations: LatestResult[];
   country: string;
   countriesList: Country[];
+  showSidebar: boolean;
+  setShowSidebar: any;
 };
 
 const INITIAL_CENTER: [number, number] = [-74.0242, 40.6941];
@@ -50,7 +51,7 @@ const WHO_PM10_GUIDELINE = 45;
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || '';
 
-const Chart: React.FC<Props> = ({ chart, locations, country }) => {
+const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setShowSidebar }) => {
   const [data, setData] = useState<Partial<PlotData>[]>([]);
   const [layout, setLayout] = useState<Partial<Layout>>({});
   const [revision, setRevision] = useState<number>(0);
@@ -76,7 +77,6 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
     setSearchQuery('');
   }, [country]);
 
-  const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
   // Funktion zum Erstellen des Hover-Textes
   const buildHoverText = useCallback((loc: LatestResult): string | null => {
@@ -330,7 +330,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
 
   // Funktion zum Ein- und Ausblenden der Sidebar
   const toggleSidebar = () => {
-    setShowSidebar(prev => !prev);
+    setShowSidebar((prev: any) => !prev);
   };
 
   return (
