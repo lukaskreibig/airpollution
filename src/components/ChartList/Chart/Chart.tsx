@@ -429,7 +429,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       {/* Hauptinhalt: Karte oder Plotly-Diagramm */}
       <Box
         sx={{
-          flexGrow: 1,
+          // flexGrow: 1,
           transition: 'margin-left 0.3s',
           height: '100%',
           position: 'relative',
