@@ -348,7 +348,8 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
               '& .MuiDrawer-paper': { 
                 width: drawerWidth, 
                 boxSizing: 'border-box',
-                borderRight: '1px solid #ccc' // Optional: Rahmen zur besseren Sichtbarkeit
+                borderRight: '1px solid #ccc', // Optional: Rahmen zur besseren Sichtbarkeit
+                backgroundColor: '#f5f5f5' // Hintergrundfarbe zur besseren Sichtbarkeit
               },
             }}
           >
@@ -432,7 +433,9 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
           marginLeft: chart === "3" && showSidebar ? `${drawerWidth}px` : '0',
           transition: 'margin-left 0.3s',
           height: '100%',
-          position: 'relative'
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: '#ffffff' // Hintergrundfarbe für die Karte
         }}
       >
         {chart === "3" ? (
