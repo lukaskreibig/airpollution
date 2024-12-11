@@ -22,6 +22,7 @@ import {
   Drawer, 
   Typography 
 } from '@mui/material';
+import { CloseCircleOutlined, MenuOutlined } from "@ant-design/icons";
 
 interface ProcessedLocation {
   name: string;
@@ -349,7 +350,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', padding: '8px', justifyContent: 'space-between' }}>
               <Typography variant="h6">Cities</Typography>
               <IconButton onClick={toggleSidebar}>
-                Close
+                <CloseCircleOutlined />
               </IconButton>
             </Box>
             {/* Such- und Sortierfelder */}
@@ -410,7 +411,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country }) => {
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
             }}
           >
-            Menu
+            <MenuOutlined />
           </IconButton>
         </>
       )}
