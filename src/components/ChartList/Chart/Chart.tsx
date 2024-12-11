@@ -20,7 +20,8 @@ import {
   Drawer, 
   Typography 
 } from '@mui/material';
-import { CloseCircleOutlined, MenuOutlined } from "@ant-design/icons";
+import CloseIcon from '@mui/icons-material/Close';
+import MenuIcon from '@mui/icons-material/Menu';
 
 interface ProcessedLocation {
   name: string;
@@ -38,7 +39,7 @@ type Props = {
   country: string;
   countriesList: Country[];
   showSidebar: boolean;
-  setShowSidebar: any;
+  setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const drawerWidth = 300; // Feste Breite für die Sidebar
@@ -172,12 +173,12 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
   // Funktion zur Anpassung der Kartenansicht
   const adjustMapView = useCallback((map: mapboxgl.Map, plocs: ProcessedLocation[]) => {
     if (plocs.length === 0) {
-      map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, duration:300 });
+      map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, duration: 300 });
       return;
     }
 
     if (plocs.length === 1) {
-      map.flyTo({ center: [plocs[0].lon, plocs[0].lat], zoom:10, duration:300 });
+      map.flyTo({ center: [plocs[0].lon, plocs[0].lat], zoom: 10, duration: 300 });
     } else {
       let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
       for (const p of plocs) {
@@ -188,9 +189,9 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
       }
 
       if (isFinite(minLat) && isFinite(minLon) && isFinite(maxLat) && isFinite(maxLon)) {
-        map.fitBounds([[minLon, minLat],[maxLon, maxLat]], { padding:50, duration:300 });
+        map.fitBounds([[minLon, minLat], [maxLon, maxLat]], { padding: 50, duration: 300 });
       } else {
-        map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, duration:300 });
+        map.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, duration: 300 });
       }
     }
   }, []);
@@ -213,7 +214,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
         zoom: INITIAL_ZOOM
       });
       mapRef.current = map;
-      popupRef.current = new mapboxgl.Popup({closeButton:false, closeOnClick:false});
+      popupRef.current = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
 
       map.on('load', () => {
         map.dragPan.enable();
@@ -232,8 +233,8 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
               'circle-radius': 6,
               'circle-color': [
                 'case',
-                ['>', ['get','pm25'], WHO_PM25_GUIDELINE], '#d62828',
-                ['>', ['get','pm10'], WHO_PM10_GUIDELINE], '#d62828',
+                ['>', ['get', 'pm25'], WHO_PM25_GUIDELINE], '#d62828',
+                ['>', ['get', 'pm10'], WHO_PM10_GUIDELINE], '#d62828',
                 '#2a9d8f'
               ]
             }
@@ -253,7 +254,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
           });
 
           map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-          map.addControl(new mapboxgl.ScaleControl({maxWidth:100, unit:'metric'}), 'bottom-left');
+          map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
 
           const plocs = processLocations(locations);
           setProcessedLocs(plocs);
@@ -293,17 +294,17 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
     if (chart === "1") {
       const dataCalc = calculateBigChart(chart, locations);
       const layoutCalc = calculateBigLayout(chart, locations);
-      layoutCalc.transition = { duration:200, easing:"cubic-in-out", ordering:"traces first"};
+      layoutCalc.transition = { duration: 200, easing: "cubic-in-out", ordering: "traces first" };
       setData(dataCalc);
       setLayout(layoutCalc);
-      setRevision(prev=>prev+1);
+      setRevision(prev => prev + 1);
     } else if (chart === "2") {
-      const { data:avgData, averages } = calculateAverageChart(locations);
+      const { data: avgData, averages } = calculateAverageChart(locations);
       const layoutCalc = calculateAverageLayout(averages);
-      layoutCalc.transition = { duration:200, easing:"cubic-in-out", ordering:"traces first"};
+      layoutCalc.transition = { duration: 200, easing: "cubic-in-out", ordering: "traces first" };
       setData(avgData);
       setLayout(layoutCalc);
-      setRevision(prev=>prev+1);
+      setRevision(prev => prev + 1);
     }
   }, [chart, locations, calculateBigChart, calculateBigLayout, calculateAverageChart, calculateAverageLayout]);
 
@@ -324,13 +325,13 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
 
   const handleCityClick = (ploc: ProcessedLocation) => {
     if (chart === "3" && mapRef.current) {
-      mapRef.current.flyTo({ center:[ploc.lon, ploc.lat], zoom:10, duration:300 });
+      mapRef.current.flyTo({ center: [ploc.lon, ploc.lat], zoom: 10, duration: 300 });
     }
   };
 
   // Funktion zum Ein- und Ausblenden der Sidebar
   const toggleSidebar = () => {
-    setShowSidebar((prev: any) => !prev);
+    setShowSidebar((prev: boolean) => !prev);
   };
 
   return (
@@ -345,14 +346,18 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
             sx={{
               width: drawerWidth,
               flexShrink: 0,
-              '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
+              '& .MuiDrawer-paper': { 
+                width: drawerWidth, 
+                boxSizing: 'border-box',
+                borderRight: '1px solid #ccc' // Optional: Rahmen zur besseren Sichtbarkeit
+              },
             }}
           >
             {/* Header der Sidebar */}
-            <Box sx={{ display: 'flex', alignItems: 'center', padding: '8px', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', padding: '8px', justifyContent: 'space-between', backgroundColor: '#f5f5f5' }}>
               <Typography variant="h6">Cities</Typography>
               <IconButton onClick={toggleSidebar}>
-                <CloseCircleOutlined />
+                <CloseIcon />
               </IconButton>
             </Box>
             {/* Such- und Sortierfelder */}
@@ -364,14 +369,14 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
                   size="small"
                   fullWidth
                   value={searchQuery}
-                  onChange={e=>setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                 />
                 <FormControl size="small" variant="outlined" sx={{ minWidth: 120 }}>
                   <InputLabel>Sort</InputLabel>
                   <Select
                     label="Sort"
                     value={sortMode}
-                    onChange={e=> setSortMode(e.target.value as 'name'|'pm25'|'pm10'|'none')}
+                    onChange={e => setSortMode(e.target.value as 'name' | 'pm25' | 'pm10' | 'none')}
                   >
                     <MenuItem value="none">None</MenuItem>
                     <MenuItem value="name">Name</MenuItem>
@@ -382,14 +387,14 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
               </Box>
 
               {/* Scrollbare Liste der Städte */}
-              <List dense sx={{ flex:1, overflowY: 'auto' }}>
+              <List dense sx={{ flex: 1, overflowY: 'auto' }}>
                 {displayedLocs.map(ploc => (
                   <ListItem 
                     key={`${ploc.name}-${ploc.city ?? ''}`} 
                     button
-                    onMouseEnter={()=>handleCityMouseEnter(ploc)}
+                    onMouseEnter={() => handleCityMouseEnter(ploc)}
                     onMouseLeave={handleCityMouseLeave}
-                    onClick={()=>handleCityClick(ploc)}
+                    onClick={() => handleCityClick(ploc)}
                   >
                     <ListItemText 
                       primary={`${ploc.name}${ploc.city ? `, ${ploc.city}` : ''}`} 
@@ -407,7 +412,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
             sx={{
               position: 'fixed', // Fixiere den Button
               top: 16,
-              left: drawerWidth + 16, // Positioniere den Button neben der Drawer-Breite
+              left: 16, // Positioniere den Button am Anfang
               zIndex: 1300,
               borderRadius: 2,
               borderStyle: "solid",
@@ -416,7 +421,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
             }}
           >
-            <MenuOutlined />
+            <MenuIcon />
           </IconButton>}
         </>
       )}
@@ -434,7 +439,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
         {chart === "3" ? (
           <>
             {/* Map Container */}
-            <div id="map-container" ref={mapContainerRef} style={{width:'100%', height:'100%'}} />
+            <div id="map-container" ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
             {/* Legende */}
             <Box
@@ -470,7 +475,7 @@ const Chart: React.FC<Props> = ({ chart, locations, country, showSidebar, setSho
               data={data}
               layout={layout}
               revision={revision}
-              style={{width:'100%', height:'100%'}}
+              style={{ width: '100%', height: '100%' }}
               useResizeHandler={true}
               config={plotConfig}
             />
