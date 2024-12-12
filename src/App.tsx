@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import ChartList from "./components/ChartList/ChartList";
 import Dropdown from "./components/Dropdown/Dropdown";
-import { SelectChangeEvent, LinearProgress } from "@mui/material";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Modal from "@mui/material/Modal";
+import {
+  SelectChangeEvent,
+  LinearProgress,
+  Box,
+  Button,
+} from "@mui/material";
 import { Country, Data } from "./react-app-env";
+import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 
 const App: React.FC = () => {
   const [data, setData] = useState<Data | null>(null);
@@ -20,12 +23,107 @@ const App: React.FC = () => {
 
   const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
-  const [open, setOpen] = useState<boolean>(true);
-  const handleClose = (): void => setOpen(false);
+  // Guided Tour States
+  const [runTour, setRunTour] = useState<boolean>(false);
+  const [tourSteps, setTourSteps] = useState<Step[]>([]);
 
   const baseUrl = "https://airpollution-mocha.vercel.app/api/fetchData";
 
+  // Define the steps for the guided tour
+  const defineTourSteps = (): Step[] => [
+    // Introduction Step
+    {
+      target: ".map-area",
+      content: "Welcome to the Air Quality Dashboard!\n\nMonitor real-time air pollution data from cities worldwide, powered by OpenAQ's live API. Explore interactive maps and charts to gain insights into air quality trends. Let's take a quick tour to discover all the features!",
+      placement: "center",
+      title: "Welcome!",
+      disableBeacon: true,
+      spotlightClicks: true,
+    },
+    // Chart Selection
+    {
+      target: ".chart-dropdown",
+      content: "Choose the chart type that best suits the insights you want to explore. Different charts offer various perspectives on air quality data.",
+      placement: "bottom",
+      title: "Chart Selection",
+      disableBeacon: true,
+      spotlightClicks: true,
+    },
+    // Country Selection
+    {
+      target: ".country-dropdown",
+      content: "Select a country to focus the air quality data analysis. This filter helps you view pollution levels specific to your region of interest.",
+      placement: "bottom",
+      title: "Country Selection",
+      spotlightClicks: true,
+    },
+    // Sidebar Toggle
+    {
+      target: ".sidebar-toggle-button",
+      content:
+        "Click here to open the sidebar. Use it to search for specific cities and sort the list based on your preferences.",
+      placement: "right",
+      title: "Sidebar Toggle",
+      spotlightClicks: true,
+    },
+    // Search Function
+    {
+      target: ".search-field",
+      content:
+        "Use this search bar to quickly locate specific cities or locations within the selected country.",
+      placement: "bottom",
+      title: "Search Function",
+      spotlightClicks: true,
+    },
+    // Sort Function (By Name, PM2.5, PM10)
+    {
+      target: ".choose-sort",
+      content:
+        "Sort the city list by Name, PM2.5, or PM10 levels to organize the data according to your analysis needs.",
+      placement: "bottom",
+      title: "Sort Function",
+      spotlightClicks: true,
+    },
+    // Sort Direction Toggle
+    {
+      target: ".sort-select",
+      content:
+        "Click here to switch between ascending and descending order, refining how your sorted data is displayed.",
+      placement: "bottom",
+      title: "Sort Direction",
+      spotlightClicks: true,
+    },
+    // Close Sidebar
+    {
+      target: ".close-list",
+      content:
+        "Click here to close the sidebar and view the full map.",
+      placement: "bottom",
+      title: "Close Sidebar",
+      spotlightClicks: true,
+    },
+    // Interactive Map Points
+    {
+      target: ".map-area",
+      content:
+        "Hover over the map points to see detailed air quality information for each location.",
+      placement: "center",
+      title: "Interactive Map Points",
+      spotlightClicks: true,
+    },
+  ];
+  
+
+  // Initial useEffect to check tour and set chart to "3" if needed
   useEffect((): void => {
+    // Check if the user has already taken the tour
+    const hasVisited = localStorage.getItem("hasVisited");
+    if (!hasVisited) {
+      // Set chart to "3" to ensure all step targets are present
+      setChart("3");
+      // Note: Do not set "hasVisited" here; set it after the tour completes
+    }
+
     const getData = async (): Promise<void> => {
       try {
         setLoading(true);
@@ -38,7 +136,7 @@ const App: React.FC = () => {
 
         if (!latestFetch.ok || !countriesFetch.ok) {
           throw new Error(
-            `Oh No! A failure occurred fetching ${
+            `Error fetching data: ${
               !latestFetch.ok
                 ? `Latest Data ${latestFetch.status}`
                 : `Country Data: ${countriesFetch.status}`
@@ -60,7 +158,21 @@ const App: React.FC = () => {
       }
     };
     getData();
+
+    // Define the tour steps after data is fetched
+    setTourSteps(defineTourSteps());
   }, [time, country]);
+
+  // useEffect to run the tour after chart is set to "3"
+  useEffect(() => {
+    const hasVisited = localStorage.getItem("hasVisited");
+    if (!hasVisited && chart === "3") {
+      // Open the sidebar to ensure all tour targets are visible
+      setShowSidebar(true);
+      // Wait for the UI to update before starting the tour
+      setTimeout(() => setRunTour(true), 1000); // delay 1s
+    }
+  }, [chart]);
 
   const handleSelect = (event: SelectChangeEvent) => {
     if (event.target.name === "Country") {
@@ -72,33 +184,51 @@ const App: React.FC = () => {
     }
   };
 
+  // Callback for Joyride events
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      // After the tour finishes, set "hasVisited" to true
+      localStorage.setItem("hasVisited", "true");
+    }
+  };
+
   return (
     <div className="App">
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h5" component="h3">
-            Air Pollution Data
-          </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            This is an informal graph that uses the OpenAQ API to provide worldwide air pollution data. Have fun exploring!
-          </Typography>
-        </Box>
-      </Modal>
+      {/* Guided Tour */}
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        continuous
+        showSkipButton
+        showProgress
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            zIndex: 10000,
+        }}}
+      />
 
       {/* Parent container with relative positioning */}
       <div style={{ position: "relative" }}>
         {/* Dropdown components positioned absolutely */}
-        <div style={{ position: "absolute", top: "10px", left: (showSidebar === true ? "300px" : "70px"), zIndex: 1 }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: (showSidebar && chart === "3") ? "320px" : "70px",
+            zIndex: 1,
+          }}
+        >
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
             <Dropdown
               handleSelect={handleSelect}
               dataValue={chart}
               dropdown="Chart"
+              className="chart-dropdown" // For tour targeting
             />
             {countriesList.length > 0 && (
               <Dropdown
@@ -106,6 +236,7 @@ const App: React.FC = () => {
                 dataValue={country}
                 dropdown="Country"
                 countries={countriesList}
+                className="country-dropdown" // For tour targeting
               />
             )}
             {/* Uncomment if needed
@@ -114,21 +245,39 @@ const App: React.FC = () => {
                 handleSelect={handleSelect}
                 dataValue={time}
                 dropdown="Time"
+                className="time-dropdown" // For tour targeting
               />
             )} */}
           </Box>
         </div>
+
+        {/* Error Message */}
         {error && (
           <div className="charts" id="message">
-            {`Error fetching the data - ${error}`}
+            {`Error fetching data: ${error}`}
           </div>
         )}
+
+        {/* Loading Message */}
         {!data && !loading && (
           <div className="charts" id="message">
             Loading data for the first time. This might take a while!
           </div>
         )}
-        {data && <ChartList locations={data.results} chart={chart} country={country} countriesList={[]} showSidebar={showSidebar} setShowSidebar={setShowSidebar} />}
+
+        {/* Chart List */}
+        {data && (
+          <ChartList
+            locations={data.results}
+            chart={chart}
+            country={country}
+            countriesList={countriesList}
+            showSidebar={showSidebar}
+            setShowSidebar={setShowSidebar}
+          />
+        )}
+
+        {/* Loading Indicator */}
         {loading && (
           <Box sx={{ width: "100%" }}>
             <LinearProgress />
@@ -141,14 +290,15 @@ const App: React.FC = () => {
 
 export default App;
 
-const style = {
+// Style for the Introduction Modal (Optional)
+const modalStyle = {
   position: "absolute" as "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 500,
+  width: { xs: "90%", sm: 400 },
   bgcolor: "background.paper",
-  border: "1px solid #000",
+  borderRadius: 2,
   boxShadow: 24,
   p: 4,
 };

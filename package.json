@@ -17,11 +17,13 @@
     "@types/react-dom": "^18.0.3",
     "d3-scale-chromatic": "^3.1.0",
     "install": "^0.13.0",
+    "lodash.debounce": "^4.0.8",
     "mapbox-gl": "^3.8.0",
     "npm": "^10.9.2",
     "plotly.js-basic-dist-min": "^2.12.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-joyride": "^2.9.3",
     "react-plotly.js": "^2.5.1",
     "react-scripts": "^5.0.1",
     "typescript": "^4.6.4",
@@ -54,6 +56,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@types/d3-scale-chromatic": "^3.0.3",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/plotly.js": "^1.54.20",
     "@types/react-plotly.js": "^2.5.0",
     "msw": "^2.6.7"

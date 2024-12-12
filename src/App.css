@@ -1,5 +1,3 @@
-/* App.css */
-
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -88,4 +86,21 @@ html, body, #root {
   align-items: center;
   padding: 8px;
   justify-content: space-between;
+}
+
+.react-joyride-tooltip button.joyride-button--next {
+  background-color: #2a9d8f;
+  color: #fff;
+}
+
+.react-joyride-tooltip button.joyride-button--next:hover {
+  background-color: #21867a; /* Darker shade on hover */
+}
+
+.react-joyride-tooltip button.joyride-button--back {
+  color: #2a9d8f;
+}
+
+.react-joyride-tooltip button.joyride-button--skip {
+  color: #d62828;
 }
