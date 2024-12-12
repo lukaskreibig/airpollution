@@ -10,6 +10,7 @@ type Props = {
   dataValue: string | undefined;
   dropdown: string;
   countries?: Country[];
+  className?: string; 
 };
 
 const Dropdown: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const Dropdown: React.FC<Props> = ({
   dataValue,
   dropdown,
   countries,
+  className
 }) => {
   // const timeData = [
   //   { input: "day", description: "Today" },
@@ -52,7 +54,7 @@ const Dropdown: React.FC<Props> = ({
   }
 
   return (
-    <Box sx={{ minWidth: 120 }}>
+    <Box sx={{ minWidth: 120 }} className={className} >
       <FormControl fullWidth>
         <InputLabel id={`${dropdown}-select-label`}>{dropdown}</InputLabel>
         <Select
