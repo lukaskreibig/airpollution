@@ -1,456 +1,215 @@
-import { useEffect, useState } from "react";
 import { Layout, PlotData, Shape, Annotations } from "plotly.js";
 import { LatestResult, Parameter } from "../../../react-app-env";
-import { interpolatePlasma } from 'd3-scale-chromatic';
 
+// WHO guidelines
+const WHO_PM25_GUIDELINE = 15;
+const WHO_PM10_GUIDELINE = 45;
 
-const ChartFunction = () => {
-  // Window dimensions code remains unchanged
-  const getWindowDimensions = () => {
-    const { innerWidth: width, innerHeight: height } = window;
-    return {
-      width,
-      height,
-    };
-  };
-
-  const useWindowDimensions = () => {
-    const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
-
-    useEffect(() => {
-      const handleResize = () => {
-        setWindowDimensions(getWindowDimensions());
-      };
-
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    return windowDimensions;
-  };
-
-  const { height, width } = useWindowDimensions();
-  
-
-  const calculateBigChart = (chart: string, locations: LatestResult[]) => {
-    const parameters: (Parameter & { guideline: number })[] = [
-      {
-        name: "PM10 µg/m³",
-        value: "pm10",
-        min: 0,
-        max: 1000,
-        guideline: 45,
-      },
-      {
-        name: "PM2.5 µg/m³",
-        value: "pm25",
-        min: 0,
-        max: 500,
-        guideline: 15,
-      },
-    ];
-  
-    const colors = ["#e9c46a", "#2a9d8f"];
-  
-    const traces: Partial<PlotData>[] = [];
-    const xValues = locations.map((_, idx) => idx);
-  
-    parameters.forEach((para, index) => {
-      const xWithin: number[] = [];
-      const yWithin: number[] = [];
-      const hoverWithin: string[] = [];
-  
-      const xExceeds: number[] = [];
-      const yExceeds: number[] = [];
-      const hoverExceeds: string[] = [];
-  
-      locations.forEach((data, idx) => {
-        const measurement = data.measurements.find(
-          (m) => m.parameter === para.value
-        );
-        if (
-          measurement &&
-          measurement.value >= para.min &&
-          measurement.value <= para.max
-        ) {
-          const value = measurement.value;
-          const locationName =
-            data.location + (data.city ? `, ${data.city}` : "");
-  
-          const hoverText = `${locationName}<br>${para.name}: ${value.toFixed(
-            2
-          )} µg/m³${
-            value > para.guideline
-              ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)`
-              : ""
-          }`;
-  
-          if (value > para.guideline) {
-            xExceeds.push(idx);
-            yExceeds.push(value);
-            hoverExceeds.push(hoverText);
-          } else {
-            xWithin.push(idx);
-            yWithin.push(value);
-            hoverWithin.push(hoverText);
-          }
-        }
-      });
-  
-      if (xWithin.length > 0) {
-        traces.push({
-          type: "scatter" as const,
-          x: xWithin,
-          y: yWithin,
-          mode: "markers" as const,
-          name: `${para.name} Within Guidelines`,
-          marker: {
-            color: colors[index],
-            symbol: "circle" as const,
-            size: 10,
-            line: {
-              color: "#000000",
-              width: 1,
-            },
-          },
-          text: hoverWithin,
-          hoverinfo: "text",
-          showlegend: true,
-        });
-      }
-  
-      if (xExceeds.length > 0) {
-        traces.push({
-          type: "scatter" as const,
-          x: xExceeds,
-          y: yExceeds,
-          mode: "markers" as const,
-          name: `${para.name} Exceeds Guidelines`,
-          marker: {
-            color: colors[index],
-            symbol: "triangle-up" as const,
-            size: 10,
-            line: {
-              color: "#000000",
-              width: 1,
-            },
-          },
-          text: hoverExceeds,
-          hoverinfo: "text",
-          showlegend: true,
-        });
-      }
-  
-      // WHO-Richtwert-Linie
-      traces.push({
-        type: "scatter" as const,
-        x: [0, xValues.length - 1],
-        y: [para.guideline, para.guideline],
-        mode: "lines" as const,
-        name: `WHO Guideline (${para.name})`,
-        line: {
-          color: colors[index],
-          dash: "dash",
-          width: 2,
-        },
-        hoverinfo: "none" as const,
-        showlegend: true,
-      });
-    });
-  
-    return traces;
-  };
-  
-
-  const calculateBigLayout = (
-    chart: string,
-    locations: LatestResult[]
-  ): Partial<Layout> => {
-    return {
-      width: width - 40,
-      height: height - 45,
-      title: `Air Pollution - Showing the Latest Data <br> from ${
-        locations.length
-      } ${locations.length === 1 ? "Station" : "Stations"}`,
-      xaxis: {
-        showgrid: false,
-        showline: false,
-        showticklabels: false,
-      },
-      yaxis: {
-        title: "Concentration (µg/m³)",
-      },
-      margin: {
-        l: 60,
-        r: 10,
-        t: 80,
-        b: 40
-      },
-      legend: {
-        x: 0,
-        y: 1,
-        font: {
-          size: 15,
-        },
-        yanchor: "top",
-        xanchor: "left",
-      },
-      hovermode: "closest",
-    };
-  };
-
-  const calculateAverageChart = (locations: LatestResult[]) => {
-    const parameters: (Parameter & { guideline: number })[] = [
-      {
-        name: "PM10",
-        value: "pm10",
-        min: 0,
-        max: 1000,
-        guideline: 45,
-      },
-      {
-        name: "PM2.5",
-        value: "pm25",
-        min: 0,
-        max: 500,
-        guideline: 15,
-      },
-    ];
-
-    const averages = parameters.map((para) => {
-      const values = locations
-        .map((data) => {
-          const measurement = data.measurements.find(
-            (m) => m.parameter === para.value
-          );
-          return measurement ? measurement.value : null;
-        })
-        .filter(
-          (value): value is number =>
-            value !== null && value >= para.min && value <= para.max
-        );
-
-      const average = values.length
-        ? values.reduce((a, b) => a + b, 0) / values.length
-        : 0;
-
-      return {
-        parameter: para.name,
-        average,
-        guideline: para.guideline,
-      };
-    });
-
-    const traceAverage: Partial<PlotData> = {
-      x: averages.map((a) => a.parameter),
-      y: averages.map((a) => a.average),
-      type: "bar",
-      name: "Average",
-      marker: {
-        color: averages.map((a) =>
-          a.average > a.guideline ? "#d62828" : "#2a9d8f"
-        ),
-      },
-      text: averages.map((a) => a.average.toFixed(2) + " µg/m³"),
-      textposition: "auto",
-      hoverinfo: "x+y",
-    };
-
-    return { data: [traceAverage], averages };
-  };
-
-  const calculateAverageLayout = (
-    averages: { parameter: string; guideline: number; average: number }[]
-  ): Partial<Layout> => {
-    const maxYValue = Math.max(
-      ...averages.map((a) => Math.max(a.average, a.guideline))
-    );
-  
-    const yAxisMax = maxYValue * 1.2;
-  
-    const shapes: Partial<Shape>[] = averages.map((a, index) => ({
-      type: "line",
-      x0: index - 0.4,
-      x1: index + 0.4,
-      y0: a.guideline,
-      y1: a.guideline,
-      xref: "x",
-      yref: "y",
-      line: {
-        color: "#000000",
-        dash: "dash",
-        width: 2,
-      },
-    }));
-  
-    const annotations: Partial<Annotations>[] = averages.map((a, index) => ({
-      x: a.parameter,
-      y: a.guideline,
-      xref: "x",
-      yref: "y",
-      text: `WHO Guideline: ${a.guideline} µg/m³`,
-      showarrow: false,
-      yshift: -10,
-      font: {
-        color: "#000000",
-        size: 12,
-      },
-    }));
-  
-    return {
-      width: width - 40,
-      height: height - 45,
-      title: "Average Air Pollution with WHO Guidelines",
-      xaxis: {
-        title: "Parameter",
-      },
-      yaxis: {
-        title: "Concentration (µg/m³)",
-        autorange: false,
-        range: [0, yAxisMax],
-      },
-      margin: {
-        l: 60,
-        r: 10,
-        b: 80,
-        t: 80,
-      },
-      shapes: shapes,
-      annotations: annotations,
-      legend: {
-        x: 0,
-        y: 1,
-        font: {
-          size: 12,
-        },
-        yanchor: "top",
-        xanchor: "left",
-      },
-    };
-  };
-
-
-const calculateMapChart = (locations: LatestResult[]) => {
-  const lats: number[] = [];
-  const lons: number[] = [];
-  const texts: string[] = [];
-  const markerColors: string[] = [];
-
-  const pm25Values: number[] = [];
-  locations.forEach((location) => {
-    const pm25Measurement = location.measurements.find((m) => m.parameter === 'pm25');
-    if (pm25Measurement) {
-      pm25Values.push(pm25Measurement.value);
-    }
-  });
-
-  const maxPm25 = Math.max(...pm25Values, 50);
-  const minPm25 = Math.min(...pm25Values, 0);
-
-  locations.forEach((location) => {
-    if (location.coordinates) {
-      const lat = location.coordinates.latitude;
-      const lon = location.coordinates.longitude;
-      const measurements = location.measurements;
-
-      const measurementMap: { [key: string]: any } = {};
-      measurements.forEach((m) => {
-        measurementMap[m.parameter] = m;
-      });
-
-      const pm25Measurement = measurementMap['pm25'];
-      const pm10Measurement = measurementMap['pm10'];
-      const temperatureMeasurement = measurementMap['temperature'];
-      const humidityMeasurement = measurementMap['relativehumidity'];
-
-      let text = `<b>${location.location}</b><br>`;
-      if (location.city) {
-        text += `City: ${location.city}<br>`;
-      }
-      if (pm25Measurement) {
-        text += `PM2.5: ${pm25Measurement.value.toFixed(2)} µg/m³<br>`;
-      }
-      if (pm10Measurement) {
-        text += `PM10: ${pm10Measurement.value.toFixed(2)} µg/m³<br>`;
-      }
-      if (temperatureMeasurement) {
-        text += `Temperature: ${temperatureMeasurement.value.toFixed(2)} °C<br>`;
-      }
-      if (humidityMeasurement) {
-        text += `Humidity: ${humidityMeasurement.value.toFixed(2)}%<br>`;
-      }
-      if (pm25Measurement || pm10Measurement) {
-        const lastUpdated = pm25Measurement
-          ? pm25Measurement.lastUpdated
-          : pm10Measurement.lastUpdated;
-        text += `Last Updated: ${new Date(lastUpdated).toLocaleString()}<br>`;
-      }
-
-      lats.push(lat);
-      lons.push(lon);
-      texts.push(text);
-
-      let color = 'green';
-      if (pm25Measurement) {
-        const normalizedValue = (pm25Measurement.value - minPm25) / (maxPm25 - minPm25);
-        color = interpolatePlasma(normalizedValue);
-      }
-      markerColors.push(color);
-    }
-  });
-
-  const data: Partial<PlotData>[] = [
+/** Build a big scatter chart's data. No Hooks. */
+export function calculateBigChart(chart: string, locations: LatestResult[]): Partial<PlotData>[] {
+  const parameters: (Parameter & { guideline: number })[] = [
     {
-      type: 'scattermapbox' as const,
-      lat: lats,
-      lon: lons,
-      text: texts,
-      mode: 'markers',
-      marker: {
-        size: 10,
-        color: markerColors,
-        opacity: 0.7,
-      },
-      hoverinfo: 'text',
-      showlegend: false,
+      name: "PM10 µg/m³",
+      value: "pm10",
+      min: 0,
+      max: 1000,
+      guideline: WHO_PM10_GUIDELINE,
+    },
+    {
+      name: "PM2.5 µg/m³",
+      value: "pm25",
+      min: 0,
+      max: 500,
+      guideline: WHO_PM25_GUIDELINE,
     },
   ];
 
-  return data;
-};
- 
-  
+  const colors = ["#e9c46a", "#2a9d8f"];
+  const traces: Partial<PlotData>[] = [];
+  const xValues = locations.map((_, idx) => idx);
 
-  const calculateMapLayout = (center: { lat: number; lon: number }): Partial<Layout> => {
-    return {
-      height: height - 45,
-      autosize: true,
-      hovermode: 'closest',
-      mapbox: {
-        style: 'open-street-map',
-        center: center,
-        zoom: 5,
+  parameters.forEach((para, index) => {
+    const xWithin: number[] = [];
+    const yWithin: number[] = [];
+    const hoverWithin: string[] = [];
+
+    const xExceeds: number[] = [];
+    const yExceeds: number[] = [];
+    const hoverExceeds: string[] = [];
+
+    locations.forEach((data, idx) => {
+      const measurement = data.measurements.find(m => m.parameter === para.value);
+      if (!measurement) return;
+      if (measurement.value >= para.min && measurement.value <= para.max) {
+        const value = measurement.value;
+        const locationName = data.location + (data.city ? `, ${data.city}` : "");
+        const hoverText = `${locationName}<br>${para.name}: ${value.toFixed(2)} µg/m³${
+          value > para.guideline ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)` : ""
+        }`;
+        if (value > para.guideline) {
+          xExceeds.push(idx);
+          yExceeds.push(value);
+          hoverExceeds.push(hoverText);
+        } else {
+          xWithin.push(idx);
+          yWithin.push(value);
+          hoverWithin.push(hoverText);
+        }
+      }
+    });
+
+    if (xWithin.length > 0) {
+      traces.push({
+        type: "scatter",
+        x: xWithin,
+        y: yWithin,
+        mode: "markers",
+        name: `${para.name} Within Guidelines`,
+        marker: {
+          color: colors[index],
+          symbol: "circle",
+          size: 10,
+          line: { color:"#000000", width:1 },
+        },
+        text: hoverWithin,
+        hoverinfo: "text",
+        showlegend: true,
+      });
+    }
+    if (xExceeds.length > 0) {
+      traces.push({
+        type: "scatter",
+        x: xExceeds,
+        y: yExceeds,
+        mode: "markers",
+        name: `${para.name} Exceeds Guidelines`,
+        marker: {
+          color: colors[index],
+          symbol: "triangle-up",
+          size: 10,
+          line:{ color:"#000000", width:1},
+        },
+        text: hoverExceeds,
+        hoverinfo:"text",
+        showlegend:true,
+      });
+    }
+    // WHO Guideline line
+    traces.push({
+      type: "scatter",
+      x: [0, xValues.length - 1],
+      y: [para.guideline, para.guideline],
+      mode:"lines",
+      name:`WHO Guideline (${para.name})`,
+      line:{
+        color: colors[index],
+        dash:"dash",
+        width:2
       },
-      margin: {
-        l: 0,
-        r: 0,
-        t: 0,
-        b: 0,
-      },
-    };
-  };
+      hoverinfo:"none",
+      showlegend:true,
+    });
+  });
 
-  
+  return traces;
+}
 
+/** Build a layout for the big scatter chart. No Hooks. */
+export function calculateBigLayout(chart: string, locations: LatestResult[], width:number, height:number): Partial<Layout> {
   return {
-    calculateBigChart,
-    calculateBigLayout,
-    calculateAverageChart,
-    calculateAverageLayout,
-    useWindowDimensions,
-    calculateMapChart,
-    calculateMapLayout
+    width: width - 40,
+    height: height - 45,
+    title: `Air Pollution - from ${locations.length} Stations`,
+    xaxis: {
+      showgrid:false,
+      showline:false,
+      showticklabels:false,
+    },
+    yaxis: {
+      title:"Concentration (µg/m³)",
+    },
+    margin:{ l:60, r:10, t:80, b:40 },
+    legend:{ x:0, y:1, font:{ size:15}, yanchor:"top", xanchor:"left"},
+    hovermode:"closest",
   };
-};
+}
 
-export default ChartFunction;
+/** Build bar chart data + averages for the average chart. */
+export function calculateAverageChart(locations: LatestResult[]): { data:Partial<PlotData>[], averages:any} {
+  const parameters: (Parameter & { guideline:number })[] = [
+    { name:"PM10", value:"pm10", min:0, max:1000, guideline:WHO_PM10_GUIDELINE},
+    { name:"PM2.5", value:"pm25", min:0, max:500, guideline:WHO_PM25_GUIDELINE},
+  ];
+  const averages = parameters.map(para => {
+    const values = locations
+      .map(loc => loc.measurements.find(m => m.parameter===para.value)?.value ?? null)
+      .filter((v): v is number => v!==null && v>=para.min && v<=para.max);
+
+    const avg = values.length? values.reduce((a,b)=>a+b,0)/values.length : 0;
+    return { parameter: para.name, average: avg, guideline: para.guideline };
+  });
+
+  const traceAverage: Partial<PlotData> = {
+    x: averages.map(a=>a.parameter),
+    y: averages.map(a=>a.average),
+    type: "bar",
+    name:"Average",
+    marker:{
+      color: averages.map(a=> a.average> a.guideline? "#d62828":"#2a9d8f"),
+    },
+    text: averages.map(a=> a.average.toFixed(2)+" µg/m³"),
+    textposition:"auto",
+    hoverinfo:"x+y",
+  };
+  return { data:[traceAverage], averages };
+}
+
+export function calculateAverageLayout(
+  averages: { parameter:string; guideline:number; average:number}[],
+  _width:number,
+  _height:number
+): Partial<Layout> {
+  // We ignore _width and _height and define a small fixed layout.
+  const maxY = Math.max(...averages.map(a=> Math.max(a.average,a.guideline)));
+  const yAxisMax = maxY * 1.2;
+
+  // We'll keep shapes for WHO lines
+  const shapes: Partial<Shape>[] = averages.map((a,idx)=>({
+    type:"line",
+    x0: idx-0.4,
+    x1: idx+0.4,
+    y0: a.guideline,
+    y1: a.guideline,
+    xref:"x",
+    yref:"y",
+    line:{ color:"#000000", dash:"dash", width:2}
+  }));
+
+  // We'll keep annotations if we want
+  const annotations: Partial<Annotations>[] = averages.map((a,idx)=>({
+    x: a.parameter,
+    y: a.guideline,
+    xref:"x",
+    yref:"y",
+    text: `WHO Guideline: ${a.guideline} µg/m³`,
+    showarrow:false,
+    // yshift:-10,
+    font:{ color:"#000", size:12},
+  }));
+
+  // Return a smaller layout perfect for a mini chart ~ 280×240 container
+  return {
+    width: 280,
+    title: "Avg Air Pollution",
+    xaxis: { title:"Concentration (µg/m³)" },
+    yaxis: { range:[0,yAxisMax] },
+    // margin: { l:40, r:20, b:40, t:40 },
+    shapes,
+    annotations,
+    legend: {
+      x:0, y:1, font:{ size:12 },
+      yanchor:"top",
+      xanchor:"left"
+    },
+  };
+}
