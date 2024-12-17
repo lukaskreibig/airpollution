@@ -1,25 +1,140 @@
-import { Layout, PlotData, Shape, Annotations } from "plotly.js";
-import { LatestResult, Parameter } from "../../../react-app-env";
+import { Layout, PlotData } from "plotly.js";
+import { LatestResult } from "../../../react-app-env";
 
-// WHO guidelines
+/**
+ * **AQI Breakpoints basierend auf den EPA-Richtlinien**
+ */
+const AQI_BREAKPOINTS: Record<
+  string,
+  Array<{ cLow: number; cHigh: number; iLow: number; iHigh: number }>
+> = {
+  pm25: [
+    { cLow: 0.0, cHigh: 12.0, iLow: 0, iHigh: 50 },
+    { cLow: 12.1, cHigh: 35.4, iLow: 51, iHigh: 100 },
+    { cLow: 35.5, cHigh: 55.4, iLow: 101, iHigh: 150 },
+    { cLow: 55.5, cHigh: 150.4, iLow: 151, iHigh: 200 },
+    { cLow: 150.5, cHigh: 250.4, iLow: 201, iHigh: 300 },
+    { cLow: 250.5, cHigh: 350.4, iLow: 301, iHigh: 400 },
+    { cLow: 350.5, cHigh: 500.4, iLow: 401, iHigh: 500 },
+  ],
+  pm10: [
+    { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },
+    { cLow: 55, cHigh: 154, iLow: 51, iHigh: 100 },
+    { cLow: 155, cHigh: 254, iLow: 101, iHigh: 150 },
+    { cLow: 255, cHigh: 354, iLow: 151, iHigh: 200 },
+    { cLow: 355, cHigh: 424, iLow: 201, iHigh: 300 },
+    { cLow: 425, cHigh: 504, iLow: 301, iHigh: 400 },
+    { cLow: 505, cHigh: 604, iLow: 401, iHigh: 500 },
+  ],
+  o3: [ // o3_8h in der ChartFunction
+    { cLow: 0.0, cHigh: 0.054, iLow: 0, iHigh: 50 },
+    { cLow: 0.055, cHigh: 0.070, iLow: 51, iHigh: 100 },
+    { cLow: 0.071, cHigh: 0.085, iLow: 101, iHigh: 150 },
+    { cLow: 0.086, cHigh: 0.105, iLow: 151, iHigh: 200 },
+    { cLow: 0.106, cHigh: 0.200, iLow: 201, iHigh: 300 },
+  ],
+  co: [
+    { cLow: 0.0, cHigh: 4.4, iLow: 0, iHigh: 50 },
+    { cLow: 4.5, cHigh: 9.4, iLow: 51, iHigh: 100 },
+    { cLow: 9.5, cHigh: 12.4, iLow: 101, iHigh: 150 },
+    { cLow: 12.5, cHigh: 15.4, iLow: 151, iHigh: 200 },
+    { cLow: 15.5, cHigh: 30.4, iLow: 201, iHigh: 300 },
+    { cLow: 30.5, cHigh: 40.4, iLow: 301, iHigh: 400 },
+    { cLow: 40.5, cHigh: 50.4, iLow: 401, iHigh: 500 },
+  ],
+  so2: [
+    { cLow: 0, cHigh: 35, iLow: 0, iHigh: 50 },
+    { cLow: 36, cHigh: 75, iLow: 51, iHigh: 100 },
+    { cLow: 76, cHigh: 185, iLow: 101, iHigh: 150 },
+    { cLow: 186, cHigh: 304, iLow: 151, iHigh: 200 },
+    { cLow: 305, cHigh: 604, iLow: 201, iHigh: 300 },
+    { cLow: 605, cHigh: 804, iLow: 301, iHigh: 400 },
+    { cLow: 805, cHigh: 1004, iLow: 401, iHigh: 500 },
+  ],
+  no2: [
+    { cLow: 0, cHigh: 53, iLow: 0, iHigh: 50 },
+    { cLow: 54, cHigh: 100, iLow: 51, iHigh: 100 },
+    { cLow: 101, cHigh: 360, iLow: 101, iHigh: 150 },
+    { cLow: 361, cHigh: 649, iLow: 151, iHigh: 200 },
+    { cLow: 650, cHigh: 1249, iLow: 201, iHigh: 300 },
+    { cLow: 1250, cHigh: 1649, iLow: 301, iHigh: 400 },
+    { cLow: 1650, cHigh: 2049, iLow: 401, iHigh: 500 },
+  ],
+};
+
+/**
+ * Berechnet den AQI für einen einzelnen Schadstoff basierend auf den offiziellen Breakpoints.
+ * @param param - Der Schadstoffparameter (z.B. 'pm25', 'o3').
+ * @param value - Der gemessene Wert des Schadstoffs.
+ * @returns Der berechnete AQI-Wert oder -1 bei ungültigen Eingaben.
+ */
+export function computeSubAqi(param: string, value: number): number {
+  const pollutant = param.toLowerCase();
+  const breakpoints = AQI_BREAKPOINTS[pollutant];
+  if (!breakpoints) return -1; // Unbekannter Schadstoff
+
+  for (const bp of breakpoints) {
+    if (value >= bp.cLow && value <= bp.cHigh) {
+      const { cLow, cHigh, iLow, iHigh } = bp;
+      const aqi = ((iHigh - iLow) / (cHigh - cLow)) * (value - cLow) + iLow;
+      return Math.round(aqi);
+    }
+  }
+
+  // Werte über den höchsten Breakpoint
+  const lastBp = breakpoints[breakpoints.length - 1];
+  if (value > lastBp.cHigh) {
+    return 500;
+  }
+
+  return -1; // Ungültiger Wert
+}
+
+/**
+ * Berechnet den AQI für einen einzelnen Schadstoff.
+ */
+export function computeAqiForPollutant(param: string, val: number): number {
+  return computeSubAqi(param, val);
+}
+
+/**
+ * Berechnet den gesamten AQI als das Maximum der Teil-AQI-Werte.
+ */
+export function computeOverallAqi(params: Record<string, number>): number {
+  let maxAqi = -1;
+  for (const [p, v] of Object.entries(params)) {
+    const sub = computeSubAqi(p, v);
+    if (sub > maxAqi) {
+      maxAqi = sub;
+    }
+  }
+  return maxAqi;
+}
+
+/**
+ * OLD scatter chart logic (Chart=1).
+ * Accepts raw LatestResult[], returns PlotData[] for PM2.5 & PM10.
+ */
+
 const WHO_PM25_GUIDELINE = 15;
 const WHO_PM10_GUIDELINE = 45;
 
-/** Build a big scatter chart's data. No Hooks. */
 export function calculateBigChart(chart: string, locations: LatestResult[]): Partial<PlotData>[] {
-  const parameters: (Parameter & { guideline: number })[] = [
+  if (!locations || !locations.length) return [];
+
+  const parameters = [
     {
       name: "PM10 µg/m³",
       value: "pm10",
       min: 0,
-      max: 1000,
+      max: 1500,
       guideline: WHO_PM10_GUIDELINE,
     },
     {
       name: "PM2.5 µg/m³",
       value: "pm25",
       min: 0,
-      max: 500,
+      max: 800,
       guideline: WHO_PM25_GUIDELINE,
     },
   ];
@@ -33,25 +148,26 @@ export function calculateBigChart(chart: string, locations: LatestResult[]): Par
     const yWithin: number[] = [];
     const hoverWithin: string[] = [];
 
-    const xExceeds: number[] = [];
-    const yExceeds: number[] = [];
-    const hoverExceeds: string[] = [];
+    const xExceed: number[] = [];
+    const yExceed: number[] = [];
+    const hoverExceed: string[] = [];
 
-    locations.forEach((data, idx) => {
-      const measurement = data.measurements.find(m => m.parameter === para.value);
+    locations.forEach((loc, idx2) => {
+      const measurement = loc.measurements.find(m => m.parameter === para.value);
       if (!measurement) return;
+      if (measurement.value <= 0) return; // skip negative
       if (measurement.value >= para.min && measurement.value <= para.max) {
         const value = measurement.value;
-        const locationName = data.location + (data.city ? `, ${data.city}` : "");
+        const locationName = loc.location + (loc.city ? `, ${loc.city}` : "");
         const hoverText = `${locationName}<br>${para.name}: ${value.toFixed(2)} µg/m³${
           value > para.guideline ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)` : ""
         }`;
         if (value > para.guideline) {
-          xExceeds.push(idx);
-          yExceeds.push(value);
-          hoverExceeds.push(hoverText);
+          xExceed.push(idx2);
+          yExceed.push(value);
+          hoverExceed.push(hoverText);
         } else {
-          xWithin.push(idx);
+          xWithin.push(idx2);
           yWithin.push(value);
           hoverWithin.push(hoverText);
         }
@@ -69,148 +185,186 @@ export function calculateBigChart(chart: string, locations: LatestResult[]): Par
           color: colors[index],
           symbol: "circle",
           size: 10,
-          line: { color:"#000000", width:1 },
+          line: { color: "#000", width: 1 },
         },
         text: hoverWithin,
         hoverinfo: "text",
         showlegend: true,
       });
     }
-    if (xExceeds.length > 0) {
+    if (xExceed.length > 0) {
       traces.push({
         type: "scatter",
-        x: xExceeds,
-        y: yExceeds,
+        x: xExceed,
+        y: yExceed,
         mode: "markers",
         name: `${para.name} Exceeds Guidelines`,
         marker: {
           color: colors[index],
           symbol: "triangle-up",
           size: 10,
-          line:{ color:"#000000", width:1},
+          line: { color: "#000", width: 1 },
         },
-        text: hoverExceeds,
-        hoverinfo:"text",
-        showlegend:true,
+        text: hoverExceed,
+        hoverinfo: "text",
+        showlegend: true,
       });
     }
-    // WHO Guideline line
+    // WHO line
     traces.push({
       type: "scatter",
       x: [0, xValues.length - 1],
       y: [para.guideline, para.guideline],
-      mode:"lines",
-      name:`WHO Guideline (${para.name})`,
-      line:{
+      mode: "lines",
+      name: `WHO Guideline (${para.name})`,
+      line: {
         color: colors[index],
-        dash:"dash",
-        width:2
+        dash: "dash",
+        width: 2,
       },
-      hoverinfo:"none",
-      showlegend:true,
+      hoverinfo: "none",
+      showlegend: true,
     });
   });
 
   return traces;
 }
 
-/** Build a layout for the big scatter chart. No Hooks. */
-export function calculateBigLayout(chart: string, locations: LatestResult[], width:number, height:number): Partial<Layout> {
+export function calculateBigLayout(
+  chart: string,
+  locations: LatestResult[],
+  width: number,
+  height: number
+): Partial<Layout> {
   return {
     width: width - 40,
     height: height - 45,
     title: `Air Pollution - from ${locations.length} Stations`,
     xaxis: {
-      showgrid:false,
-      showline:false,
-      showticklabels:false,
+      showgrid: false,
+      showline: false,
+      showticklabels: false,
     },
     yaxis: {
-      title:"Concentration (µg/m³)",
+      title: "Concentration (µg/m³)",
     },
-    margin:{ l:60, r:10, t:80, b:40 },
-    legend:{ x:0, y:1, font:{ size:15}, yanchor:"top", xanchor:"left"},
-    hovermode:"closest",
+    margin: { l: 60, r: 10, t: 80, b: 40 },
+    legend: { x: 0, y: 1, font: { size: 15 }, yanchor: "top", xanchor: "left" },
+    hovermode: "closest",
   };
 }
 
-/** Build bar chart data + averages for the average chart. */
-export function calculateAverageChart(locations: LatestResult[]): { data:Partial<PlotData>[], averages:any} {
-  const parameters: (Parameter & { guideline:number })[] = [
-    { name:"PM10", value:"pm10", min:0, max:1000, guideline:WHO_PM10_GUIDELINE},
-    { name:"PM2.5", value:"pm25", min:0, max:500, guideline:WHO_PM25_GUIDELINE},
-  ];
-  const averages = parameters.map(para => {
-    const values = locations
-      .map(loc => loc.measurements.find(m => m.parameter===para.value)?.value ?? null)
-      .filter((v): v is number => v!==null && v>=para.min && v<=para.max);
+export interface ProcessedLocation {
+  name: string;
+  city?: string;
+  lat: number;
+  lon: number;
+  parameters: Record<string, number>;
+  timestamp?: string;
+  popupHTML: string;
+}
 
-    const avg = values.length? values.reduce((a,b)=>a+b,0)/values.length : 0;
-    return { parameter: para.name, average: avg, guideline: para.guideline };
+const POLLUTANTS_TO_AVG = ["pm25", "pm10", "o3", "co", "so2", "no2"];
+
+/**
+ * Bestimmt die Farbe basierend auf dem AQI-Wert für Balkendiagramme.
+ */
+function barAqiColor(aqi: number): string {
+  if (aqi < 0) return "#bfbfbf";
+  if (aqi <= 50) return "#2a9d8f";
+  if (aqi <= 100) return "#e9c46a";
+  if (aqi <= 150) return "#f4a261";
+  if (aqi <= 200) return "#d62828";
+  return "#9d0208";
+}
+
+/**
+ * Berechnet den Durchschnitts-AQI für die Balkendiagramme.
+ */
+export function calculateAverageChart(
+  processedLocs: ProcessedLocation[]
+): { data: Partial<PlotData>[]; maxVal: number } {
+  if (!processedLocs.length) return { data: [], maxVal: 500 };
+
+  let sum: Record<string, number> = {};
+  let count: Record<string, number> = {};
+  POLLUTANTS_TO_AVG.forEach((p) => {
+    sum[p] = 0;
+    count[p] = 0;
   });
 
-  const traceAverage: Partial<PlotData> = {
-    x: averages.map(a=>a.parameter),
-    y: averages.map(a=>a.average),
+  let overallSum = 0,
+    overallCount = 0;
+  processedLocs.forEach((loc) => {
+    const subAqis: number[] = [];
+    for (const [p, v] of Object.entries(loc.parameters)) {
+      if (!POLLUTANTS_TO_AVG.includes(p)) continue;
+      const sub = computeSubAqi(p, v);
+      if (sub >= 0) {
+        subAqis.push(sub);
+        sum[p] += sub;
+        count[p]++;
+      }
+    }
+    if (subAqis.length > 0) {
+      const locOverall = Math.max(...subAqis);
+      overallSum += locOverall;
+      overallCount++;
+    }
+  });
+
+  const xLabels: string[] = [];
+  const yValues: number[] = [];
+  const barColors: string[] = [];
+  let maxVal = 0;
+
+  POLLUTANTS_TO_AVG.forEach((p) => {
+    if (count[p] === 0) {
+      xLabels.push(p.toUpperCase());
+      yValues.push(0);
+      barColors.push("#bfbfbf");
+    } else {
+      const avg = sum[p] / count[p];
+      xLabels.push(p.toUpperCase());
+      yValues.push(avg);
+      barColors.push(barAqiColor(avg));
+      if (avg > maxVal) maxVal = avg;
+    }
+  });
+
+  let overallAvg = -1;
+  if (overallCount > 0) {
+    overallAvg = overallSum / overallCount;
+  }
+  xLabels.push("Overall");
+  const finalVal = overallAvg < 0 ? 0 : overallAvg;
+  yValues.push(finalVal);
+  barColors.push(finalVal <= 0 ? "#bfbfbf" : barAqiColor(finalVal));
+  if (finalVal > maxVal) maxVal = finalVal;
+
+  const barTrace: Partial<PlotData> = {
+    x: xLabels,
+    y: yValues,
     type: "bar",
-    name:"Average",
-    marker:{
-      color: averages.map(a=> a.average> a.guideline? "#d62828":"#2a9d8f"),
-    },
-    text: averages.map(a=> a.average.toFixed(2)+" µg/m³"),
-    textposition:"auto",
-    hoverinfo:"x+y",
+    marker: { color: barColors },
+    text: yValues.map((v) => (v > 0 ? v.toFixed(1) : "?")),
+    textposition: "auto",
+    hoverinfo: "y",
   };
-  return { data:[traceAverage], averages };
+
+  return { data: [barTrace], maxVal };
 }
 
-export function calculateAverageLayout(
-  averages: { parameter:string; guideline:number; average:number}[],
-  _width:number,
-  _height:number
-): Partial<Layout> {
-  // We ignore _width and _height and define a small fixed layout.
-  const maxY = Math.max(...averages.map(a=> Math.max(a.average,a.guideline)));
-  const yAxisMax = maxY * 1.2;
-
-  // We'll keep shapes for WHO lines
-  const shapes: Partial<Shape>[] = averages.map((a,idx)=>({
-    type:"line",
-    x0: idx-0.4,
-    x1: idx+0.4,
-    y0: a.guideline,
-    y1: a.guideline,
-    xref:"x",
-    yref:"y",
-    line:{ color:"#000000", dash:"dash", width:2}
-  }));
-
-  // We'll keep annotations if we want
-  const annotations: Partial<Annotations>[] = averages.map((a,idx)=>({
-    x: a.parameter,
-    y: a.guideline,
-    xref:"x",
-    yref:"y",
-    text: `WHO Guideline: ${a.guideline} µg/m³`,
-    showarrow:false,
-    // yshift:-10,
-    font:{ color:"#000", size:12},
-  }));
-
-  // Return a smaller layout perfect for a mini chart ~ 280×240 container
+export function calculateAverageLayout(maxVal: number): Partial<Layout> {
+  let upper = maxVal * 1.2;
+  if (upper < 50) upper = 50;
+  if (upper > 500) upper = 500;
   return {
-    width: 280,
-    height: 240,
-    title: "Avg Air Pollution",
-    xaxis: { title:"Concentration (µg/m³)" },
-    yaxis: { range:[0,yAxisMax] },
-    // margin: { l:40, r:20, b:40, t:40 },
-    shapes,
-    annotations,
-    legend: {
-      x:0, y:1, font:{ size:12 },
-      yanchor:"top",
-      xanchor:"left"
-    },
+    width: 600,
+    height: 300,
+    title: "AQI Pollutant Averages",
+    xaxis: { title: "Pollutants & Overall" },
+    yaxis: { title: "AQI", range: [0, upper] },
+    margin: { l: 40, r: 20, t: 50, b: 40 },
   };
 }

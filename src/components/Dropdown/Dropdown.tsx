@@ -18,13 +18,13 @@ const Dropdown: React.FC<Props> = ({
   dataValue,
   dropdown,
   countries,
-  className
+  className,
 }) => {
-  // const timeData = [
-  //   { input: "day", description: "Today" },
-  //   { input: "month", description: "This Month" },
-  //   { input: "year", description: "This Year" },
-  // ];
+  const timeData = [
+    { input: "day", description: "Today" },
+    { input: "month", description: "This Month" },
+    { input: "year", description: "This Year" },
+  ];
 
   const chartData = [
     { input: "1", description: "Scatter Chart" },
@@ -35,10 +35,10 @@ const Dropdown: React.FC<Props> = ({
   let options: { value: string; label: string }[] = [];
 
   if (dropdown === "Time") {
-    // options = timeData.map((data) => ({
-    //   value: data.input,
-    //   label: data.description,
-    // }));
+    options = timeData.map((data) => ({
+      value: data.input,
+      label: data.description,
+    }));
   } else if (dropdown === "Country" && countries) {
     options = countries
     .map((country) => ({
