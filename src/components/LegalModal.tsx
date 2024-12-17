@@ -1,4 +1,3 @@
-import React from 'react';
 import { Modal, Box, Typography, IconButton } from '@mui/material';
 import { CloseOutlined } from '@ant-design/icons';
 
@@ -23,6 +22,8 @@ const modalStyle = {
 };
 
 export default function LegalModal({ open, onClose }: LegalModalProps) {
+    console.log("LegalModal Rendered. Open:", open);
+
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={modalStyle}>
@@ -33,7 +34,7 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
           </IconButton>
         </Box>
 
-        {/* Impressum / Legal Notice (German requirement) */}
+        {/* Impressum / Legal Notice (German requirement)
         <section style={{ marginTop: '1rem' }}>
           <Typography variant="h6">Impressum / Legal Notice</Typography>
           <Typography variant="body1" paragraph>
@@ -47,7 +48,7 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             company details. If you’re hosting the site in Berlin (Germany) for a public/commercial
             purpose, you are required to display this information.
           </Typography>
-        </section>
+        </section> */}
 
         {/* Privacy Policy */}
         <section style={{ marginTop: '1.5rem' }}>
@@ -108,7 +109,7 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
           <Typography variant="h6">Contact</Typography>
           <Typography variant="body2" paragraph>
             If you have any questions or concerns about this legal notice or our Privacy Policy,
-            please contact: <strong>lukas.kreibig@posteo.de</strong>
+            please contact: <strong>lukatze@posteo.de</strong>
           </Typography>
           <Typography variant="body2" style={{ fontStyle: 'italic' }}>
             Last Updated: [December 17, 2024]

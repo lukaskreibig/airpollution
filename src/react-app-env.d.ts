@@ -58,5 +58,9 @@ export interface Country {
   locations: number;
   name: string;
   parameters: Parameters;
+  coordinates: {
+    lat: number;
+    lon: number;
+  };
   sources: number;
 }

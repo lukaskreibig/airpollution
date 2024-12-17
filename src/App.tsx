@@ -264,12 +264,12 @@ const App: React.FC = () => {
                 className="country-dropdown"
               />
             )}
-            <Dropdown
+            {/* <Dropdown
               handleSelect={handleSelect}
               dataValue={time}
               dropdown="Time"
               className="time-dropdown"
-            />
+            /> */}
           </Box>
         </Box>
 
@@ -317,7 +317,7 @@ const App: React.FC = () => {
             borderRadius: "4px",
           }}
         >
-          <Box sx={{ textDecoration: "underline", cursor: "pointer", marginRight: "10px" }}>
+          <Box onClick={() => setIsLegalOpen(true)} sx={{ textDecoration: "underline", cursor: "pointer", marginRight: "10px" }}>
             Legal & Privacy
           </Box>
           <Box>
@@ -335,7 +335,7 @@ const App: React.FC = () => {
       )}
 
       <Analytics />
-      <LegalModal open={isLegalOpen} onClose={() => setIsLegalOpen(false)} />
+        <LegalModal open={isLegalOpen} onClose={() => setIsLegalOpen(false)} />
     </div>
   );
 };

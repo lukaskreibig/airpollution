@@ -1,3 +1,5 @@
+// Chart.tsx
+
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Plot from "react-plotly.js";
 import mapboxgl, { GeoJSONSource } from "mapbox-gl";
@@ -174,7 +176,7 @@ const Chart: React.FC<Props> = ({
 
   // Sidebar-Such- und Sortierzustände
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortMode, setSortMode] = useState<"name" | "aqi" | "pm25" | "pm10">("name");
+  const [sortMode, setSortMode] = useState<"name" | "aqi" | "pm25" | "pm10" | "so2" | "no2" | "co">("aqi");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Verarbeitete Standorte für Sidebar und Durchschnittschart
@@ -306,6 +308,22 @@ const Chart: React.FC<Props> = ({
     },
     []
   );
+
+  /**
+   * Hilfsfunktion zum Zentrieren der Karte auf das ausgewählte Land.
+   */
+  const centerMapOnCountry = useCallback(() => {
+    const foundCountry = countriesList.find((c) => String(c.id) === country);
+    if (foundCountry && foundCountry.coordinates && mapRef.current) {
+      const { lat, lon } = foundCountry.coordinates;
+      mapRef.current.flyTo({
+        center: [lon, lat],
+        zoom: 5, // Passen Sie den Zoom-Level nach Bedarf an
+        essential: true, // Für barrierefreie Animationen
+        duration: 1000, // Dauer der Animation in Millisekunden
+      });
+    }
+  }, [countriesList, country]);
 
   /**
    * Aktualisiert verarbeitete Standorte, wenn sich die Standorte ändern.
@@ -556,7 +574,7 @@ const Chart: React.FC<Props> = ({
     const miniLayout: Partial<Plotly.Layout> = {
       width: 280,
       height: 240,
-      title: `Avg in ${activeCountryName}`,
+      title: `Durchschnitt in ${activeCountryName}`,
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
       yaxis: { range: [0, upper], title: "AQI" },
@@ -591,7 +609,11 @@ const Chart: React.FC<Props> = ({
       if (chart === "3" && mapRef.current) {
         setTimeout(() => {
           mapRef.current?.resize();
-          adjustMapView(mapRef.current!, processedLocs);
+          if (newVal) {
+            centerMapOnCountry(); // Karte zentrieren, wenn die Sidebar geöffnet wird
+          } else {
+            adjustMapView(mapRef.current!, processedLocs);
+          }
         }, 300);
       }
       return newVal;
@@ -677,7 +699,7 @@ const Chart: React.FC<Props> = ({
 
               return (
                 <ListItem
-                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}`}
+                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}`} // Sicherstellen, dass der Schlüssel eindeutig ist
                   button
                   onMouseEnter={() => handleCityMouseEnter(ploc)}
                   onMouseLeave={handleCityMouseLeave}
