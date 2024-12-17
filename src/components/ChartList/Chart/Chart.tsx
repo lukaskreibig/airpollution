@@ -540,6 +540,7 @@ const Chart: React.FC<Props> = ({
 
               {/* Bottom-right mini average chart */}
               <Box
+                className="average-plot"
                 sx={{
                   position:"fixed",
                   bottom:40,

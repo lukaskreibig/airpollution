@@ -200,6 +200,7 @@ export function calculateAverageLayout(
   // Return a smaller layout perfect for a mini chart ~ 280×240 container
   return {
     width: 280,
+    height: 240,
     title: "Avg Air Pollution",
     xaxis: { title:"Concentration (µg/m³)" },
     yaxis: { range:[0,yAxisMax] },

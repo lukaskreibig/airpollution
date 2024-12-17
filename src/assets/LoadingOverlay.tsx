@@ -1,9 +1,7 @@
-// src/components/LoadingOverlay/LoadingOverlay.tsx
-
 import React from "react";
 import { Box, Typography, Fade } from "@mui/material";
 import Lottie from "lottie-react";
-import loadingAnimation from "./loadingworld.json"; // your Lottie JSON
+import loadingAnimation from "./loadingworld.json";
 
 interface LoadingOverlayProps {
   loading: boolean;
@@ -25,7 +23,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ loading, message }) => 
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          zIndex: 2000, // Over everything
+          zIndex: 2000,
         }}
       >
         <Box sx={{ width: 200, height: 200 }}>

@@ -40,6 +40,15 @@ const App: React.FC = () => {
         disableBeacon: true,
         spotlightClicks: true,
       },
+            // Average in Germany
+            {
+              target: ".average-plot",
+              content: "Average Plot",
+              placement: "bottom",
+              title: "Welcome!",
+              disableBeacon: true,
+              spotlightClicks: true,
+            },
       // Chart Selection
       {
         target: ".chart-dropdown",
