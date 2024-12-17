@@ -6,6 +6,7 @@ import { SelectChangeEvent, Box } from "@mui/material";
 import { Country, Data } from "./react-app-env";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import LoadingOverlay from "./assets/LoadingOverlay";
+import { Analytics } from '@vercel/analytics/next';
 
 const App: React.FC = () => {
   const [data, setData] = useState<Data | null>(null);
@@ -199,7 +200,7 @@ const App: React.FC = () => {
   const loadingOverlayActive = !dataLoaded || !mapLoaded;
 
   return (
-    <div className="App" style={{height: "90vh"}}>
+    <Box className="App" style={{height: "90vh"}}>
       <Joyride
         steps={tourSteps}
         run={runTour}
@@ -218,7 +219,7 @@ const App: React.FC = () => {
         message="Loading data & map..."
       />
 
-      <div
+      <Box
         style={{
           position: "relative",
           opacity: loadingOverlayActive ? 0.5 : 1,
@@ -226,7 +227,7 @@ const App: React.FC = () => {
         }}
       >
         {/* Top-left dropdowns */}
-        <div
+        <Box
           style={{
             position: "absolute",
             top: "10px",
@@ -251,20 +252,20 @@ const App: React.FC = () => {
               />
             )}
           </Box>
-        </div>
+        </Box>
 
         {/* Error handling */}
         {error && (
-          <div className="charts" id="message">
+          <Box className="charts" id="message">
             {`Error fetching data: ${error}`}
-          </div>
+          </Box>
         )}
 
         {/* First-time loading message */}
         {!data && !dataLoaded && (
-          <div className="charts" id="message">
+          <Box className="charts" id="message">
             Loading data for the first time. This might take a while!
-          </div>
+          </Box>
         )}
 
         {/* ChartList once data is ready */}
@@ -279,8 +280,9 @@ const App: React.FC = () => {
             onMapLoadEnd={() => setMapLoaded(true)}
           />
         )}
-      </div>
-    </div>
+      </Box>
+      <Analytics />
+    </Box>
   );
 };
 
