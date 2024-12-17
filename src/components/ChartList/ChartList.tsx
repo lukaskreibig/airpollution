@@ -9,7 +9,7 @@ type Props = {
   countriesList: Country[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
-  onMapLoadEnd?: () => void; 
+  onMapLoadEnd?: () => void;
 };
 
 const ChartList: React.FC<Props> = ({
@@ -24,7 +24,7 @@ const ChartList: React.FC<Props> = ({
   if (!locations.length) {
     return (
       <div className="charts" id="message">
-        No data found. There might be no up-to-date data from the selected country.
+        No data found. Possibly no up-to-date data for this country.
       </div>
     );
   }
