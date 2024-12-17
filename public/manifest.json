@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Map The Air",
+  "name": "Map The Air - Real Time Air Data",
   "icons": [
     {
       "src": "favicon.ico",
