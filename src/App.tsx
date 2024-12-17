@@ -6,7 +6,7 @@ import { SelectChangeEvent, Box } from "@mui/material";
 import { Country, Data } from "./react-app-env";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import LoadingOverlay from "./assets/LoadingOverlay";
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<Data | null>(null);
@@ -200,7 +200,7 @@ const App: React.FC = () => {
   const loadingOverlayActive = !dataLoaded || !mapLoaded;
 
   return (
-    <Box className="App" style={{height: "90vh"}}>
+    <div className="App" style={{height: "90vh"}}>
       <Joyride
         steps={tourSteps}
         run={runTour}
@@ -282,7 +282,7 @@ const App: React.FC = () => {
         )}
       </Box>
       <Analytics />
-    </Box>
+    </div>
   );
 };
 
