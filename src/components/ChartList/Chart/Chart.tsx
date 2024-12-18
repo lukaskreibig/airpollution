@@ -1,5 +1,3 @@
-// Chart.tsx
-
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Plot from "react-plotly.js";
 import mapboxgl, { GeoJSONSource } from "mapbox-gl";
@@ -37,6 +35,7 @@ import {
   computeOverallAqi,      // Importiert aus ChartFunction.ts
   ProcessedLocation,
 } from "./ChartFunction";
+import Logo from "./Logo";
 
 /**
  * Funktion zur Bestimmung der AQI-Farbe basierend auf dem Wert.
@@ -231,41 +230,50 @@ const Chart: React.FC<Props> = ({
     const results = locs.map((loc) => {
       if (!loc.coordinates) return null;
       if (!loc.measurements || loc.measurements.length === 0) return null;
-
+  
       const paramObj: Record<string, number> = {};
       let timestamp = "";
-
+  
       loc.measurements.forEach((m) => {
         const p = m.parameter?.toLowerCase() || "";
         if (!isValidMeasurement(p, m.value)) return; // Schließt ungültige aus
-
+  
         const conv = truncateAndConvert(p, m.value);
         if (!timestamp && m.lastUpdated) {
           timestamp = formatDate(m.lastUpdated);
         }
         paramObj[p] = conv;
       });
-
+  
       if (Object.keys(paramObj).length === 0) {
         return null; // Schließt Standort aus, wenn keine gültigen Parameter vorhanden sind
       }
-
+  
       // Berechnung des gesamten AQI
       const overallAQI = computeOverallAqi(paramObj);
+  
+      // **Neue Bedingung: Ausschluss von AQI <= 0**
+      if (overallAQI <= 0) {
+        return null; // Schließt Standorte mit AQI 0 oder weniger aus
+      }
 
+      if (Object.keys(paramObj).length < 2) {
+        return null; // Schließt Standorte mit weniger als zwei Schadstoffen aus
+      }
+  
       // Erstellung der Popup-HTML
       let html = `<div style="font-size:14px;line-height:1.4;">`;
       html += `<strong>${loc.location}</strong><br/>`;
       if (loc.city) html += `Stadt: ${loc.city}<br/>`;
       html += `Gesamt-AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? "?" : overallAQI}</span><br/>`;
-
+  
       for (const [p, val] of Object.entries(paramObj)) {
         const subAqi = computeAqiForPollutant(p, val);
         const color = aqiColor(subAqi);
         html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(p)}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? "?" : subAqi})</span><br/>`;
       }
       html += `</div>`;
-
+  
       return {
         name: typeof loc.location === "string" ? loc.location : "Unbekannt",
         city: typeof loc.city === "string" ? loc.city : undefined,
@@ -276,9 +284,10 @@ const Chart: React.FC<Props> = ({
         popupHTML: html,
       };
     });
-
+  
     return results.filter(r=>r!==null) as ProcessedLocation[];
   }, [computeAqiForPollutant]);
+  
 
   /**
    * Erstellt GeoJSON-Daten für Mapbox.
@@ -601,7 +610,7 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Umschaltet die Sichtbarkeit der Sidebar.
+   * Sichtbarkeit der Sidebar
    */
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
@@ -634,11 +643,8 @@ const Chart: React.FC<Props> = ({
         open={showSidebar}
         sx={{ "& .MuiDrawer-paper": { width: 300, boxSizing: "border-box" } }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", p: 1, justifyContent: "space-between" }}>
-          <Typography variant="h6">Städte</Typography>
-          <IconButton size="medium" onClick={toggleSidebar} className="close-list">
-            <CloseCircleOutlined />
-          </IconButton>
+        <Box sx={{ display: "flex", alignItems: "center", p: 1, pt: 2, alignSelf: "center" }}>
+       <Logo />
         </Box>
 
         <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
@@ -673,6 +679,10 @@ const Chart: React.FC<Props> = ({
             >
               {sortDirection === "asc" ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
             </IconButton>
+
+          <IconButton size="medium" onClick={toggleSidebar} className="close-list">
+            <CloseCircleOutlined />
+          </IconButton>
           </Box>
 
           {/* Stadtliste */}
@@ -699,7 +709,7 @@ const Chart: React.FC<Props> = ({
 
               return (
                 <ListItem
-                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}`} // Sicherstellen, dass der Schlüssel eindeutig ist
+                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}`}
                   button
                   onMouseEnter={() => handleCityMouseEnter(ploc)}
                   onMouseLeave={handleCityMouseLeave}
