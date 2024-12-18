@@ -46,91 +46,93 @@ const App: React.FC = () => {
   const baseUrl = "https://airpollution-mocha.vercel.app/api/fetchData";
 
     // Joyride steps
-    const defineTourSteps = (): Step[] => [
-      // Introduction Step
-      {
-        target: ".map-area",
-        content:
-          "Welcome to the Air Quality Dashboard!\n\nAt the moment this isMonitor real-time air pollution data from cities worldwide, powered by OpenAQ's live API. Explore interactive maps and charts to gain insights into air quality trends. Let's take a quick tour to discover all the features!",
-        placement: "center",
-        title: "Welcome!",
-        disableBeacon: true,
-        spotlightClicks: true,
-      },
-      {
-        target: ".average-plot",
-        content: "Average Plot",
-        placement: "bottom",
-        title: "Welcome!",
-        disableBeacon: true,
-        spotlightClicks: true,
-      },
-      {
-        target: ".chart-dropdown",
-        content:
-          "Choose the chart type that best suits the insights you want to explore. Different charts offer various perspectives on air quality data.",
-        placement: "bottom",
-        title: "Chart Selection",
-        disableBeacon: true,
-        spotlightClicks: true,
-      },
-      {
-        target: ".country-dropdown",
-        content:
-          "Select a country to focus the air quality data analysis. This filter helps you view pollution levels specific to your region of interest.",
-        placement: "bottom",
-        title: "Country Selection",
-        spotlightClicks: true,
-      },
-      {
-        target: ".sidebar-toggle-button",
-        content:
-          "Click here to open the sidebar. Use it to search for specific cities and sort the list based on your preferences.",
-        placement: "right",
-        title: "Sidebar Toggle",
-        spotlightClicks: true,
-      },
-      {
-        target: ".search-field",
-        content:
-          "Use this search bar to quickly locate specific cities or locations within the selected country.",
-        placement: "bottom",
-        title: "Search Function",
-        spotlightClicks: true,
-      },
-      {
-        target: ".choose-sort",
-        content:
-          "Sort the city list by Name, PM2.5, or PM10 levels to organize the data according to your analysis needs.",
-        placement: "bottom",
-        title: "Sort Function",
-        spotlightClicks: true,
-      },
-      {
-        target: ".sort-select",
-        content:
-          "Click here to switch between ascending and descending order, refining how your sorted data is displayed.",
-        placement: "bottom",
-        title: "Sort Direction",
-        spotlightClicks: true,
-      },
-      {
-        target: ".close-list",
-        content:
-          "Click here to close the sidebar and view the full map.",
-        placement: "bottom",
-        title: "Close Sidebar",
-        spotlightClicks: true,
-      },
-      {
-        target: ".map-area",
-        content:
-          "Hover over the map points to see detailed air quality information for each location.",
-        placement: "center",
-        title: "Interactive Map Points",
-        spotlightClicks: true,
-      },
-    ];
+const defineTourSteps = (): Step[] => [
+  // Introduction Step
+  {
+    target: ".map-area",
+    content:
+      "Welcome to MapTheAir!\n\nThis application monitors real-time air pollution data from cities worldwide, powered by OpenAQ's live API. Explore interactive maps and charts to gain insights into air quality trends. Let's take a quick tour to discover all the features!",
+    placement: "center",
+    title: "Welcome!",
+    disableBeacon: true,
+    spotlightClicks: true,
+  },
+  {
+    target: ".average-plot",
+    content:
+      "This is the Average Plot, which displays the average AQI values over a specific period. Use this chart to identify general trends in air quality.",
+    placement: "bottom",
+    title: "Average Plot",
+    disableBeacon: true,
+    spotlightClicks: true,
+  },
+  {
+    target: ".chart-dropdown",
+    content:
+      "Choose the chart type that best suits the insights you want to explore. Different chart types offer various perspectives on air quality data.",
+    placement: "bottom",
+    title: "Chart Selection",
+    disableBeacon: true,
+    spotlightClicks: true,
+  },
+  {
+    target: ".country-dropdown",
+    content:
+      "Select a country to focus the air quality data analysis. This filter helps you view pollution levels specific to your region of interest.",
+    placement: "bottom",
+    title: "Country Selection",
+    spotlightClicks: true,
+  },
+  {
+    target: ".sidebar-toggle-button",
+    content:
+      "Click here to open the sidebar. Use it to search for specific cities and sort the list based on your preferences.",
+    placement: "right",
+    title: "Sidebar Toggle",
+    spotlightClicks: true,
+  },
+  {
+    target: ".search-field",
+    content:
+      "Use this search bar to quickly locate specific cities or locations within the selected country.",
+    placement: "bottom",
+    title: "Search Function",
+    spotlightClicks: true,
+  },
+  {
+    target: ".choose-sort",
+    content:
+      "Sort the city list by Name, PM2.5, or PM10 levels to organize the data according to your analysis needs.",
+    placement: "bottom",
+    title: "Sort Options",
+    spotlightClicks: true,
+  },
+  {
+    target: ".sort-select",
+    content:
+      "Click here to switch between ascending and descending order, refining how your sorted data is displayed.",
+    placement: "bottom",
+    title: "Sort Direction",
+    spotlightClicks: true,
+  },
+  {
+    target: ".close-list",
+    content:
+      "Click here to close the sidebar and view the full map.",
+    placement: "bottom",
+    title: "Close Sidebar",
+    spotlightClicks: true,
+  },
+  {
+    target: ".map-area",
+    content:
+      "Hover over the map points to see detailed air quality information for each location.",
+    placement: "center",
+    title: "Interactive Map Points",
+    spotlightClicks: true,
+  },
+];
+
 
   // Async fetch data
   const getData = useCallback(async () => {
