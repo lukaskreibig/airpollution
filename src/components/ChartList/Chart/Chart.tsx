@@ -667,8 +667,11 @@ const Chart: React.FC<Props> = ({
               >
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="aqi">AQI</MenuItem>
-                <MenuItem value="pm25">PM2.5</MenuItem>
-                <MenuItem value="pm10">PM10</MenuItem>
+                <MenuItem value="pm25">PM<sub>2.5</sub></MenuItem>
+                <MenuItem value="pm10">PM<sub>10</sub></MenuItem>
+                <MenuItem value="so2">SO<sub>2</sub></MenuItem>
+                <MenuItem value="no2">NO<sub>2</sub></MenuItem>
+                <MenuItem value="co">CO</MenuItem>
               </Select>
             </FormControl>
             <IconButton

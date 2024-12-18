@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [chart, setChart] = useState<string>("3"); // default map
   const [country, setCountry] = useState<string>("50"); // '50' might be Germany
 
-  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+  const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
   // Joyride states
   const [runTour, setRunTour] = useState<boolean>(false);
