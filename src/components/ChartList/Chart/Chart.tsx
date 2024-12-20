@@ -583,7 +583,7 @@ const Chart: React.FC<Props> = ({
     const miniLayout: Partial<Plotly.Layout> = {
       width: 280,
       height: 240,
-      title: `Durchschnitt in ${activeCountryName}`,
+      title: `Average in ${activeCountryName}`,
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
       yaxis: { range: [0, upper], title: "AQI" },
@@ -650,7 +650,7 @@ const Chart: React.FC<Props> = ({
         <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1, flex: 1 }}>
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1, alignItems: "center" }}>
             <TextField
-              label="Suche"
+              label="Search"
               variant="outlined"
               size="small"
               fullWidth
@@ -659,11 +659,11 @@ const Chart: React.FC<Props> = ({
               className="search-field"
             />
             <FormControl size="small" variant="outlined" className="choose-sort" sx={{ minWidth: 100 }}>
-              <InputLabel>Sortieren</InputLabel>
+              <InputLabel>Sort</InputLabel>
               <Select
-                label="Sortieren"
+                label="Sort"
                 value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as "name" | "aqi" | "pm25" | "pm10")}
+                onChange={(e) => setSortMode(e.target.value as "name" | "aqi" | "pm25" | "pm10" | "so2" | "no2" | "co")}
               >
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="aqi">AQI</MenuItem>
@@ -734,7 +734,7 @@ const Chart: React.FC<Props> = ({
                         {paramLines}
                         {ploc.timestamp && (
                           <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                            Letzte Aktualisierung: {ploc.timestamp}
+                            Last Update: {ploc.timestamp}
                           </Typography>
                         )}
                       </>
@@ -774,10 +774,10 @@ const Chart: React.FC<Props> = ({
         <Box sx={{ flex: 1, height: "100%" }}>
           {chart === "3" ? (
             <>
-              {/* Kartencontainer */}
+              {/* Card Container */}
               <div ref={mapContainerRef} className="map-area" style={{ width: "100%", height: "100%" }} />
 
-              {/* AQI-Legende */}
+              {/* AQI-Legend */}
               <Box
                 sx={{
                   position: "absolute",
@@ -795,27 +795,27 @@ const Chart: React.FC<Props> = ({
                 }}
               >
                 <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                  AQI-Legende
+                  AQI-Legend
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: "50%", mr: 1, background: "#2a9d8f" }} />
-                  <Typography variant="body2">0-50 (Gut)</Typography>
+                  <Typography variant="body2">0-50 (Good)</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: "50%", mr: 1, background: "#e9c46a" }} />
-                  <Typography variant="body2">51-100 (Mäßig)</Typography>
+                  <Typography variant="body2">51-100 (Moderate)</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: "50%", mr: 1, background: "#f4a261" }} />
-                  <Typography variant="body2">101-150 (Ungesund)</Typography>
+                  <Typography variant="body2">101-150 (Unhealthy)</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: "50%", mr: 1, background: "#d62828" }} />
-                  <Typography variant="body2">151-200 (Sehr Ungesund)</Typography>
+                  <Typography variant="body2">151-200 (Very Unhealthy)</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: "50%", mr: 1, background: "#9d0208" }} />
-                  <Typography variant="body2">201+ (Gefährlich)</Typography>
+                  <Typography variant="body2">201+ (Hazardous)</Typography>
                 </Box>
               </Box>
 
@@ -879,7 +879,7 @@ const Chart: React.FC<Props> = ({
             </Box>
           ) : (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-              <Typography variant="h6">Keine Daten verfügbar zur Anzeige.</Typography>
+              <Typography variant="h6">No data available to display.</Typography>
             </Box>
           )}
         </Box>
