@@ -265,7 +265,7 @@ const Chart: React.FC<Props> = ({
       let html = `<div style="font-size:14px;line-height:1.4;">`;
       html += `<strong>${loc.location}</strong><br/>`;
       if (loc.city) html += `Stadt: ${loc.city}<br/>`;
-      html += `Gesamt-AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? "?" : overallAQI}</span><br/>`;
+      html += `Overall AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? "?" : overallAQI}</span><br/>`;
   
       for (const [p, val] of Object.entries(paramObj)) {
         const subAqi = computeAqiForPollutant(p, val);
@@ -275,8 +275,8 @@ const Chart: React.FC<Props> = ({
       html += `</div>`;
   
       return {
-        name: typeof loc.location === "string" ? loc.location : "Unbekannt",
-        city: typeof loc.city === "string" ? loc.city : undefined,
+        name: typeof loc.location === "string" ? loc.location : "Unknown",
+        city: typeof loc.city === "string" ? loc.city : "Unknown",
         lat: loc.coordinates.latitude,
         lon: loc.coordinates.longitude,
         parameters: paramObj,
@@ -583,7 +583,7 @@ const Chart: React.FC<Props> = ({
     const miniLayout: Partial<Plotly.Layout> = {
       width: 280,
       height: 240,
-      title: `Average in ${activeCountryName}`,
+      title: `Avg AQI in ${activeCountryName}`,
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
       yaxis: { range: [0, upper], title: "AQI" },
