@@ -1,69 +1,49 @@
-import { SelectChangeEvent } from "@mui/material";
-import { render, screen } from "@testing-library/react";
-import Dropdown from "../Dropdown";
+import { render, screen, fireEvent, within } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import Dropdown from '../Dropdown';
 
-const handleSelect = (event: SelectChangeEvent) => {
-  if (event.target.name === "Country") {
-    (event.target.value as string);};}
+describe('Dropdown Component', () => {
+  it('renders chart dropdown and updates on selection', async () => {
+    const handleSelect = jest.fn();
+    render(<Dropdown handleSelect={handleSelect} dataValue="3" dropdown="Chart" />);
 
+    const chartSelect = screen.getByLabelText(/Chart/i);
+    expect(chartSelect).toBeInTheDocument();
 
-describe("Dropdown", () => {
-  test("Testing Dropdown Time", async () => {
-    render(
-      <Dropdown handleSelect={handleSelect} dataValue={"day"} dropdown={"Time"} />
-    );
-    const TimeDropdown = screen.getByText(/Today/i);
-    expect(TimeDropdown).toBeInTheDocument();
+    fireEvent.mouseDown(chartSelect);
+
+    // Wait for menu items to appear and choose the correct option
+    const scatterOption = await screen.findByRole('option', { name: /Scatter Chart/i });
+    fireEvent.click(scatterOption);
+
+    expect(handleSelect).toHaveBeenCalled();
   });
 
-  describe("Dropdown Charts", () => {
-    test("Testing Dropdown Chart 1", async () => {
-      render(
-        <Dropdown handleSelect={handleSelect} dataValue={"1"} dropdown={"Chart"} />
-      );
-      const ChartDropdown = screen.getByText(/Detailed/i);
-      expect(ChartDropdown).toBeInTheDocument();
-    });
+  it('renders country dropdown with countries', async () => {
+    const handleSelect = jest.fn();
+    const countries = [{
+      id: 50, 
+      name: 'Germany', 
+      cities: 10, 
+      code: 'DE', 
+      count: 100, 
+      firstUpdated: '', 
+      lastUpdated: '', 
+      locations: 5, 
+      parameters: [], 
+      coordinates: { lat: 51.0, lon: 9.0 }, 
+      sources: 1
+    }];
 
-    test("Testing Dropdown Chart 2", async () => {
-      render(
-        <Dropdown handleSelect={handleSelect} dataValue={"2"} dropdown={"Chart"} />
-      );
-      const ChartDropdown = screen.getByText(/Average/i);
-      expect(ChartDropdown).toBeInTheDocument();
-    });
+    render(<Dropdown handleSelect={handleSelect} dataValue="50" dropdown="Country" countries={countries} />);
 
-    test("Testing Dropdown Chart 3", async () => {
-      render(
-        <Dropdown handleSelect={handleSelect} dataValue={"3"} dropdown={"Chart"} />
-      );
-      const ChartDropdown = screen.getByText(/Latest/i);
-      expect(ChartDropdown).toBeInTheDocument();
-    });
+    const countrySelect = screen.getByLabelText(/Country/i);
+    expect(countrySelect).toBeInTheDocument();
+    fireEvent.mouseDown(countrySelect);
+
+    // Instead of findByText, let's find the listbox and then find the option inside it.
+    const listbox = await screen.findByRole('listbox', { name: /Country/i });
+    const germanyOption = within(listbox).getByRole('option', { name: /Germany/i });
+    expect(germanyOption).toBeInTheDocument();
   });
-
-  // test("Testing Dropdown Country", async () => {
-  //   render(
-  //     <Dropdown
-  //       handleSelect={handleSelect}
-  //       dataValue={"DE"}
-  //       dropdown={"Country"}
-  //       countries={[{
-  //         cities: "Berlin",
-  //         code: "DE",
-  //         count: 10,
-  //         firstUpdated: '12-10-2001',
-  //         localUpdated: '12-10-2001',
-  //         locations: 12,
-  //         name: "Germany",
-  //         parameters: ["test"],
-  //         sources: 12
-  //       },]}
-  //     />
-  //   );
-  //   const CountryDropdown = screen.getByText(/Germany/i);
-  //   expect(CountryDropdown).toBeInTheDocument();
-  // });
 });
-
-

@@ -22,7 +22,6 @@ const modalStyle = {
 };
 
 export default function LegalModal({ open, onClose }: LegalModalProps) {
-    console.log("LegalModal Rendered. Open:", open);
 
   return (
     <Modal open={open} onClose={onClose}>

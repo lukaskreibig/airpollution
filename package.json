@@ -8,10 +8,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^5.16.12",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^13.2.0",
+    "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.5.0",
     "@types/node": "^16.11.33",
     "@types/react": "^18.3.14",
     "@types/react-dom": "^18.0.3",
@@ -58,10 +56,14 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
+    "@testing-library/jest-dom": "^6.6.3",
     "@types/d3-scale-chromatic": "^3.0.3",
+    "@types/jest": "^29.5.14",
     "@types/lodash.debounce": "^4.0.9",
     "@types/plotly.js": "^1.54.20",
     "@types/react-plotly.js": "^2.5.0",
+    "@types/testing-library__react": "^10.2.0",
+    "jest-canvas-mock": "^2.5.2",
     "msw": "^2.6.7"
   }
 }
