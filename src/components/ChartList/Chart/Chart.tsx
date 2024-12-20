@@ -262,17 +262,22 @@ const Chart: React.FC<Props> = ({
       }
   
       // Erstellung der Popup-HTML
-      let html = `<div style="font-size:14px;line-height:1.4;">`;
-      html += `<strong>${loc.location}</strong><br/>`;
-      if (loc.city) html += `Stadt: ${loc.city}<br/>`;
-      html += `Overall AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? "?" : overallAQI}</span><br/>`;
-  
-      for (const [p, val] of Object.entries(paramObj)) {
-        const subAqi = computeAqiForPollutant(p, val);
-        const color = aqiColor(subAqi);
-        html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(p)}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? "?" : subAqi})</span><br/>`;
-      }
-      html += `</div>`;
+let html = `<div style="font-size:14px;line-height:1.4;">`;
+html += `<strong>${loc.location}</strong><br/>`;
+if (loc.city) html += `City: ${loc.city}<br/>`;
+html += `Overall AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? "?" : overallAQI}</span><br/>`;
+
+for (const [p, val] of Object.entries(paramObj)) {
+  const subAqi = computeAqiForPollutant(p, val);
+  const color = aqiColor(subAqi);
+  html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(p)}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? "?" : subAqi})</span><br/>`;
+}
+// Add "Last Updated" with smaller font size
+if (timestamp) {
+  html += `<span style="font-size:11px; color:gray;">Last Update: <span style="font-weight:bold;">${timestamp}</span></span><br/>`;
+}
+html += `</div>`;
+
   
       return {
         name: typeof loc.location === "string" ? loc.location : "Unknown",
@@ -345,35 +350,36 @@ const Chart: React.FC<Props> = ({
   /**
    * Filtert und sortiert Standorte für die Sidebar-Liste.
    */
-  const displayedLocs = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const filtered = processedLocs.filter((ploc) => {
-      if (!q) return true;
-      const nameMatch = ploc.name.toLowerCase().includes(q);
-      const cityMatch = ploc.city?.toLowerCase().includes(q) ?? false;
-      return nameMatch || cityMatch;
-    });
+ const displayedLocs = useMemo(() => {
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = processedLocs.filter((ploc) => {
+    if (!q) return true;
+    const nameMatch = ploc.name.toLowerCase().includes(q);
+    const cityMatch = ploc.city?.toLowerCase().includes(q) ?? false;
+    return nameMatch || cityMatch;
+  });
 
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortMode === "aqi") {
-        const aVal = computeOverallAqi(a.parameters);
-        const bVal = computeOverallAqi(b.parameters);
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
-      } else if (sortMode === "pm25") {
-        const aVal = a.parameters["pm25"] ?? 0;
-        const bVal = b.parameters["pm25"] ?? 0;
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
-      } else if (sortMode === "pm10") {
-        const aVal = a.parameters["pm10"] ?? 0;
-        const bVal = b.parameters["pm10"] ?? 0;
-        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
-      }
-      // Standardmäßig nach Name sortieren
-      const comparison = a.name.localeCompare(b.name);
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-    return sorted;
-  }, [processedLocs, searchQuery, sortMode, sortDirection]);
+  const sorted = [...filtered].sort((a, b) => {
+    const getValue = (loc: ProcessedLocation, param: keyof typeof loc.parameters): number => 
+      loc.parameters[param] ?? -Infinity;
+
+    if (sortMode === "aqi") {
+      const aVal = computeOverallAqi(a.parameters);
+      const bVal = computeOverallAqi(b.parameters);
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+    } else if (ALLOWED_PARAMS.has(sortMode)) {
+      const aVal = getValue(a, sortMode as keyof typeof a.parameters);
+      const bVal = getValue(b, sortMode as keyof typeof b.parameters);
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+    }
+    const comparison = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  return sorted;
+}, [processedLocs, searchQuery, sortMode, sortDirection]);
+
+  
 
   /**
    * Passt die Kartenansicht basierend auf den verarbeiteten Standorten an.
@@ -586,7 +592,11 @@ const Chart: React.FC<Props> = ({
       title: `Avg AQI in ${activeCountryName}`,
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
-      yaxis: { range: [0, upper], title: "AQI" },
+      yaxis: { range: [0, upper], title: "" },
+      // Use responsive sizing
+      font: {
+        size: (window.innerWidth < 600) ? 10 : 12,
+      },
     };
     setMiniChartData(groupedData);
     setMiniChartLayout(miniLayout);
@@ -640,8 +650,13 @@ const Chart: React.FC<Props> = ({
       <Drawer
         variant="persistent"
         anchor="left"
-        open={showSidebar}
-        sx={{ "& .MuiDrawer-paper": { width: 300, boxSizing: "border-box" } }}
+        open={showSidebar && chart === "3"}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: { xs: '100%', sm: 300 },
+            boxSizing: "border-box",
+          },
+        }}
       >
         <Box sx={{ display: "flex", alignItems: "center", p: 1, pt: 2, alignSelf: "center" }}>
        <Logo />
@@ -712,7 +727,7 @@ const Chart: React.FC<Props> = ({
 
               return (
                 <ListItem
-                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}`}
+                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}-${Math.random()}`}
                   button
                   onMouseEnter={() => handleCityMouseEnter(ploc)}
                   onMouseLeave={handleCityMouseLeave}
@@ -734,7 +749,7 @@ const Chart: React.FC<Props> = ({
                         {paramLines}
                         {ploc.timestamp && (
                           <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                            Last Update: {ploc.timestamp}
+                            Last Sensor Update: {ploc.timestamp}
                           </Typography>
                         )}
                       </>
@@ -746,7 +761,7 @@ const Chart: React.FC<Props> = ({
           </List>
         </Box>
       </Drawer>
-      {showSidebar && <Box sx={{ width: 300 }} />}
+      {showSidebar && chart === "3" && <Box sx={{ width: 300 }} />}
 
       {/* Haupt-Chart-Bereich */}
       <Box className="charts" sx={{ height: "95vh", display: "flex", flexDirection: "row" }}>
@@ -779,21 +794,23 @@ const Chart: React.FC<Props> = ({
 
               {/* AQI-Legend */}
               <Box
-                sx={{
-                  position: "absolute",
-                  bottom: 10,
-                  left: 10,
-                  backgroundColor: "rgba(255,255,255,0.8)",
-                  padding: "5px 10px",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontFamily: "sans-serif",
-                  zIndex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                }}
-              >
+              sx={{
+                position: "absolute",
+                bottom: 22,
+                left: showSidebar && chart === "3" ? 310 : 10, // shift right by 300px + some padding
+                backgroundColor: "rgba(255,255,255,0.8)",
+                padding: "5px 10px",
+                borderRadius: "4px",
+                borderBottomLeftRadius: "0px",
+                fontSize: "14px",
+                fontFamily: "sans-serif",
+                zIndex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                transition: "left 0.3s ease-in-out", // smooth transition when sidebar toggles
+              }}
+            >
                 <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
                   AQI-Legend
                 </Typography>

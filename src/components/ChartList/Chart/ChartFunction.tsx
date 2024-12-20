@@ -62,40 +62,56 @@ const AQI_BREAKPOINTS: Record<
   ],
 };
 
-/**
- * Berechnet den AQI für einen einzelnen Schadstoff basierend auf den offiziellen Breakpoints.
- * @param param - Der Schadstoffparameter (z.B. 'pm25', 'o3').
- * @param value - Der gemessene Wert des Schadstoffs.
- * @returns Der berechnete AQI-Wert oder -1 bei ungültigen Eingaben.
- */
-export function computeSubAqi(param: string, value: number): number {
+function truncateValue(param: string, value: number): number {
+  const p = param.toLowerCase();
+  if (p === "o3") return Math.floor(value * 1000) / 1000; // truncate to 3 decimals
+  if (p === "pm25") return Math.floor(value * 10) / 10; // 1 decimal
+  if (p === "pm10") return Math.floor(value); // integer
+  if (p === "co") return Math.floor(value * 10) / 10; // 1 decimal
+  if (p === "so2" || p === "no2") return Math.floor(value); // integer
+  return value;
+}
+
+export function computeSubAqi(param: string, val: number): number {
   const pollutant = param.toLowerCase();
   const breakpoints = AQI_BREAKPOINTS[pollutant];
-  if (!breakpoints) return -1; // Unbekannter Schadstoff
+  if (!breakpoints) return -1;
+  
+  // Truncate value according to rules
+  const c = truncateValue(pollutant, val);
 
+  // Find the breakpoint interval
+  let chosenBp = null;
   for (const bp of breakpoints) {
-    if (value >= bp.cLow && value <= bp.cHigh) {
-      const { cLow, cHigh, iLow, iHigh } = bp;
-      const aqi = ((iHigh - iLow) / (cHigh - cLow)) * (value - cLow) + iLow;
-      return Math.round(aqi);
+    if (c >= bp.cLow && c <= bp.cHigh) {
+      chosenBp = bp;
+      break;
     }
   }
 
-  // Werte über den höchsten Breakpoint
-  const lastBp = breakpoints[breakpoints.length - 1];
-  if (value > lastBp.cHigh) {
-    return 500;
+  // If above last breakpoint
+  if (!chosenBp) {
+    const lastBp = breakpoints[breakpoints.length - 1];
+    if (c > lastBp.cHigh) {
+      return 500; // max AQI
+    }
+    return -1;
   }
 
-  return -1; // Ungültiger Wert
+  const { cLow, cHigh, iLow, iHigh } = chosenBp;
+  
+  // Equation 1:
+  // Ip = (IHi - ILo)/(CHi - CLo) * (Cp - CLo) + ILo
+  const Ip = ((iHigh - iLow) / (cHigh - cLow)) * (c - cLow) + iLow;
+  
+  // Round to nearest integer
+  return Math.round(Ip);
 }
 
-/**
- * Berechnet den AQI für einen einzelnen Schadstoff.
- */
 export function computeAqiForPollutant(param: string, val: number): number {
   return computeSubAqi(param, val);
 }
+
 
 /**
  * Berechnet den gesamten AQI als das Maximum der Teil-AQI-Werte.
