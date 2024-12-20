@@ -10,7 +10,7 @@ describe('Chart Component', () => {
       city: 'Test City',
       country: 'US',
       coordinates: { latitude: 40.0, longitude: -74.0 },
-      measurements: [] // no measurements
+      measurements: []
     }];
 
     render(
