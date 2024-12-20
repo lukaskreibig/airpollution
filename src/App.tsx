@@ -51,7 +51,7 @@ const defineTourSteps = (): Step[] => [
   {
     target: ".map-area",
     content:
-      "Welcome to MapTheAir!\n\nThis application monitors real-time air pollution data from cities worldwide. Explore interactive maps and charts to gain insights into air quality trends. Let's take a quick tour to discover all the features!",
+      "Welcome to MapTheAir (Beta)!\n\nThis application monitors real-time air pollution data from cities worldwide. Explore interactive maps and charts to gain insights into air quality trends. Please note: MapTheAir is currently in beta, and some features may be under development or subject to change. Let's take a quick tour to discover all the features!",
     placement: "center",
     title: "Welcome!",
     disableBeacon: true,
