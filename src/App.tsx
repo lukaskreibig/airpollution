@@ -145,7 +145,7 @@ const defineTourSteps = (): Step[] => [
         fetch(
           `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=2000`
         ),
-        fetch(`${baseUrl}?path=/v3/countries`),
+        fetch(`${baseUrl}?path=/v3/countries?limit=200`),
       ]);
 
       if (!latestFetch.ok || !countriesFetch.ok) {
