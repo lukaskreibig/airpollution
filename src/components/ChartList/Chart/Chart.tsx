@@ -30,7 +30,7 @@ import {
   calculateBigChart,
   calculateBigLayout,
   calculateAverageChart,
-  calculateAverageLayout,
+  // calculateAverageLayout,
   computeAqiForPollutant,
   computeOverallAqi,
   ProcessedLocation,
@@ -291,7 +291,7 @@ html += `</div>`;
     });
   
     return results.filter(r=>r!==null) as ProcessedLocation[];
-  }, [computeAqiForPollutant]);
+  }, []);
   
 
   /**
