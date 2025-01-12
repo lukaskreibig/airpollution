@@ -1,5 +1,5 @@
-import { Layout, PlotData } from "plotly.js";
-import { LatestResult } from "../../../react-app-env";
+import { Layout, PlotData } from 'plotly.js';
+import { LatestResult } from '../../../react-app-env';
 
 /**
  * **AQI Breakpoints basierend auf den EPA-Richtlinien**
@@ -26,12 +26,13 @@ const AQI_BREAKPOINTS: Record<
     { cLow: 425, cHigh: 504, iLow: 301, iHigh: 400 },
     { cLow: 505, cHigh: 604, iLow: 401, iHigh: 500 },
   ],
-  o3: [ // o3_8h in der ChartFunction
+  o3: [
+    // o3_8h in der ChartFunction
     { cLow: 0.0, cHigh: 0.054, iLow: 0, iHigh: 50 },
-    { cLow: 0.055, cHigh: 0.070, iLow: 51, iHigh: 100 },
+    { cLow: 0.055, cHigh: 0.07, iLow: 51, iHigh: 100 },
     { cLow: 0.071, cHigh: 0.085, iLow: 101, iHigh: 150 },
     { cLow: 0.086, cHigh: 0.105, iLow: 151, iHigh: 200 },
-    { cLow: 0.106, cHigh: 0.200, iLow: 201, iHigh: 300 },
+    { cLow: 0.106, cHigh: 0.2, iLow: 201, iHigh: 300 },
   ],
   co: [
     { cLow: 0.0, cHigh: 4.4, iLow: 0, iHigh: 50 },
@@ -64,11 +65,11 @@ const AQI_BREAKPOINTS: Record<
 
 function truncateValue(param: string, value: number): number {
   const p = param.toLowerCase();
-  if (p === "o3") return Math.floor(value * 1000) / 1000; // truncate to 3 decimals
-  if (p === "pm25") return Math.floor(value * 10) / 10; // 1 decimal
-  if (p === "pm10") return Math.floor(value); // integer
-  if (p === "co") return Math.floor(value * 10) / 10; // 1 decimal
-  if (p === "so2" || p === "no2") return Math.floor(value); // integer
+  if (p === 'o3') return Math.floor(value * 1000) / 1000; // truncate to 3 decimals
+  if (p === 'pm25') return Math.floor(value * 10) / 10; // 1 decimal
+  if (p === 'pm10') return Math.floor(value); // integer
+  if (p === 'co') return Math.floor(value * 10) / 10; // 1 decimal
+  if (p === 'so2' || p === 'no2') return Math.floor(value); // integer
   return value;
 }
 
@@ -76,7 +77,7 @@ export function computeSubAqi(param: string, val: number): number {
   const pollutant = param.toLowerCase();
   const breakpoints = AQI_BREAKPOINTS[pollutant];
   if (!breakpoints) return -1;
-  
+
   // Truncate value according to rules
   const c = truncateValue(pollutant, val);
 
@@ -99,11 +100,11 @@ export function computeSubAqi(param: string, val: number): number {
   }
 
   const { cLow, cHigh, iLow, iHigh } = chosenBp;
-  
+
   // Equation 1:
   // Ip = (IHi - ILo)/(CHi - CLo) * (Cp - CLo) + ILo
   const Ip = ((iHigh - iLow) / (cHigh - cLow)) * (c - cLow) + iLow;
-  
+
   // Round to nearest integer
   return Math.round(Ip);
 }
@@ -111,7 +112,6 @@ export function computeSubAqi(param: string, val: number): number {
 export function computeAqiForPollutant(param: string, val: number): number {
   return computeSubAqi(param, val);
 }
-
 
 /**
  * Berechnet den gesamten AQI als das Maximum der Teil-AQI-Werte.
@@ -135,27 +135,30 @@ export function computeOverallAqi(params: Record<string, number>): number {
 const WHO_PM25_GUIDELINE = 15;
 const WHO_PM10_GUIDELINE = 45;
 
-export function calculateBigChart(chart: string, locations: LatestResult[]): Partial<PlotData>[] {
+export function calculateBigChart(
+  chart: string,
+  locations: LatestResult[]
+): Partial<PlotData>[] {
   if (!locations || !locations.length) return [];
 
   const parameters = [
     {
-      name: "PM10 µg/m³",
-      value: "pm10",
+      name: 'PM10 µg/m³',
+      value: 'pm10',
       min: 0,
       max: 1500,
       guideline: WHO_PM10_GUIDELINE,
     },
     {
-      name: "PM2.5 µg/m³",
-      value: "pm25",
+      name: 'PM2.5 µg/m³',
+      value: 'pm25',
       min: 0,
       max: 800,
       guideline: WHO_PM25_GUIDELINE,
     },
   ];
 
-  const colors = ["#e9c46a", "#2a9d8f"];
+  const colors = ['#e9c46a', '#2a9d8f'];
   const traces: Partial<PlotData>[] = [];
   const xValues = locations.map((_, idx) => idx);
 
@@ -169,14 +172,18 @@ export function calculateBigChart(chart: string, locations: LatestResult[]): Par
     const hoverExceed: string[] = [];
 
     locations.forEach((loc, idx2) => {
-      const measurement = loc.measurements.find(m => m.parameter === para.value);
+      const measurement = loc.measurements.find(
+        (m) => m.parameter === para.value
+      );
       if (!measurement) return;
       if (measurement.value <= 0) return; // skip negative
       if (measurement.value >= para.min && measurement.value <= para.max) {
         const value = measurement.value;
-        const locationName = loc.location + (loc.city ? `, ${loc.city}` : "");
+        const locationName = loc.location + (loc.city ? `, ${loc.city}` : '');
         const hoverText = `${locationName}<br>${para.name}: ${value.toFixed(2)} µg/m³${
-          value > para.guideline ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)` : ""
+          value > para.guideline
+            ? ` (Exceeds WHO guideline of ${para.guideline} µg/m³)`
+            : ''
         }`;
         if (value > para.guideline) {
           xExceed.push(idx2);
@@ -192,53 +199,53 @@ export function calculateBigChart(chart: string, locations: LatestResult[]): Par
 
     if (xWithin.length > 0) {
       traces.push({
-        type: "scatter",
+        type: 'scatter',
         x: xWithin,
         y: yWithin,
-        mode: "markers",
+        mode: 'markers',
         name: `${para.name} Within Guidelines`,
         marker: {
           color: colors[index],
-          symbol: "circle",
+          symbol: 'circle',
           size: 10,
-          line: { color: "#000", width: 1 },
+          line: { color: '#000', width: 1 },
         },
         text: hoverWithin,
-        hoverinfo: "text",
+        hoverinfo: 'text',
         showlegend: true,
       });
     }
     if (xExceed.length > 0) {
       traces.push({
-        type: "scatter",
+        type: 'scatter',
         x: xExceed,
         y: yExceed,
-        mode: "markers",
+        mode: 'markers',
         name: `${para.name} Exceeds Guidelines`,
         marker: {
           color: colors[index],
-          symbol: "triangle-up",
+          symbol: 'triangle-up',
           size: 10,
-          line: { color: "#000", width: 1 },
+          line: { color: '#000', width: 1 },
         },
         text: hoverExceed,
-        hoverinfo: "text",
+        hoverinfo: 'text',
         showlegend: true,
       });
     }
     // WHO line
     traces.push({
-      type: "scatter",
+      type: 'scatter',
       x: [0, xValues.length - 1],
       y: [para.guideline, para.guideline],
-      mode: "lines",
+      mode: 'lines',
       name: `WHO Guideline (${para.name})`,
       line: {
         color: colors[index],
-        dash: "dash",
+        dash: 'dash',
         width: 2,
       },
-      hoverinfo: "none",
+      hoverinfo: 'none',
       showlegend: true,
     });
   });
@@ -262,11 +269,11 @@ export function calculateBigLayout(
       showticklabels: false,
     },
     yaxis: {
-      title: "Concentration (µg/m³)",
+      title: 'Concentration (µg/m³)',
     },
     margin: { l: 60, r: 10, t: 80, b: 40 },
-    legend: { x: 0, y: 1, font: { size: 15 }, yanchor: "top", xanchor: "left" },
-    hovermode: "closest",
+    legend: { x: 0, y: 1, font: { size: 15 }, yanchor: 'top', xanchor: 'left' },
+    hovermode: 'closest',
   };
 }
 
@@ -280,26 +287,27 @@ export interface ProcessedLocation {
   popupHTML: string;
 }
 
-const POLLUTANTS_TO_AVG = ["pm25", "pm10", "o3", "co", "so2", "no2"];
+const POLLUTANTS_TO_AVG = ['pm25', 'pm10', 'o3', 'co', 'so2', 'no2'];
 
 /**
  * Bestimmt die Farbe basierend auf dem AQI-Wert für Balkendiagramme.
  */
 function barAqiColor(aqi: number): string {
-  if (aqi < 0) return "#bfbfbf";
-  if (aqi <= 50) return "#2a9d8f";
-  if (aqi <= 100) return "#e9c46a";
-  if (aqi <= 150) return "#f4a261";
-  if (aqi <= 200) return "#d62828";
-  return "#9d0208";
+  if (aqi < 0) return '#bfbfbf';
+  if (aqi <= 50) return '#2a9d8f';
+  if (aqi <= 100) return '#e9c46a';
+  if (aqi <= 150) return '#f4a261';
+  if (aqi <= 200) return '#d62828';
+  return '#9d0208';
 }
 
 /**
  * Berechnet den Durchschnitts-AQI für die Balkendiagramme.
  */
-export function calculateAverageChart(
-  processedLocs: ProcessedLocation[]
-): { data: Partial<PlotData>[]; maxVal: number } {
+export function calculateAverageChart(processedLocs: ProcessedLocation[]): {
+  data: Partial<PlotData>[];
+  maxVal: number;
+} {
   if (!processedLocs.length) return { data: [], maxVal: 500 };
 
   let sum: Record<string, number> = {};
@@ -338,7 +346,7 @@ export function calculateAverageChart(
     if (count[p] === 0) {
       xLabels.push(p.toUpperCase());
       yValues.push(0);
-      barColors.push("#bfbfbf");
+      barColors.push('#bfbfbf');
     } else {
       const avg = sum[p] / count[p];
       xLabels.push(p.toUpperCase());
@@ -352,20 +360,20 @@ export function calculateAverageChart(
   if (overallCount > 0) {
     overallAvg = overallSum / overallCount;
   }
-  xLabels.push("Overall");
+  xLabels.push('Overall');
   const finalVal = overallAvg < 0 ? 0 : overallAvg;
   yValues.push(finalVal);
-  barColors.push(finalVal <= 0 ? "#bfbfbf" : barAqiColor(finalVal));
+  barColors.push(finalVal <= 0 ? '#bfbfbf' : barAqiColor(finalVal));
   if (finalVal > maxVal) maxVal = finalVal;
 
   const barTrace: Partial<PlotData> = {
     x: xLabels,
     y: yValues,
-    type: "bar",
+    type: 'bar',
     marker: { color: barColors },
-    text: yValues.map((v) => (v > 0 ? v.toFixed(1) : "?")),
-    textposition: "auto",
-    hoverinfo: "y",
+    text: yValues.map((v) => (v > 0 ? v.toFixed(1) : '?')),
+    textposition: 'auto',
+    hoverinfo: 'y',
   };
 
   return { data: [barTrace], maxVal };
@@ -378,9 +386,9 @@ export function calculateAverageLayout(maxVal: number): Partial<Layout> {
   return {
     width: 600,
     height: 300,
-    title: "AQI Pollutant Averages",
-    xaxis: { title: "Pollutants & Overall" },
-    yaxis: { title: "AQI", range: [0, upper] },
+    title: 'AQI Pollutant Averages',
+    xaxis: { title: 'Pollutants & Overall' },
+    yaxis: { title: 'AQI', range: [0, upper] },
     margin: { l: 40, r: 20, t: 50, b: 40 },
   };
 }

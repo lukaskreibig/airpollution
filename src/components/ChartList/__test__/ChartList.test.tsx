@@ -13,7 +13,7 @@ describe('ChartList (Unit Tests)', () => {
   it('displays "No data found..." if locations array is empty', () => {
     render(
       <ChartList
-        locations={[]}            // Empty array
+        locations={[]} // Empty array
         chart="3"
         country="50"
         countriesList={[]}
@@ -41,12 +41,14 @@ describe('ChartList (Unit Tests)', () => {
         country: 'US',
         coordinates: { latitude: 40, longitude: -74 },
         // Must have at least one valid measurement if your real code demands it
-        measurements: [{
-          parameter: 'pm25',
-          value: 15,
-          lastUpdated: '2025-01-01T12:00:00Z',
-          unit: 'µg/m³',
-        }],
+        measurements: [
+          {
+            parameter: 'pm25',
+            value: 15,
+            lastUpdated: '2025-01-01T12:00:00Z',
+            unit: 'µg/m³',
+          },
+        ],
       },
     ];
 
