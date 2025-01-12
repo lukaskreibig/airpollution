@@ -28,7 +28,7 @@ const App: React.FC = () => {
 
   // States for time, chart, country
   const [time, setTime] = useState<string>("month");
-  const [chart, setChart] = useState<string>("1"); // default map
+  const [chart, setChart] = useState<string>("2");
   const [country, setCountry] = useState<string>("50"); // Germany
 
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
