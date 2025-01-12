@@ -19,8 +19,8 @@ describe('Chart (Unit Tests)', () => {
         coordinates: { latitude: 40, longitude: -74 },
         measurements: [
           {
-            parameter: 'pm25',         // "pm25" is recognized in calculateBigChart
-            value: 25,                // > 0 => valid
+            parameter: 'pm25', // "pm25" is recognized in calculateBigChart
+            value: 25, // > 0 => valid
             lastUpdated: '2025-01-01T12:00:00Z',
             unit: 'µg/m³',
           },
@@ -29,15 +29,15 @@ describe('Chart (Unit Tests)', () => {
             value: 50,
             lastUpdated: '2025-01-01T12:00:00Z',
             unit: 'µg/m³',
-          }
-        ]
+          },
+        ],
       },
     ];
 
     render(
       <Chart
         locations={mockLocations}
-        chart="1"                  // triggers calculateBigChart
+        chart="1" // triggers calculateBigChart
         country="50"
         countriesList={[]}
         showSidebar={false}
@@ -49,6 +49,8 @@ describe('Chart (Unit Tests)', () => {
     expect(screen.getByTestId('plotly-mock')).toBeInTheDocument();
 
     // Confirm the fallback text is NOT present
-    expect(screen.queryByText(/No data available to display\./i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/No data available to display\./i)
+    ).not.toBeInTheDocument();
   });
 });

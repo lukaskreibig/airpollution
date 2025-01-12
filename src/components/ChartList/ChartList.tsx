@@ -1,6 +1,6 @@
-import React from "react";
-import { LatestResult, Country } from "../../react-app-env";
-import Chart from "./Chart/Chart";
+import React from 'react';
+import { LatestResult, Country } from '../../react-app-env';
+import Chart from './Chart/Chart';
 
 type Props = {
   locations: LatestResult[];
@@ -30,7 +30,7 @@ const ChartList: React.FC<Props> = ({
   }
 
   return (
-    <div style={{ width: "100%", height: "100%", flex: 1 }}>
+    <div style={{ width: '100%', height: '100%', flex: 1 }}>
       <Chart
         locations={locations}
         chart={chart}
