@@ -17,7 +17,7 @@ html, body, #root {
 }
 
 .charts {
-  flex: 1; /* ensures chart or map fills space */
+  flex: 1;
   display: flex;
   justify-content: center;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
@@ -93,7 +93,7 @@ html, body, #root {
 }
 
 .react-joyride-tooltip button.joyride-button--next:hover {
-  background-color: #21867a; /* Darker shade on hover */
+  background-color: #21867a;
 }
 
 .react-joyride-tooltip button.joyride-button--back {

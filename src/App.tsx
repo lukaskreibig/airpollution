@@ -10,10 +10,10 @@ import { Analytics } from "@vercel/analytics/react";
 import LegalModal from "./components/LegalModal";
 
 /**
- * This App fetches data from OpenAQ, displaying scatter (chart=1), average (2), or map (3).
+ * This App fetches data from OpenAQ, displaying scatter (chart=1), or map (2).
  * The LoadingOverlay re-appears whenever "country/time" changes. 
- * For chart=3, we wait for the map to fully load (onMapLoadEnd -> setMapLoaded(true)).
- * For chart=1 or 2, there's no map, so we automatically set mapLoaded=true once data is fetched.
+ * For chart=2, we wait for the map to fully load (onMapLoadEnd -> setMapLoaded(true)).
+ * For chart=1 there's no map, so we automatically set mapLoaded=true once data is fetched.
  */
 
 const App: React.FC = () => {
@@ -28,8 +28,8 @@ const App: React.FC = () => {
 
   // States for time, chart, country
   const [time, setTime] = useState<string>("month");
-  const [chart, setChart] = useState<string>("3"); // default map
-  const [country, setCountry] = useState<string>("50"); // '50' might be Germany
+  const [chart, setChart] = useState<string>("1"); // default map
+  const [country, setCountry] = useState<string>("50"); // Germany
 
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
 
@@ -179,14 +179,14 @@ const defineTourSteps = (): Step[] => [
 
   // If chart !=3, there's no map => set mapLoaded=true automatically once data loaded
   useEffect(() => {
-    if (dataLoaded && chart !== "3") {
+    if (dataLoaded && chart !== "2") {
       setMapLoaded(true);
     }
   }, [chart, dataLoaded]);
 
   // Possibly run the Joyride if chart=3
   useEffect(() => {
-    if (dataLoaded && chart === "3") {
+    if (dataLoaded && chart === "2") {
       const hasVisited = localStorage.getItem("hasVisited");
       if (!hasVisited) {
         setShowSidebar(true);
@@ -246,7 +246,7 @@ const defineTourSteps = (): Step[] => [
           style={{
             position: "absolute",
             top: "10px",
-            left: showSidebar && chart === "3" ? "320px" : "70px",
+            left: showSidebar && chart === "2" ? "320px" : "70px",
             zIndex: 1,
           }}
         >

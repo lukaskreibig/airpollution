@@ -31,8 +31,8 @@ import {
   calculateBigLayout,
   calculateAverageChart,
   calculateAverageLayout,
-  computeAqiForPollutant, // Importiert aus ChartFunction.ts
-  computeOverallAqi,      // Importiert aus ChartFunction.ts
+  computeAqiForPollutant,
+  computeOverallAqi,
   ProcessedLocation,
 } from "./ChartFunction";
 import Logo from "./Logo";
@@ -332,9 +332,9 @@ html += `</div>`;
       const { lat, lon } = foundCountry.coordinates;
       mapRef.current.flyTo({
         center: [lon, lat],
-        zoom: 5, // Passen Sie den Zoom-Level nach Bedarf an
+        zoom: 5,
         essential: true, // Für barrierefreie Animationen
-        duration: 1000, // Dauer der Animation in Millisekunden
+        duration: 1000,
       });
     }
   }, [countriesList, country]);
@@ -494,7 +494,7 @@ html += `</div>`;
    * Initialisiert oder entfernt die Karte basierend auf dem ausgewählten Chart.
    */
   useEffect(() => {
-    if (chart !== "3") {
+    if (chart !== "2") {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -509,8 +509,8 @@ html += `</div>`;
   /**
    * Aktualisiert die Karte, wenn chart=3 und sich die Daten ändern.
    */
-  useEffect(() => {
-    if (chart === "3" && mapRef.current && mapRef.current.isStyleLoaded()) {
+  useEffect(() => { 
+    if (chart === "2" && mapRef.current && mapRef.current.isStyleLoaded()) {
       mapRef.current.resize();
       const plocs = processLocations(locations);
       setProcessedLocs(plocs);
@@ -544,23 +544,6 @@ html += `</div>`;
         setPlotLayout(scatterLayout);
       }
       setRevision((r) => r + 1);
-    } else if (chart === "2") {
-      // Durchschnittschart
-      if (!processedLocs.length) {
-        setPlotData([]);
-        setPlotLayout({});
-      } else {
-        const { data: groupedData, maxVal } = calculateAverageChart(processedLocs);
-        if (!groupedData.length) {
-          setPlotData([]);
-          setPlotLayout({});
-        } else {
-          const newLayout = calculateAverageLayout(maxVal);
-          setPlotData(groupedData);
-          setPlotLayout(newLayout);
-        }
-      }
-      setRevision((r) => r + 1);
     } else {
       // Chart=3 (Karte) - Kein Plotly-Chart
       setPlotData([]);
@@ -572,7 +555,7 @@ html += `</div>`;
    * Handhabt Mini-Chart-Updates für die Karte.
    */
   useEffect(() => {
-    if (chart !== "3" || !processedLocs.length) {
+    if (chart !== "2" || !processedLocs.length) {
       setMiniChartData([]);
       setMiniChartLayout({});
       return;
@@ -606,7 +589,7 @@ html += `</div>`;
    * Handhabt Mausereignisse auf Sidebar-Listenelementen.
    */
   const handleCityMouseEnter = (ploc: ProcessedLocation) => {
-    if (chart === "3" && mapRef.current && popupRef.current) {
+    if (chart === "2" && mapRef.current && popupRef.current) {
       mapRef.current.flyTo({ center: [ploc.lon, ploc.lat], zoom: 10, duration: 300 });
     }
   };
@@ -614,7 +597,7 @@ html += `</div>`;
     // Keine Aktion erforderlich
   };
   const handleCityClick = (ploc: ProcessedLocation) => {
-    if (chart === "3" && mapRef.current) {
+    if (chart === "2" && mapRef.current) {
       mapRef.current.flyTo({ center: [ploc.lon, ploc.lat], zoom: 10, duration: 300 });
     }
   };
@@ -625,7 +608,7 @@ html += `</div>`;
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
       const newVal = !prev;
-      if (chart === "3" && mapRef.current) {
+      if (chart === "2" && mapRef.current) {
         setTimeout(() => {
           mapRef.current?.resize();
           if (newVal) {
@@ -650,7 +633,7 @@ html += `</div>`;
       <Drawer
         variant="persistent"
         anchor="left"
-        open={showSidebar && chart === "3"}
+        open={showSidebar && chart === "2"}
         sx={{
           "& .MuiDrawer-paper": {
             width: { xs: '100%', sm: 300 },
@@ -761,12 +744,12 @@ html += `</div>`;
           </List>
         </Box>
       </Drawer>
-      {showSidebar && chart === "3" && <Box sx={{ width: 300 }} />}
+      {showSidebar && chart === "2" && <Box sx={{ width: 300 }} />}
 
       {/* Haupt-Chart-Bereich */}
       <Box className="charts" sx={{ height: "95vh", display: "flex", flexDirection: "row" }}>
         {/* Sidebar-Umschaltknopf für die Karte */}
-        {chart === "3" && !showSidebar && (
+        {chart === "2" && !showSidebar && (
           <IconButton
             onClick={toggleSidebar}
             sx={{
@@ -787,7 +770,7 @@ html += `</div>`;
         )}
 
         <Box sx={{ flex: 1, height: "100%" }}>
-          {chart === "3" ? (
+          {chart === "2" ? (
             <>
               {/* Card Container */}
               <div ref={mapContainerRef} className="map-area" style={{ width: "100%", height: "100%" }} />
@@ -797,7 +780,7 @@ html += `</div>`;
               sx={{
                 position: "absolute",
                 bottom: 22,
-                left: showSidebar && chart === "3" ? 310 : 10, // shift right by 300px + some padding
+                left: showSidebar && chart === "2" ? 310 : 10, // shift right by 300px + some padding
                 backgroundColor: "rgba(255,255,255,0.8)",
                 padding: "5px 10px",
                 borderRadius: "4px",

@@ -28,8 +28,7 @@ const Dropdown: React.FC<Props> = ({
 
   const chartData = [
     { input: "1", description: "Scatter Chart" },
-    { input: "2", description: "Average Charts" },
-    { input: "3", description: "Map View" },
+    { input: "2", description: "Map View" },
   ];
 
   let options: { value: string; label: string }[] = [];
