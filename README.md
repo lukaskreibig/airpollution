@@ -1,63 +1,189 @@
-# Air Pollution Charts
+# Map The Air - Air Quality Visualization Dashboard
 
-Introducing Air Pollution Charts - a personal project and tech challenge I took on to explore the possibilities of React, Node, JavaScript, and TypeScript. Using these powerful tools, I built a platform that provides real-time global air pollution data through rich and interactive data visualizations. The platform incorporates Plotly, a versatile data visualization library that offers a wide range of chart types, from basic line graphs to 3D visualizations. I've also utilized react-spring technology to enhance animations and provide a seamless user experience. 
+An interactive web application for visualizing air quality data using **Plotly**, **Mapbox**, and **React**. This project allows users to explore air quality metrics such as PM2.5 and PM10 across various locations, providing rich visual insights and comparisons to WHO guidelines.
 
----
-
-## The platform is built on a foundation of four key technologies:
-
-• [React](https://reactjs.org/) - A popular and widely-used JavaScript library for building user interfaces.
-
-• [TypeScript](https://www.typescriptlang.org/) - A superset of JavaScript that adds static type definitions to improve code safety and maintainability.
-
-• [Plotly](https://plotly.com/graphing-libraries/) - A data visualization library that allows users to create a wide range of chart types, from basic line graphs to 3D visualizations.
-
-• [react-spring](https://react-spring.io/) - A powerful animation library for React that allows us to create smooth, fluid animations that enhance the user experience.
+<img width="281" alt="MapTheAirLogo" src="https://github.com/user-attachments/assets/0b97bcec-71ac-4979-a690-6f6888c350d8" />
 
 ---
 
-## Examples
+## 📋 Table of Contents
 
-<img width="1437" alt="Screenshot 2022-05-11 at 00 00 28" src="https://user-images.githubusercontent.com/78150333/167729475-6fa0e3a0-da99-4315-8d37-055b6140bbe0.png">
+- [Features](#features)
+- [Demo](#demo)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Folder Structure](#folder-structure)
+- [Technologies Used](#technologies-used)
+- [API Integration](#api-integration)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Installation
+## ✨ Features
 
-To install this project, follow the steps below:
+- **Interactive Map**  
+  Visualize air quality metrics across locations using Mapbox. Threshold-based coloring provides instant insights into air quality conditions.
 
-Clone this repository to your local machine.
+- **Mini Average Chart**  
+  A sleek, collapsible chart displays average air quality data with WHO guideline comparisons.
 
-Ensure that you have Node.js and either npm or yarn installed on your machine.
+- **Sidebar with Search and Sorting**  
+  Quickly filter and sort data by location name or air quality metrics (PM2.5, PM10).
 
-Open a terminal window and navigate to the root directory of the project.
+- **Responsive Design**  
+  Optimized for various devices, from desktops to tablets.
 
-Run either of the following commands:
+- **Color Thresholds**  
+  Dynamic color coding for safe, moderate, unhealthy, and hazardous air quality levels.
 
-```bash
-npm install
+---
+
+## 🎥 Demo
+
+Check out the live Beta here: <a href="https://www.maptheair.com/" target="_blank">Map The Air Beta</a>
+
+---
+
+## 🛠️ Installation
+
+To run the application locally, follow these steps:
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-username/your-repo.git
+   cd your-repo
+   ```
+
+2. **Install Dependencies**
+   Ensure you have **Node.js** and **npm** installed. Then, run:
+   ```bash
+   npm install
+   ```
+
+3. **Set Environment Variables**
+   Create a `.env` file in the root directory and configure it as follows:
+   ```env
+   REACT_APP_MAPBOX_ACCESS_TOKEN=your_mapbox_token
+   REACT_APP_API_BASE_URL=your_api_url
+   ```
+
+4. **Start the Development Server**
+   ```bash
+   npm start
+   ```
+
+5. **Open in Browser**
+   Navigate to `http://localhost:3000` to view the application.
+
+---
+
+## 🚀 Usage
+
+### Explore the Map
+- Zoom in/out and pan around to explore air quality data across locations.
+- Hover over data points for detailed metrics.
+
+### Sidebar
+- Search for specific locations by name.
+- Sort data by PM2.5, PM10, or location name.
+
+### Mini Average Chart
+- View the average air quality metrics in a collapsible chart on the map.
+- Compare the data against WHO guidelines.
+
+---
+
+## 📁 Folder Structure
+
+```plaintext
+src
+├── components
+│   ├── ChartList
+│   │   ├── Chart
+│   │   │   ├── Chart.tsx
+│   │   │   ├── ChartFunction.ts
+│   │   │   └── styles.css
+│   │   └── ChartList.tsx
+│   ├── Sidebar
+│   │   └── Sidebar.tsx
+├── services
+│   ├── api.ts
+├── App.tsx
+├── index.tsx
+└── styles.css
 ```
 
-or
+---
 
-```bash
-yarn install
-```
+## 🛠️ Technologies Used
 
-This will install all the necessary modules and dependencies required to run the project.
+- **React**: For building the user interface.
+- **Plotly.js**: For interactive charts and data visualization.
+- **Mapbox GL JS**: For rendering the map and geo-coordinates.
+- **Material UI**: For styling components.
+- **TypeScript**: For type safety and maintainability.
 
 ---
 
-## Steps to Run :computer:
+## 🌐 API Integration
 
-```bash
-npm start *or* yarn run
+The application integrates with the **OpenAQ API** for fetching real-time air quality data. Ensure you have the correct API base URL in the `.env` file:
+
+```env
+REACT_APP_API_BASE_URL=https://api.openaq.org/v1/
 ```
 
-## Steps to Run Tests
+For more details, visit the [OpenAQ API Documentation](https://docs.openaq.org/).
 
+---
+
+## 👩‍💻 Development
+
+### Running Tests
+To run the test suite:
 ```bash
 npm test
 ```
 
-Enjoy exploring! :movie_camera:
+### Linting
+To check for linting errors:
+```bash
+npm run lint
+```
+
+### Building for Production
+To build the application for production:
+```bash
+npm run build
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! To get started:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Commit your changes and push the branch to your fork.
+4. Submit a pull request describing your changes.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🌟 Acknowledgments
+
+- **OpenAQ** for providing air quality data.
+- **Mapbox** for the mapping platform.
+- **Plotly** for interactive charting tools.
+
+---
+
+Happy coding! :tada:
