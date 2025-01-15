@@ -3,7 +3,6 @@ import { Typography, Box } from '@mui/material';
 const Logo = () => {
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
-      {/* Main Logo */}
       <Box
         display="flex"
         alignItems="center"
@@ -50,7 +49,6 @@ const Logo = () => {
         >
           Air
         </Typography>
-        {/* Beta Badge */}
         <Box
           sx={{
             position: 'absolute',
@@ -69,7 +67,6 @@ const Logo = () => {
         </Box>
       </Box>
 
-      {/* Subtitle */}
       <Box sx={{ width: '100%', textAlign: 'center', mb: 1 }}>
         <Typography
           variant="subtitle2"

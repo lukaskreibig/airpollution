@@ -61,7 +61,7 @@ Check out the live Beta here: <a href="https://www.maptheair.com/" target="_blan
 
 ### **How We Calculate AQI**
 
-Our application uses the latest **real-time data** fetched from the **OpenAQ API**. While the methodology aligns closely with the official AQI calculation, slight differences exist due to real-time processing and simplified pollutant conversions for performance and user experience.
+Our application uses the latest **real-time data** fetched from the **OpenAQ API**. While the methodology aligns closely with the [official AQI calculation](https://www.airnow.gov/publications/air-quality-index/technical-assistance-document-for-reporting-the-daily-aqi/), slight differences exist due to real-time processing and simplified pollutant conversions for performance and user experience.
 
 ---
 
