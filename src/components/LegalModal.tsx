@@ -31,27 +31,28 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             <CloseOutlined />
           </IconButton>
         </Box>
-
-        {/* Impressum / Legal Notice (German requirement)
+        Impressum / Legal Notice (German requirement)
         <section style={{ marginTop: '1rem' }}>
           <Typography variant="h6">Impressum / Legal Notice</Typography>
-          <Typography variant="body1" paragraph>
-            <strong>Operator:</strong> Lukas Kreibig<br />
-            <strong>Address:</strong> Wipperstrasse 6, Berlin, Germany<br />
+          <Typography variant="body1">
+            <strong>Operator:</strong> Lukas Kreibig
+            <br />
+            <strong>Address:</strong> Wipperstrasse 6, Berlin, Germany
+            <br />
             <strong>Contact:</strong> lukas.kreibig@posteo.de
           </Typography>
-          <Typography variant="body2" paragraph>
-            According to §5 TMG (Telemediengesetz), operators of commercial websites in Germany
-            must provide an Impressum (Legal Notice). This legal disclosure contains personal or
-            company details. If you’re hosting the site in Berlin (Germany) for a public/commercial
+          <Typography variant="body2">
+            According to §5 TMG (Telemediengesetz), operators of commercial
+            websites in Germany must provide an Impressum (Legal Notice). This
+            legal disclosure contains personal or company details. If you’re
+            hosting the site in Berlin (Germany) for a public/commercial
             purpose, you are required to display this information.
           </Typography>
-        </section> */}
-
+        </section>
         {/* Privacy Policy */}
         <section style={{ marginTop: '1.5rem' }}>
           <Typography variant="h6">Privacy Policy</Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2">
             Welcome to <strong>MapTheAir.com</strong>. We respect your privacy
             and commit to protecting it through this policy. We use{' '}
             <strong>Vercel Analytics</strong> for aggregated, anonymized traffic
@@ -59,13 +60,13 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             data in your browser. However, IP addresses may be anonymized and
             collected for the purpose of generating analytics.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2">
             We do not collect personally identifiable information (PII) unless
             you voluntarily provide it, for instance via email inquiries. Any
             PII you submit is used solely for the purpose stated at the time of
             collection.
           </Typography>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body2">
             By using our website, you consent to the data practices described in
             this policy. If you do not agree, please do not use our services.
             For more details on how Vercel handles data, see their{' '}
@@ -79,7 +80,6 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             .
           </Typography>
         </section>
-
         {/* Disclaimer & Terms of Use */}
         <section style={{ marginTop: '1.5rem' }}>
           <Typography variant="h6">Disclaimer & Terms of Use</Typography>
@@ -109,13 +109,13 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             Germany.
           </Typography>
         </section>
-
         {/* Contact */}
         <section style={{ marginTop: '1.5rem' }}>
           <Typography variant="h6">Contact</Typography>
           <Typography variant="body2" paragraph>
             If you have any questions or concerns about this legal notice or our
-            Privacy Policy, please contact: <strong>lukatze@posteo.de</strong>
+            Privacy Policy, please contact:{' '}
+            <strong>lukas.kreibig@posteo.de</strong>
           </Typography>
           <Typography variant="body2" style={{ fontStyle: 'italic' }}>
             Last Updated: [December 17, 2024]

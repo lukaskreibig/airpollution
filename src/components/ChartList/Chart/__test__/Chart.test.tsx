@@ -19,7 +19,7 @@ describe('Chart (Unit Tests)', () => {
         coordinates: { latitude: 40, longitude: -74 },
         measurements: [
           {
-            parameter: 'pm25', // "pm25" is recognized in calculateBigChart
+            parameter: 'pm25',
             value: 25, // > 0 => valid
             lastUpdated: '2025-01-01T12:00:00Z',
             unit: 'µg/m³',
@@ -37,7 +37,7 @@ describe('Chart (Unit Tests)', () => {
     render(
       <Chart
         locations={mockLocations}
-        chart="1" // triggers calculateBigChart
+        chart="1"
         country="50"
         countriesList={[]}
         showSidebar={false}

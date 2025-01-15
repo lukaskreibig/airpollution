@@ -2,7 +2,7 @@ import { Layout, PlotData } from 'plotly.js';
 import { LatestResult } from '../../../react-app-env';
 
 /**
- * **AQI Breakpoints based oj EPA-Guidelines**
+ * **AQI Breakpoints based on EPA-Guidelines**
  */
 const AQI_BREAKPOINTS: Record<
   string,

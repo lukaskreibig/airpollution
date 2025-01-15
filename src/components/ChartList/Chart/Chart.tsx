@@ -44,35 +44,35 @@ import {
 import Logo from './Logo';
 
 /**
- * Funktion zur Bestimmung der AQI-Farbe basierend auf dem Wert.
+ * Function to determine the AQI color based on the value.
  */
 function aqiColor(aqi: number): string {
-  if (aqi < 0) return '#bfbfbf'; // Keine Daten
-  if (aqi <= 50) return '#2a9d8f'; // Gut
-  if (aqi <= 100) return '#e9c46a'; // Mäßig
-  if (aqi <= 150) return '#f4a261'; // Ungesund
-  if (aqi <= 200) return '#d62828'; // Sehr Ungesund
-  return '#9d0208'; // Gefährlich
+  if (aqi < 0) return '#bfbfbf'; // No Data
+  if (aqi <= 50) return '#2a9d8f'; // Good
+  if (aqi <= 100) return '#e9c46a'; // Moderate
+  if (aqi <= 150) return '#f4a261'; // Unhealthy
+  if (aqi <= 200) return '#d62828'; // Very Unhealthy
+  return '#9d0208'; // Hazardous
 }
 
 /**
- * **Inklusionsliste für AQI-Parameter**
- * Enthält nur die für AQI relevanten Schadstoffe.
+ * **Inclusion list for AQI parameters**
+ * Includes only the pollutants relevant for AQI.
  */
 const ALLOWED_PARAMS = new Set(['o3', 'pm25', 'pm10', 'so2', 'no2', 'co']);
 
 /**
- * Überprüft, ob eine Messung basierend auf der Inklusionsliste gültig ist.
+ * Checks if a measurement is valid based on the inclusion list.
  */
 function isValidMeasurement(param: string, value: number): boolean {
-  if (!ALLOWED_PARAMS.has(param)) return false; // Schließt nicht-AQI-Parameter aus
+  if (!ALLOWED_PARAMS.has(param)) return false; // Exclude non-AQI parameters
   if (value <= 0) return false;
   if (value > 600) return false;
   return true;
 }
 
 /**
- * Formatiert Datumsstrings für die Anzeige.
+ * Formats date strings for display.
  */
 function formatDate(dateStr: string): string {
   try {
@@ -92,7 +92,7 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * Konvertiert Messwerte, falls erforderlich.
+ * Converts measurement values if needed.
  */
 function convertIfNeeded(parameter: string, rawValue: number): number {
   if (parameter === 'o3') return rawValue / 2000;
@@ -101,7 +101,7 @@ function convertIfNeeded(parameter: string, rawValue: number): number {
 }
 
 /**
- * Kürzt und konvertiert Messwerte basierend auf dem Parameter.
+ * Truncates and converts measurement values based on the parameter.
  */
 function truncateAndConvert(parameter: string, val: number): number {
   const cVal = convertIfNeeded(parameter.toLowerCase(), val);
@@ -120,7 +120,7 @@ function truncateAndConvert(parameter: string, val: number): number {
 }
 
 /**
- * Hook zur Ermittlung der Fensterabmessungen.
+ * Hook to get the window dimensions.
  */
 function useWindowDimensions() {
   const [dims, setDims] = useState({
@@ -137,7 +137,7 @@ function useWindowDimensions() {
 }
 
 /**
- * Initiale Kartenmitte und Zoom.
+ * Initial map center and zoom.
  */
 const INITIAL_CENTER: [number, number] = [-74.0242, 40.6941];
 const INITIAL_ZOOM = 10.12;
@@ -154,8 +154,8 @@ type Props = {
 };
 
 /**
- * Chart-Komponente
- * Handhabt die Darstellung von Streu-, Durchschnitts- oder Karten-Charts basierend auf der ausgewählten Typ.
+ * Chart Component
+ * Handles the display of scatter, average, or map charts based on the selected type.
  */
 const Chart: React.FC<Props> = ({
   chart,
@@ -168,44 +168,44 @@ const Chart: React.FC<Props> = ({
 }) => {
   const { width, height } = useWindowDimensions();
 
-  // Zustand für Plotly-Daten und -Layout
+  // State for Plotly data and layout
   const [plotData, setPlotData] = useState<Partial<PlotData>[]>([]);
   const [plotLayout, setPlotLayout] = useState<Partial<Plotly.Layout>>({});
   const [revision, setRevision] = useState<number>(0);
 
-  // Zustand für Mini-Chart
+  // State for Mini Chart
   const [miniChartData, setMiniChartData] = useState<Partial<PlotData>[]>([]);
   const [miniChartLayout, setMiniChartLayout] = useState<
     Partial<Plotly.Layout>
   >({});
   const [miniChartExpanded, setMiniChartExpanded] = useState<boolean>(true);
 
-  // Karten-Referenzen
+  // Map references
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
 
-  // Sidebar-Such- und Sortierzustände
+  // Sidebar search and sort states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortMode, setSortMode] = useState<
     'name' | 'aqi' | 'pm25' | 'pm10' | 'so2' | 'no2' | 'co'
   >('aqi');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Verarbeitete Standorte für Sidebar und Durchschnittschart
+  // Processed locations for sidebar and average chart
   const [processedLocs, setProcessedLocs] = useState<ProcessedLocation[]>([]);
 
-  // Aktiver Ländername
+  // Active country name
   const activeCountryName = useMemo(() => {
     const found = countriesList.find((c) => String(c.id) === country);
-    return found ? found.name : 'Unbekanntes Land';
+    return found ? found.name : 'Unknown Country';
   }, [country, countriesList]);
 
   /**
-   * **Formatierungsfunktion für Parameternamen in der Sidebar**
-   * Gibt JSX-Elemente mit richtigen Subscripts zurück.
-   * @param param - Der Schadstoffparameter-Code (z.B. 'pm25', 'o3').
-   * @returns JSX.Element oder string mit formatiertem Schadstoffnamen.
+   * **Formatting function for parameter names in the sidebar**
+   * Returns JSX elements with proper subscripts.
+   * @param param - The pollutant parameter code (e.g., 'pm25', 'o3').
+   * @returns JSX.Element or string with formatted pollutant name.
    */
   const formatParamNameJSX = (param: string): JSX.Element | string => {
     const mapping: Record<string, JSX.Element | string> = {
@@ -240,10 +240,10 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * **Formatierungsfunktion für Parameternamen in der Popup-HTML**
-   * Gibt Strings mit HTML <sub>-Tags zurück.
-   * @param param - Der Schadstoffparameter-Code (z.B. 'pm25', 'o3').
-   * @returns String mit formatiertem Schadstoffnamen.
+   * **Formatting function for parameter names in the popup HTML**
+   * Returns strings with HTML <sub>-tags.
+   * @param param - The pollutant parameter code (e.g., 'pm25', 'o3').
+   * @returns String with formatted pollutant name.
    */
   const formatParamNameHTML = (param: string): string => {
     const mapping: Record<string, string> = {
@@ -258,7 +258,7 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Verarbeitet rohe Standorte zu verarbeiteten Standorten, schließt ungültige Messungen aus.
+   * Processes raw locations into processed locations, excluding invalid measurements.
    */
   const processLocations = useCallback(
     (locs: LatestResult[]): ProcessedLocation[] => {
@@ -271,7 +271,7 @@ const Chart: React.FC<Props> = ({
 
         loc.measurements.forEach((m) => {
           const p = m.parameter?.toLowerCase() || '';
-          if (!isValidMeasurement(p, m.value)) return; // Schließt ungültige aus
+          if (!isValidMeasurement(p, m.value)) return; // Exclude invalid measurements
 
           const conv = truncateAndConvert(p, m.value);
           if (!timestamp && m.lastUpdated) {
@@ -281,22 +281,22 @@ const Chart: React.FC<Props> = ({
         });
 
         if (Object.keys(paramObj).length === 0) {
-          return null; // Schließt Standort aus, wenn keine gültigen Parameter vorhanden sind
+          return null; // Exclude location if no valid parameters exist
         }
 
-        // Berechnung des gesamten AQI
+        // Calculate the overall AQI
         const overallAQI = computeOverallAqi(paramObj);
 
-        // **Neue Bedingung: Ausschluss von AQI <= 0**
+        // **New condition: Exclude AQI <= 0**
         if (overallAQI <= 0) {
-          return null; // Schließt Standorte mit AQI 0 oder weniger aus
+          return null; // Exclude locations with AQI 0 or less
         }
 
         if (Object.keys(paramObj).length < 2) {
-          return null; // Schließt Standorte mit weniger als zwei Schadstoffen aus
+          return null; // Exclude locations with fewer than two pollutants
         }
 
-        // Erstellung der Popup-HTML
+        // Create the popup HTML
         let html = `<div style="font-size:14px;line-height:1.4;">`;
         html += `<strong>${loc.location}</strong><br/>`;
         if (loc.city) html += `City: ${loc.city}<br/>`;
@@ -330,7 +330,7 @@ const Chart: React.FC<Props> = ({
   );
 
   /**
-   * Erstellt GeoJSON-Daten für Mapbox.
+   * Creates GeoJSON data for Mapbox.
    */
   const createGeoJSON = useCallback(
     (plocs: ProcessedLocation[]): GeoJSON.FeatureCollection<GeoJSON.Point> => {
@@ -359,7 +359,7 @@ const Chart: React.FC<Props> = ({
   );
 
   /**
-   * Hilfsfunktion zum Zentrieren der Karte auf das ausgewählte Land.
+   * Helper function to center the map on the selected country.
    */
   const centerMapOnCountry = useCallback(() => {
     const foundCountry = countriesList.find((c) => String(c.id) === country);
@@ -368,14 +368,14 @@ const Chart: React.FC<Props> = ({
       mapRef.current.flyTo({
         center: [lon, lat],
         zoom: 5,
-        essential: true, // Für barrierefreie Animationen
+        essential: true, // For accessible animations
         duration: 1000,
       });
     }
   }, [countriesList, country]);
 
   /**
-   * Aktualisiert verarbeitete Standorte, wenn sich die Standorte ändern.
+   * Updates processed locations when the locations change.
    */
   useEffect(() => {
     const plocs = processLocations(locations);
@@ -383,7 +383,7 @@ const Chart: React.FC<Props> = ({
   }, [locations, processLocations]);
 
   /**
-   * Filtert und sortiert Standorte für die Sidebar-Liste.
+   * Filters and sorts locations for the sidebar list.
    */
   const displayedLocs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -419,7 +419,7 @@ const Chart: React.FC<Props> = ({
   }, [processedLocs, searchQuery, sortMode, sortDirection]);
 
   /**
-   * Passt die Kartenansicht basierend auf den verarbeiteten Standorten an.
+   * Adjusts the map view based on the processed locations.
    */
   const adjustMapView = useCallback(
     (map: mapboxgl.Map, plocs: ProcessedLocation[]) => {
@@ -474,7 +474,7 @@ const Chart: React.FC<Props> = ({
   );
 
   /**
-   * Initializes Mapbox Map
+   * Initializes Mapbox Map.
    */
   const mapRefInit = useCallback(() => {
     if (!mapContainerRef.current) return;
@@ -553,7 +553,7 @@ const Chart: React.FC<Props> = ({
   }, [locations, processLocations, createGeoJSON, adjustMapView, onMapLoadEnd]);
 
   /**
-   * Initializes or removes the map based on selected Chart.
+   * Initializes or removes the map based on the selected chart.
    */
   useEffect(() => {
     if (chart !== '2') {
@@ -569,7 +569,7 @@ const Chart: React.FC<Props> = ({
   }, [chart, mapRefInit]);
 
   /**
-   * Refreshes Map if Chart 2 Changes
+   * Refreshes the map if Chart 2 changes.
    */
   useEffect(() => {
     if (chart === '2' && mapRef.current && mapRef.current.isStyleLoaded()) {
@@ -593,7 +593,7 @@ const Chart: React.FC<Props> = ({
   ]);
 
   /**
-   * Handles Plotly and Layout Data
+   * Handles Plotly and Layout data.
    */
   useEffect(() => {
     if (!locations.length) {
@@ -624,7 +624,7 @@ const Chart: React.FC<Props> = ({
   }, [chart, locations, width, height, processedLocs]);
 
   /**
-   * Mini Chart Updates on Map
+   * Mini Chart updates on the map.
    */
   useEffect(() => {
     if (chart !== '2' || !processedLocs.length) {
@@ -677,7 +677,7 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   *Sidebar Toggle
+   * Sidebar Toggle
    */
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
@@ -816,17 +816,17 @@ const Chart: React.FC<Props> = ({
             </IconButton>
           </Box>
 
-          {/* Stadtliste */}
+          {/* City list */}
           <List dense sx={{ flex: 1, overflowY: 'auto' }}>
             {displayedLocs.map((ploc) => {
               const overallVal = computeOverallAqi(ploc.parameters);
               const bkgColor = aqiColor(overallVal) + '33';
 
-              // Erstellen der Parameterzeilen für jeden Standort
+              // Create the parameter lines for each location
               const paramLines: JSX.Element[] = [];
               for (const [p, v] of Object.entries(ploc.parameters)) {
                 const subAqi = computeAqiForPollutant(p, v);
-                if (subAqi < 0) continue; // Schließt ungültige aus
+                if (subAqi < 0) continue; // Exclude invalid measurements
                 const color = aqiColor(subAqi);
                 paramLines.push(
                   <React.Fragment key={p}>
@@ -893,12 +893,12 @@ const Chart: React.FC<Props> = ({
       </Drawer>
       {showSidebar && chart === '2' && <Box sx={{ width: 300 }} />}
 
-      {/* Haupt-Chart-Bereich */}
+      {/* Main chart area */}
       <Box
         className="charts"
         sx={{ height: '95vh', display: 'flex', flexDirection: 'row' }}
       >
-        {/* Sidebar-Umschaltknopf für die Karte */}
+        {/* Sidebar toggle button for the map */}
         {chart === '2' && !showSidebar && (
           <IconButton
             onClick={toggleSidebar}
@@ -1015,7 +1015,7 @@ const Chart: React.FC<Props> = ({
                 </Box>
               </Box>
 
-              {/* Mini-Durchschnittschart */}
+              {/* Mini-Average Chart */}
               <Box
                 className="average-plot"
                 sx={{
