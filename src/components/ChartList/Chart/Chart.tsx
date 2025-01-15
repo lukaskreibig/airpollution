@@ -474,7 +474,7 @@ const Chart: React.FC<Props> = ({
   );
 
   /**
-   * Initialisiert die Mapbox-Karte.
+   * Initializes Mapbox Map
    */
   const mapRefInit = useCallback(() => {
     if (!mapContainerRef.current) return;
@@ -540,7 +540,6 @@ const Chart: React.FC<Props> = ({
         'bottom-left'
       );
 
-      // Befüllen der Karte mit Daten
       const plocs = processLocations(locations);
       setProcessedLocs(plocs);
 
@@ -554,7 +553,7 @@ const Chart: React.FC<Props> = ({
   }, [locations, processLocations, createGeoJSON, adjustMapView, onMapLoadEnd]);
 
   /**
-   * Initialisiert oder entfernt die Karte basierend auf dem ausgewählten Chart.
+   * Initializes or removes the map based on selected Chart.
    */
   useEffect(() => {
     if (chart !== '2') {
@@ -570,7 +569,7 @@ const Chart: React.FC<Props> = ({
   }, [chart, mapRefInit]);
 
   /**
-   * Aktualisiert die Karte, wenn chart=3 und sich die Daten ändern.
+   * Refreshes Map if Chart 2 Changes
    */
   useEffect(() => {
     if (chart === '2' && mapRef.current && mapRef.current.isStyleLoaded()) {
@@ -594,7 +593,7 @@ const Chart: React.FC<Props> = ({
   ]);
 
   /**
-   * Handhabt Plotly-Daten- und Layout-Updates basierend auf dem ausgewählten Chart.
+   * Handles Plotly and Layout Data
    */
   useEffect(() => {
     if (!locations.length) {
@@ -603,7 +602,6 @@ const Chart: React.FC<Props> = ({
       return;
     }
     if (chart === '1') {
-      // Streudiagramm
       const scatterData = calculateBigChart(chart, locations);
       if (!scatterData.length) {
         setPlotData([]);
@@ -620,14 +618,13 @@ const Chart: React.FC<Props> = ({
       }
       setRevision((r) => r + 1);
     } else {
-      // Chart=3 (Karte) - Kein Plotly-Chart
       setPlotData([]);
       setPlotLayout({});
     }
   }, [chart, locations, width, height, processedLocs]);
 
   /**
-   * Handhabt Mini-Chart-Updates für die Karte.
+   * Mini Chart Updates on Map
    */
   useEffect(() => {
     if (chart !== '2' || !processedLocs.length) {
@@ -651,7 +648,6 @@ const Chart: React.FC<Props> = ({
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
       yaxis: { range: [0, upper], title: '' },
-      // Use responsive sizing
       font: {
         size: window.innerWidth < 600 ? 10 : 12,
       },
@@ -660,9 +656,6 @@ const Chart: React.FC<Props> = ({
     setMiniChartLayout(miniLayout);
   }, [chart, processedLocs, activeCountryName]);
 
-  /**
-   * Handhabt Mausereignisse auf Sidebar-Listenelementen.
-   */
   const handleCityMouseEnter = (ploc: ProcessedLocation) => {
     if (chart === '2' && mapRef.current && popupRef.current) {
       mapRef.current.flyTo({
@@ -672,9 +665,7 @@ const Chart: React.FC<Props> = ({
       });
     }
   };
-  const handleCityMouseLeave = () => {
-    // Keine Aktion erforderlich
-  };
+  const handleCityMouseLeave = () => {};
   const handleCityClick = (ploc: ProcessedLocation) => {
     if (chart === '2' && mapRef.current) {
       mapRef.current.flyTo({
@@ -686,7 +677,7 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Sichtbarkeit der Sidebar
+   *Sidebar Toggle
    */
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
@@ -695,7 +686,7 @@ const Chart: React.FC<Props> = ({
         setTimeout(() => {
           mapRef.current?.resize();
           if (newVal) {
-            centerMapOnCountry(); // Karte zentrieren, wenn die Sidebar geöffnet wird
+            centerMapOnCountry();
           } else {
             adjustMapView(mapRef.current!, processedLocs);
           }
@@ -706,13 +697,12 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Umschaltet die Sichtbarkeit des Mini-Charts.
+   * Toggle Mini Chart Function
    */
   const toggleMiniChart = () => setMiniChartExpanded((prev) => !prev);
 
   return (
     <Box display="flex">
-      {/* Sidebar Drawer */}
       <Drawer
         variant="persistent"
         anchor="left"
