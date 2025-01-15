@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import React, { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import ChartList from './components/ChartList/ChartList';
@@ -8,6 +10,8 @@ import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
 import LoadingOverlay from './assets/LoadingOverlay';
 import { Analytics } from '@vercel/analytics/react';
 import LegalModal from './components/LegalModal';
+import tourSteps from './components/tourSteps';
+import PersistentOverlay from './components/PersistentOverlay';
 
 /**
  * This App fetches data from OpenAQ, displaying scatter (chart=1), or map (2).
@@ -35,7 +39,7 @@ const App: React.FC = () => {
 
   // Joyride states
   const [runTour, setRunTour] = useState<boolean>(false);
-  const [tourSteps, setTourSteps] = useState<Step[]>([]);
+  const [steps, setSteps] = useState<Step[]>([]);
 
   // Legal modal
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
@@ -44,93 +48,6 @@ const App: React.FC = () => {
   const linkVisible = mapLoaded;
 
   const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData';
-
-  // Joyride steps
-  const defineTourSteps = (): Step[] => [
-    // Introduction Step
-    {
-      target: '.map-area',
-      content:
-        "Welcome to MapTheAir (Beta)!\n\nThis application monitors real-time air pollution data from cities worldwide. Explore interactive maps and charts to gain insights into air quality trends. Please note: MapTheAir is currently in beta, and some features may be under development or subject to change. Let's take a quick tour to discover all the features!",
-      placement: 'center',
-      title: 'Welcome!',
-      disableBeacon: true,
-      spotlightClicks: true,
-    },
-    {
-      target: '.average-plot',
-      content:
-        'This is the Average Plot, which displays the average AQI values over a specific period. Use this chart to identify general trends in air quality.',
-      placement: 'bottom',
-      title: 'Average Plot',
-      disableBeacon: true,
-      spotlightClicks: true,
-    },
-    {
-      target: '.chart-dropdown',
-      content:
-        'Choose the chart type that best suits the insights you want to explore. Different chart types offer various perspectives on air quality data.',
-      placement: 'bottom',
-      title: 'Chart Selection',
-      disableBeacon: true,
-      spotlightClicks: true,
-    },
-    {
-      target: '.country-dropdown',
-      content:
-        'Select a country to focus the air quality data analysis. This filter helps you view pollution levels specific to your region of interest.',
-      placement: 'bottom',
-      title: 'Country Selection',
-      spotlightClicks: true,
-    },
-    {
-      target: '.sidebar-toggle-button',
-      content:
-        'Click here to open the sidebar. Use it to search for specific cities and sort the list based on your preferences.',
-      placement: 'right',
-      title: 'Sidebar Toggle',
-      spotlightClicks: true,
-    },
-    {
-      target: '.search-field',
-      content:
-        'Use this search bar to quickly locate specific cities or locations within the selected country.',
-      placement: 'bottom',
-      title: 'Search Function',
-      spotlightClicks: true,
-    },
-    {
-      target: '.choose-sort',
-      content:
-        'Sort the city list by Name, PM2.5, or PM10 levels to organize the data according to your analysis needs.',
-      placement: 'bottom',
-      title: 'Sort Options',
-      spotlightClicks: true,
-    },
-    {
-      target: '.sort-select',
-      content:
-        'Click here to switch between ascending and descending order, refining how your sorted data is displayed.',
-      placement: 'bottom',
-      title: 'Sort Direction',
-      spotlightClicks: true,
-    },
-    {
-      target: '.close-list',
-      content: 'Click here to close the sidebar and view the full map.',
-      placement: 'bottom',
-      title: 'Close Sidebar',
-      spotlightClicks: true,
-    },
-    {
-      target: '.map-area',
-      content:
-        'Hover over the map points to see detailed air quality information for each location.',
-      placement: 'center',
-      title: 'Interactive Map Points',
-      spotlightClicks: true,
-    },
-  ];
 
   // Async fetch data
   const getData = useCallback(async () => {
@@ -176,17 +93,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     getData();
-    setTourSteps(defineTourSteps());
+    // Setzen der aus der separaten Datei importierten Tour-Steps
+    setSteps(tourSteps);
   }, [getData]);
 
-  // If chart !=3, there's no map => set mapLoaded=true automatically once data loaded
+  // Wenn chart !== '2', gibt es keine Map => setze mapLoaded true, sobald die Daten geladen wurden
   useEffect(() => {
     if (dataLoaded && chart !== '2') {
       setMapLoaded(true);
     }
   }, [chart, dataLoaded]);
 
-  // Possibly run the Joyride if chart=3
+  // Tour bei chart === '2' starten (wenn noch nicht besucht)
   useEffect(() => {
     if (dataLoaded && chart === '2') {
       const hasVisited = localStorage.getItem('hasVisited');
@@ -198,17 +116,14 @@ const App: React.FC = () => {
     }
   }, [chart, dataLoaded]);
 
-  // Joyride callback fix
   const handleJoyrideCallback = (info: CallBackProps) => {
     const { status } = info;
-    // Fix TS error: We compare directly with constants
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setRunTour(false);
       localStorage.setItem('hasVisited', 'true');
     }
   };
 
-  // handleSelect
   const handleSelect = (event: SelectChangeEvent) => {
     if (event.target.name === 'Country') {
       setCountry(event.target.value as string);
@@ -223,14 +138,20 @@ const App: React.FC = () => {
 
   return (
     <div className="App" style={{ height: '90vh', position: 'relative' }}>
+      {runTour && <PersistentOverlay />}
       <Joyride
-        steps={tourSteps}
+        steps={steps}
         run={runTour}
         continuous
         showSkipButton
         showProgress
         callback={handleJoyrideCallback}
-        styles={{ options: { zIndex: 10000 } }}
+        disableOverlay
+        styles={{
+          options: {
+            zIndex: 10000,
+          },
+        }}
       />
 
       <LoadingOverlay
@@ -246,7 +167,6 @@ const App: React.FC = () => {
           height: '100%',
         }}
       >
-        {/* Top-left dropdowns */}
         <Box
           style={{
             position: 'absolute',
@@ -271,12 +191,6 @@ const App: React.FC = () => {
                 className="country-dropdown"
               />
             )}
-            {/* <Dropdown
-              handleSelect={handleSelect}
-              dataValue={time}
-              dropdown="Time"
-              className="time-dropdown"
-            /> */}
           </Box>
         </Box>
 
@@ -300,7 +214,6 @@ const App: React.FC = () => {
             countriesList={countriesList}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
-            // callback from the map => set mapLoaded true
             onMapLoadEnd={() => setMapLoaded(true)}
           />
         )}

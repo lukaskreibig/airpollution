@@ -6,7 +6,7 @@ describe('Dropdown Component', () => {
   it('renders chart dropdown and updates on selection', async () => {
     const handleSelect = jest.fn();
     render(
-      <Dropdown handleSelect={handleSelect} dataValue="3" dropdown="Chart" />
+      <Dropdown handleSelect={handleSelect} dataValue="2" dropdown="Chart" />
     );
 
     const chartSelect = screen.getByLabelText(/Chart/i);
@@ -14,7 +14,6 @@ describe('Dropdown Component', () => {
 
     fireEvent.mouseDown(chartSelect);
 
-    // Wait for menu items to appear and choose the correct option
     const scatterOption = await screen.findByRole('option', {
       name: /Scatter Chart/i,
     });
