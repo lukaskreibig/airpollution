@@ -1,15 +1,18 @@
-# Map The Air - Air Quality Visualization Dashboard
+# Map The Air - Air Quality Visualization Dashboard (Beta)
 
 An interactive web application for visualizing air quality data using **Plotly**, **Mapbox**, and **React**. This project allows users to explore air quality metrics such as PM2.5 and PM10 across various locations, providing rich visual insights and comparisons to WHO guidelines.
+
+**Note:** This is a **Beta version**, and some features are still under development or subject to change based on user feedback.
 
 <img width="281" alt="MapTheAirLogo" src="https://github.com/user-attachments/assets/0b97bcec-71ac-4979-a690-6f6888c350d8" />
 
 ---
 
-## 📋 Table of Contents
+## 🗋 Table of Contents
 
 - [Features](#features)
 - [Demo](#demo)
+- [What is AQI?](#what-is-aqi)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Folder Structure](#folder-structure)
@@ -29,161 +32,90 @@ An interactive web application for visualizing air quality data using **Plotly**
 - **Mini Average Chart**  
   A sleek, collapsible chart displays average air quality data with WHO guideline comparisons.
 
+- **Scatter Chart**  
+  A compelling and different way of visualizing all the AQI values of a country.
+
 - **Sidebar with Search and Sorting**  
   Quickly filter and sort data by location name or air quality metrics (PM2.5, PM10).
-
-- **Responsive Design**  
-  Optimized for various devices, from desktops to tablets.
 
 - **Color Thresholds**  
   Dynamic color coding for safe, moderate, unhealthy, and hazardous air quality levels.
 
 ---
 
-## 🎥 Demo
+## 🔥 Demo
 
 Check out the live Beta here: <a href="https://www.maptheair.com/" target="_blank">Map The Air Beta</a>
 
 ---
 
-## 🛠️ Installation
+## 💡 What is AQI?
 
-To run the application locally, follow these steps:
+**AQI** stands for **Air Quality Index**, a standardized scale used by environmental agencies (such as the **U.S. Environmental Protection Agency**) and adopted worldwide to communicate how polluted the air currently is or how polluted it is forecast to become.
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/your-username/your-repo.git
-   cd your-repo
-   ```
+- **Pollutants Monitored**: The AQI typically focuses on key pollutants: **PM2.5**, **PM10**, **O₃** (ozone), **NO₂** (nitrogen dioxide), **SO₂** (sulfur dioxide), and **CO** (carbon monoxide).
+- **Breakpoints**: Each pollutant’s concentration is converted into a numerical range (0–500). These breakpoints are used to classify air quality into "Good," "Moderate," "Unhealthy," "Very Unhealthy," and "Hazardous."
+- **Why It Matters**: A single AQI value helps the public quickly gauge overall air pollution levels and any associated health concerns. For example, an AQI under 50 usually indicates "Good" air quality, while values above 150 suggest that even healthy individuals could begin experiencing adverse symptoms.
+- **WHO Guidelines**: Alongside the AQI scale, organizations like the **World Health Organization (WHO)** provide recommended thresholds for pollutants (e.g., PM2.5 < 15 µg/m³) to reduce health risks.
+- **Use Cases**: Public health advisories, city planning, personal air quality monitors, and real-time pollution tracking apps rely on AQI to make data accessible and actionable for everyone.
 
-2. **Install Dependencies**
-   Ensure you have **Node.js** and **npm** installed. Then, run:
-   ```bash
-   npm install
-   ```
+### **How We Calculate AQI**
 
-3. **Set Environment Variables**
-   Create a `.env` file in the root directory and configure it as follows:
-   ```env
-   REACT_APP_MAPBOX_ACCESS_TOKEN=your_mapbox_token
-   REACT_APP_API_BASE_URL=your_api_url
-   ```
-
-4. **Start the Development Server**
-   ```bash
-   npm start
-   ```
-
-5. **Open in Browser**
-   Navigate to `http://localhost:3000` to view the application.
+Our application uses the latest **real-time data** fetched from the **OpenAQ API**. While the methodology aligns closely with the official AQI calculation, slight differences exist due to real-time processing and simplified pollutant conversions for performance and user experience.
 
 ---
 
 ## 🚀 Usage
 
 ### Explore the Map
+
 - Zoom in/out and pan around to explore air quality data across locations.
 - Hover over data points for detailed metrics.
 
 ### Sidebar
+
 - Search for specific locations by name.
 - Sort data by PM2.5, PM10, or location name.
 
 ### Mini Average Chart
+
 - View the average air quality metrics in a collapsible chart on the map.
 - Compare the data against WHO guidelines.
 
 ---
 
-## 📁 Folder Structure
+## 🔄 Technologies Used
 
-```plaintext
-src
-├── components
-│   ├── ChartList
-│   │   ├── Chart
-│   │   │   ├── Chart.tsx
-│   │   │   ├── ChartFunction.ts
-│   │   │   └── styles.css
-│   │   └── ChartList.tsx
-│   ├── Sidebar
-│   │   └── Sidebar.tsx
-├── services
-│   ├── api.ts
-├── App.tsx
-├── index.tsx
-└── styles.css
-```
+### Frontend Frameworks and Libraries
 
----
+- **React**: For building the user interface, ensuring component reusability and state management.
+- **Material UI**: For styling and theming the application with prebuilt components and accessibility in mind.
+- **Plotly.js**: For creating highly interactive and customizable charts.
+- **Mapbox GL JS**: For rendering detailed and interactive maps with customizable layers and markers.
 
-## 🛠️ Technologies Used
+### Backend and Data
 
-- **React**: For building the user interface.
-- **Plotly.js**: For interactive charts and data visualization.
-- **Mapbox GL JS**: For rendering the map and geo-coordinates.
-- **Material UI**: For styling components.
-- **TypeScript**: For type safety and maintainability.
+- **TypeScript**: Ensures type safety and reduces runtime errors by catching issues during development.
+- **OpenAQ API**: Fetches real-time air quality data from monitoring stations worldwide.
+
+### Testing and Deployment
+
+- **JEST**: A testing framework for writing and running unit tests to ensure application reliability.
+- **React Testing Library**: For testing React components in a manner resembling real user interactions.
+- **GitHub Actions**: Automates testing and continuous integration in the development pipeline.
+
+### Tooling and Utilities
+
+- **ESLint**: For maintaining code quality and enforcing consistent coding styles.
+- **Prettier**: For automatic code formatting.
+- **dotenv**: For managing environment variables locally.
 
 ---
 
 ## 🌐 API Integration
 
-The application integrates with the **OpenAQ API** for fetching real-time air quality data. Ensure you have the correct API base URL in the `.env` file:
-
-```env
-REACT_APP_API_BASE_URL=https://api.openaq.org/v1/
-```
-
-For more details, visit the [OpenAQ API Documentation](https://docs.openaq.org/).
+The application integrates with the **OpenAQ API** for fetching real-time air quality data.
 
 ---
 
-## 👩‍💻 Development
-
-### Running Tests
-To run the test suite:
-```bash
-npm test
-```
-
-### Linting
-To check for linting errors:
-```bash
-npm run lint
-```
-
-### Building for Production
-To build the application for production:
-```bash
-npm run build
-```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! To get started:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes and push the branch to your fork.
-4. Submit a pull request describing your changes.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
----
-
-## 🌟 Acknowledgments
-
-- **OpenAQ** for providing air quality data.
-- **Mapbox** for the mapping platform.
-- **Plotly** for interactive charting tools.
-
----
-
-Happy coding! :tada:
+**Explore the air quality around you with Map The Air!**

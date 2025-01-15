@@ -2,7 +2,7 @@ import { Layout, PlotData } from 'plotly.js';
 import { LatestResult } from '../../../react-app-env';
 
 /**
- * **AQI Breakpoints basierend auf den EPA-Richtlinien**
+ * **AQI Breakpoints based oj EPA-Guidelines**
  */
 const AQI_BREAKPOINTS: Record<
   string,
@@ -27,7 +27,7 @@ const AQI_BREAKPOINTS: Record<
     { cLow: 505, cHigh: 604, iLow: 401, iHigh: 500 },
   ],
   o3: [
-    // o3_8h in der ChartFunction
+    // o3_8h in ChartFunction
     { cLow: 0.0, cHigh: 0.054, iLow: 0, iHigh: 50 },
     { cLow: 0.055, cHigh: 0.07, iLow: 51, iHigh: 100 },
     { cLow: 0.071, cHigh: 0.085, iLow: 101, iHigh: 150 },
@@ -114,7 +114,7 @@ export function computeAqiForPollutant(param: string, val: number): number {
 }
 
 /**
- * Berechnet den gesamten AQI als das Maximum der Teil-AQI-Werte.
+ * Calculates overall AQI as a maximum from the Part-AQI-Value.
  */
 export function computeOverallAqi(params: Record<string, number>): number {
   let maxAqi = -1;
@@ -290,7 +290,7 @@ export interface ProcessedLocation {
 const POLLUTANTS_TO_AVG = ['pm25', 'pm10', 'o3', 'co', 'so2', 'no2'];
 
 /**
- * Bestimmt die Farbe basierend auf dem AQI-Wert für Balkendiagramme.
+ * Defines the color of the diagrams.
  */
 function barAqiColor(aqi: number): string {
   if (aqi < 0) return '#bfbfbf';
@@ -302,7 +302,7 @@ function barAqiColor(aqi: number): string {
 }
 
 /**
- * Berechnet den Durchschnitts-AQI für die Balkendiagramme.
+ * Calculates the Average-AQI for the diagrams.
  */
 export function calculateAverageChart(processedLocs: ProcessedLocation[]): {
   data: Partial<PlotData>[];
