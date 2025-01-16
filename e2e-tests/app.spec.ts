@@ -2,8 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('MapTheAir App Basic Tests', () => {
   // Runs once before all tests in this describe-block
-  test.beforeAll(async ({ browser }) => {
-    // You could do any global setup here if needed
+  test.beforeEach(async ({ page }) => {
+    // Navigate to the app and wait until the network is idle (ensuring the app is fully loaded)
+    await page.goto('/');
+    // Wait until no network calls are in flight. Adjust timeout if needed.
+    await page.waitForLoadState('networkidle');
   });
 
   // Test #1: Can we load the page and see the loading overlay?
