@@ -25,6 +25,7 @@ jobs:
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps
 
+      # Start the server, wait for it to be reachable, and run tests
       - name: Run Playwright tests with server
         run: npx start-server-and-test 'yarn start' http://localhost:3000 'yarn playwright test'
 
