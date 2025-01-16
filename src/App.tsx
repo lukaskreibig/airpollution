@@ -179,7 +179,7 @@ const App: React.FC = () => {
             <Dropdown
               handleSelect={handleSelect}
               dataValue={chart}
-              dropdown="Chart"
+              dropdown="View"
               className="chart-dropdown"
             />
             {countriesList.length > 0 && (
