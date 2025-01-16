@@ -1,3 +1,7 @@
+/**
+ * @file Chart.tsx
+ * @desc Main Chart component that coordinates the map, plotly charts, sidebar, mini chart, and legend.
+ */
 import React, {
   useEffect,
   useState,
@@ -5,145 +9,64 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import {
+  Box,
+  IconButton,
+  Typography,
+  Drawer,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  ListItem,
+  ListItemText,
+  List,
+} from '@mui/material';
+import { MenuOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Plot from 'react-plotly.js';
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-  TextField,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  IconButton,
-  Drawer,
-  Typography,
-} from '@mui/material';
-import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  CloseCircleOutlined,
-  MenuOutlined,
-} from '@ant-design/icons';
-import { LatestResult, Country } from '../../../react-app-env';
-import { PlotData } from 'plotly.js';
-
+import Logo from './Logo';
 import {
   calculateBigChart,
   calculateBigLayout,
   calculateAverageChart,
-  // calculateAverageLayout,
   computeAqiForPollutant,
   computeOverallAqi,
   ProcessedLocation,
 } from './ChartFunction';
-import Logo from './Logo';
+import {
+  aqiColor,
+  isValidMeasurement,
+  formatDate,
+  convertIfNeeded,
+  truncateAndConvert,
+  useWindowDimensions,
+  ALLOWED_PARAMS,
+  INITIAL_CENTER,
+  INITIAL_ZOOM,
+} from './chartUtilsHelpers/chartUtilsHelpers';
 
-/**
- * Function to determine the AQI color based on the value.
- */
-function aqiColor(aqi: number): string {
-  if (aqi < 0) return '#bfbfbf'; // No Data
-  if (aqi <= 50) return '#2a9d8f'; // Good
-  if (aqi <= 100) return '#e9c46a'; // Moderate
-  if (aqi <= 150) return '#f4a261'; // Unhealthy
-  if (aqi <= 200) return '#d62828'; // Very Unhealthy
-  return '#9d0208'; // Hazardous
-}
+import { LatestResult, Country } from '../../../react-app-env';
+import { PlotData } from 'plotly.js';
+import Legend from './Legend/Legend';
+import MiniChart from './MiniChart/MiniChart';
 
-/**
- * **Inclusion list for AQI parameters**
- * Includes only the pollutants relevant for AQI.
- */
-const ALLOWED_PARAMS = new Set(['o3', 'pm25', 'pm10', 'so2', 'no2', 'co']);
-
-/**
- * Checks if a measurement is valid based on the inclusion list.
- */
-function isValidMeasurement(param: string, value: number): boolean {
-  if (!ALLOWED_PARAMS.has(param)) return false; // Exclude non-AQI parameters
-  if (value <= 0) return false;
-  if (value > 600) return false;
-  return true;
-}
-
-/**
- * Formats date strings for display.
- */
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    };
-    return d.toLocaleString('de-DE', options);
-  } catch {
-    return dateStr;
-  }
-}
-
-/**
- * Converts measurement values if needed.
- */
-function convertIfNeeded(parameter: string, rawValue: number): number {
-  if (parameter === 'o3') return rawValue / 2000;
-  if (parameter === 'co') return rawValue / 1145;
-  return rawValue;
-}
-
-/**
- * Truncates and converts measurement values based on the parameter.
- */
-function truncateAndConvert(parameter: string, val: number): number {
-  const cVal = convertIfNeeded(parameter.toLowerCase(), val);
-  if (parameter === 'pm25') {
-    return Number(cVal.toFixed(1));
-  } else if (parameter === 'pm10') {
-    return Math.floor(cVal);
-  } else if (parameter === 'o3' || parameter === 'o3_8h') {
-    return Number(cVal.toFixed(3));
-  } else if (parameter === 'co') {
-    return Number(cVal.toFixed(1));
-  } else if (parameter === 'so2' || parameter === 'no2') {
-    return Math.floor(cVal);
-  }
-  return cVal;
-}
-
-/**
- * Hook to get the window dimensions.
- */
-function useWindowDimensions() {
-  const [dims, setDims] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-  useEffect(() => {
-    const handleResize = () =>
-      setDims({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  return dims;
-}
-
-/**
- * Initial map center and zoom.
- */
-const INITIAL_CENTER: [number, number] = [-74.0242, 40.6941];
-const INITIAL_ZOOM = 10.12;
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || '';
 
-type Props = {
+/**
+ * @interface ChartProps
+ * @property {string} chart - The chart type ("1" or "2").
+ * @property {LatestResult[]} locations - Array of measurement data.
+ * @property {string} country - Selected country ID.
+ * @property {Country[]} countriesList - Array of countries.
+ * @property {boolean} showSidebar - Whether the sidebar (drawer) is open.
+ * @property {React.Dispatch<React.SetStateAction<boolean>>} setShowSidebar - Function to toggle sidebar open/close.
+ * @property {() => void} [onMapLoadEnd] - Optional callback after the map finishes loading.
+ */
+interface ChartProps {
   chart: string;
   locations: LatestResult[];
   country: string;
@@ -151,13 +74,13 @@ type Props = {
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
   onMapLoadEnd?: () => void;
-};
+}
 
 /**
- * Chart Component
- * Handles the display of scatter, average, or map charts based on the selected type.
+ * @function Chart
+ * @desc Main chart component for displaying scatter or map-based air quality data, along with a sidebar and mini chart.
  */
-const Chart: React.FC<Props> = ({
+const Chart: React.FC<ChartProps> = ({
   chart,
   locations,
   country,
@@ -166,86 +89,49 @@ const Chart: React.FC<Props> = ({
   setShowSidebar,
   onMapLoadEnd,
 }) => {
+  // -- Window dims
   const { width, height } = useWindowDimensions();
 
-  // State for Plotly data and layout
+  // -- Plotly chart states
   const [plotData, setPlotData] = useState<Partial<PlotData>[]>([]);
   const [plotLayout, setPlotLayout] = useState<Partial<Plotly.Layout>>({});
   const [revision, setRevision] = useState<number>(0);
 
-  // State for Mini Chart
+  // -- Mini chart states
   const [miniChartData, setMiniChartData] = useState<Partial<PlotData>[]>([]);
   const [miniChartLayout, setMiniChartLayout] = useState<
     Partial<Plotly.Layout>
   >({});
   const [miniChartExpanded, setMiniChartExpanded] = useState<boolean>(true);
 
-  // Map references
+  // -- Map references
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
 
-  // Sidebar search and sort states
+  // -- Sidebar search/sort states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortMode, setSortMode] = useState<
     'name' | 'aqi' | 'pm25' | 'pm10' | 'so2' | 'no2' | 'co'
   >('aqi');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Processed locations for sidebar and average chart
+  // -- Processed locations
   const [processedLocs, setProcessedLocs] = useState<ProcessedLocation[]>([]);
 
-  // Active country name
+  // -- Active country name
   const activeCountryName = useMemo(() => {
     const found = countriesList.find((c) => String(c.id) === country);
     return found ? found.name : 'Unknown Country';
   }, [country, countriesList]);
 
   /**
-   * **Formatting function for parameter names in the sidebar**
-   * Returns JSX elements with proper subscripts.
-   * @param param - The pollutant parameter code (e.g., 'pm25', 'o3').
-   * @returns JSX.Element or string with formatted pollutant name.
+   * @function formatParamNameHTML
+   * @desc Formats a pollutant parameter to an HTML string with sub/superscripts.
+   * @param {string} param - The pollutant parameter name
+   * @returns {string} - Formatted HTML string for use in popups
    */
-  const formatParamNameJSX = (param: string): JSX.Element | string => {
-    const mapping: Record<string, JSX.Element | string> = {
-      o3: (
-        <span>
-          O<sub>3</sub>
-        </span>
-      ),
-      pm25: (
-        <span>
-          PM<sub>2.5</sub>
-        </span>
-      ),
-      pm10: (
-        <span>
-          PM<sub>10</sub>
-        </span>
-      ),
-      so2: (
-        <span>
-          SO<sub>2</sub>
-        </span>
-      ),
-      no2: (
-        <span>
-          NO<sub>2</sub>
-        </span>
-      ),
-      co: 'CO',
-    };
-    return mapping[param.toLowerCase()] || param.toUpperCase();
-  };
-
-  /**
-   * **Formatting function for parameter names in the popup HTML**
-   * Returns strings with HTML <sub>-tags.
-   * @param param - The pollutant parameter code (e.g., 'pm25', 'o3').
-   * @returns String with formatted pollutant name.
-   */
-  const formatParamNameHTML = (param: string): string => {
+  const formatParamNameHTML = useCallback((param: string): string => {
     const mapping: Record<string, string> = {
       o3: 'O<sub>3</sub>',
       pm25: 'PM<sub>2.5</sub>',
@@ -255,10 +141,13 @@ const Chart: React.FC<Props> = ({
       co: 'CO',
     };
     return mapping[param.toLowerCase()] || param.toUpperCase();
-  };
+  }, []);
 
   /**
-   * Processes raw locations into processed locations, excluding invalid measurements.
+   * @function processLocations
+   * @desc Converts raw LatestResult locations into a filtered array of ProcessedLocation, excluding invalid data.
+   * @param {LatestResult[]} locs - Raw measurement data
+   * @returns {ProcessedLocation[]} - Array of processed locations
    */
   const processLocations = useCallback(
     (locs: LatestResult[]): ProcessedLocation[] => {
@@ -271,8 +160,7 @@ const Chart: React.FC<Props> = ({
 
         loc.measurements.forEach((m) => {
           const p = m.parameter?.toLowerCase() || '';
-          if (!isValidMeasurement(p, m.value)) return; // Exclude invalid measurements
-
+          if (!isValidMeasurement(p, m.value)) return;
           const conv = truncateAndConvert(p, m.value);
           if (!timestamp && m.lastUpdated) {
             timestamp = formatDate(m.lastUpdated);
@@ -280,34 +168,26 @@ const Chart: React.FC<Props> = ({
           paramObj[p] = conv;
         });
 
-        if (Object.keys(paramObj).length === 0) {
-          return null; // Exclude location if no valid parameters exist
-        }
+        if (Object.keys(paramObj).length === 0) return null;
 
-        // Calculate the overall AQI
         const overallAQI = computeOverallAqi(paramObj);
+        if (overallAQI <= 0) return null;
+        if (Object.keys(paramObj).length < 2) return null;
 
-        // **New condition: Exclude AQI <= 0**
-        if (overallAQI <= 0) {
-          return null; // Exclude locations with AQI 0 or less
-        }
-
-        if (Object.keys(paramObj).length < 2) {
-          return null; // Exclude locations with fewer than two pollutants
-        }
-
-        // Create the popup HTML
         let html = `<div style="font-size:14px;line-height:1.4;">`;
         html += `<strong>${loc.location}</strong><br/>`;
         if (loc.city) html += `City: ${loc.city}<br/>`;
-        html += `Overall AQI: <span style="color:${aqiColor(overallAQI)};font-weight:bold;">${overallAQI < 0 ? '?' : overallAQI}</span><br/>`;
+        html += `Overall AQI: <span style="color:${aqiColor(
+          overallAQI
+        )};font-weight:bold;">${overallAQI < 0 ? '?' : overallAQI}</span><br/>`;
 
         for (const [p, val] of Object.entries(paramObj)) {
           const subAqi = computeAqiForPollutant(p, val);
           const color = aqiColor(subAqi);
-          html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(p)}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? '?' : subAqi})</span><br/>`;
+          html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(
+            p
+          )}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? '?' : subAqi})</span><br/>`;
         }
-        // Add "Last Updated" with smaller font size
         if (timestamp) {
           html += `<span style="font-size:11px; color:gray;">Last Update: <span style="font-weight:bold;">${timestamp}</span></span><br/>`;
         }
@@ -323,14 +203,16 @@ const Chart: React.FC<Props> = ({
           popupHTML: html,
         };
       });
-
       return results.filter((r) => r !== null) as ProcessedLocation[];
     },
-    []
+    [formatParamNameHTML]
   );
 
   /**
-   * Creates GeoJSON data for Mapbox.
+   * @function createGeoJSON
+   * @desc Builds a GeoJSON FeatureCollection from an array of ProcessedLocation objects.
+   * @param {ProcessedLocation[]} plocs - Processed location data
+   * @returns {GeoJSON.FeatureCollection<GeoJSON.Point>} - The resulting GeoJSON data
    */
   const createGeoJSON = useCallback(
     (plocs: ProcessedLocation[]): GeoJSON.FeatureCollection<GeoJSON.Point> => {
@@ -352,14 +234,14 @@ const Chart: React.FC<Props> = ({
           },
         };
       });
-
       return { type: 'FeatureCollection', features };
     },
     []
   );
 
   /**
-   * Helper function to center the map on the selected country.
+   * @function centerMapOnCountry
+   * @desc Centers the map on the currently selected country if coordinates are present.
    */
   const centerMapOnCountry = useCallback(() => {
     const foundCountry = countriesList.find((c) => String(c.id) === country);
@@ -368,14 +250,14 @@ const Chart: React.FC<Props> = ({
       mapRef.current.flyTo({
         center: [lon, lat],
         zoom: 5,
-        essential: true, // For accessible animations
+        essential: true,
         duration: 1000,
       });
     }
   }, [countriesList, country]);
 
   /**
-   * Updates processed locations when the locations change.
+   * Convert raw locations => processedLocs any time locations changes.
    */
   useEffect(() => {
     const plocs = processLocations(locations);
@@ -383,43 +265,8 @@ const Chart: React.FC<Props> = ({
   }, [locations, processLocations]);
 
   /**
-   * Filters and sorts locations for the sidebar list.
-   */
-  const displayedLocs = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const filtered = processedLocs.filter((ploc) => {
-      if (!q) return true;
-      const nameMatch = ploc.name.toLowerCase().includes(q);
-      const cityMatch = ploc.city?.toLowerCase().includes(q) ?? false;
-      return nameMatch || cityMatch;
-    });
-
-    const sorted = [...filtered].sort((a, b) => {
-      const getValue = (
-        loc: ProcessedLocation,
-        param: keyof typeof loc.parameters
-      ): number => loc.parameters[param] ?? -Infinity;
-
-      if (sortMode === 'aqi') {
-        const aVal = computeOverallAqi(a.parameters);
-        const bVal = computeOverallAqi(b.parameters);
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      } else if (ALLOWED_PARAMS.has(sortMode)) {
-        const aVal = getValue(a, sortMode as keyof typeof a.parameters);
-        const bVal = getValue(b, sortMode as keyof typeof b.parameters);
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      const comparison = a.name
-        .toLowerCase()
-        .localeCompare(b.name.toLowerCase());
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-
-    return sorted;
-  }, [processedLocs, searchQuery, sortMode, sortDirection]);
-
-  /**
-   * Adjusts the map view based on the processed locations.
+   * @function adjustMapView
+   * @desc Fits or centers the map around the processed location boundaries.
    */
   const adjustMapView = useCallback(
     (map: mapboxgl.Map, plocs: ProcessedLocation[]) => {
@@ -474,7 +321,8 @@ const Chart: React.FC<Props> = ({
   );
 
   /**
-   * Initializes Mapbox Map.
+   * @function mapRefInit
+   * @desc Initializes the Mapbox map when chart=2.
    */
   const mapRefInit = useCallback(() => {
     if (!mapContainerRef.current) return;
@@ -496,7 +344,6 @@ const Chart: React.FC<Props> = ({
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
-
       map.addLayer({
         id: 'locations-layer',
         type: 'circle',
@@ -506,7 +353,6 @@ const Chart: React.FC<Props> = ({
           'circle-color': ['get', 'overallColor'],
         },
       });
-
       map.addLayer({
         id: 'locations-label',
         type: 'symbol',
@@ -522,16 +368,16 @@ const Chart: React.FC<Props> = ({
         },
       });
 
-      const popup = popupRef.current!;
+      const popupObj = popupRef.current!;
       map.on('mouseenter', 'locations-layer', (e) => {
         map.getCanvas().style.cursor = 'pointer';
         if (!e.features || !e.features[0]) return;
         const html = e.features[0].properties?.popupHTML || '';
-        popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+        popupObj.setLngLat(e.lngLat).setHTML(html).addTo(map);
       });
       map.on('mouseleave', 'locations-layer', () => {
         map.getCanvas().style.cursor = '';
-        popup.remove();
+        popupObj.remove();
       });
 
       map.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -553,7 +399,7 @@ const Chart: React.FC<Props> = ({
   }, [locations, processLocations, createGeoJSON, adjustMapView, onMapLoadEnd]);
 
   /**
-   * Initializes or removes the map based on the selected chart.
+   * If chart=2 => init map; else remove map
    */
   useEffect(() => {
     if (chart !== '2') {
@@ -569,13 +415,14 @@ const Chart: React.FC<Props> = ({
   }, [chart, mapRefInit]);
 
   /**
-   * Refreshes the map if Chart 2 changes.
+   * Refresh map if chart=2 changes or when data updates
    */
   useEffect(() => {
     if (chart === '2' && mapRef.current && mapRef.current.isStyleLoaded()) {
       mapRef.current.resize();
       const plocs = processLocations(locations);
       setProcessedLocs(plocs);
+
       const geojson = createGeoJSON(plocs);
       const src = mapRef.current.getSource('locations-source') as GeoJSONSource;
       src.setData(geojson);
@@ -593,7 +440,7 @@ const Chart: React.FC<Props> = ({
   ]);
 
   /**
-   * Handles Plotly and Layout data.
+   * Build the big Plotly chart if chart=1
    */
   useEffect(() => {
     if (!locations.length) {
@@ -624,7 +471,7 @@ const Chart: React.FC<Props> = ({
   }, [chart, locations, width, height, processedLocs]);
 
   /**
-   * Mini Chart updates on the map.
+   * Build the mini average chart if chart=2
    */
   useEffect(() => {
     if (chart !== '2' || !processedLocs.length) {
@@ -641,6 +488,7 @@ const Chart: React.FC<Props> = ({
     let upper = maxVal * 1.2;
     if (upper < 50) upper = 50;
     if (upper > 500) upper = 500;
+
     const miniLayout: Partial<Plotly.Layout> = {
       width: 280,
       height: 240,
@@ -648,14 +496,16 @@ const Chart: React.FC<Props> = ({
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
       yaxis: { range: [0, upper], title: '' },
-      font: {
-        size: window.innerWidth < 600 ? 10 : 12,
-      },
+      font: { size: window.innerWidth < 600 ? 10 : 12 },
     };
     setMiniChartData(groupedData);
     setMiniChartLayout(miniLayout);
   }, [chart, processedLocs, activeCountryName]);
 
+  /**
+   * @function handleCityMouseEnter
+   * @desc Flies map to a city location on mouse enter (optional).
+   */
   const handleCityMouseEnter = (ploc: ProcessedLocation) => {
     if (chart === '2' && mapRef.current && popupRef.current) {
       mapRef.current.flyTo({
@@ -677,7 +527,8 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Sidebar Toggle
+   * @function toggleSidebar
+   * @desc Opens or closes the sidebar drawer.
    */
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
@@ -697,9 +548,43 @@ const Chart: React.FC<Props> = ({
   };
 
   /**
-   * Toggle Mini Chart Function
+   * @function toggleMiniChart
+   * @desc Expands or collapses the mini average chart overlay.
    */
   const toggleMiniChart = () => setMiniChartExpanded((prev) => !prev);
+
+  /**
+   * @constant displayedLocs
+   * @desc Filtered and sorted array of processedLocs for the sidebar.
+   */
+  const displayedLocs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = processedLocs.filter((ploc) => {
+      if (!q) return true;
+      const nameMatch = ploc.name.toLowerCase().includes(q);
+      const cityMatch = ploc.city?.toLowerCase().includes(q) ?? false;
+      return nameMatch || cityMatch;
+    });
+    const sorted = [...filtered].sort((a, b) => {
+      const getValue = (
+        loc: ProcessedLocation,
+        param: keyof typeof loc.parameters
+      ): number => loc.parameters[param] ?? -Infinity;
+
+      if (sortMode === 'aqi') {
+        const aVal = computeOverallAqi(a.parameters);
+        const bVal = computeOverallAqi(b.parameters);
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      } else if (ALLOWED_PARAMS.has(sortMode)) {
+        const aVal = getValue(a, sortMode as keyof typeof a.parameters);
+        const bVal = getValue(b, sortMode as keyof typeof b.parameters);
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const cmp = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }, [processedLocs, searchQuery, sortMode, sortDirection]);
 
   return (
     <Box display="flex">
@@ -743,15 +628,17 @@ const Chart: React.FC<Props> = ({
               alignItems: 'center',
             }}
           >
-            <TextField
-              label="Search"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-field"
-            />
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                label="Search"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-field"
+              />
+            </Box>
             <FormControl
               size="small"
               variant="outlined"
@@ -800,13 +687,8 @@ const Chart: React.FC<Props> = ({
               }
               className="sort-select"
             >
-              {sortDirection === 'asc' ? (
-                <ArrowUpOutlined />
-              ) : (
-                <ArrowDownOutlined />
-              )}
+              {sortDirection === 'asc' ? '▲' : '▼'}
             </IconButton>
-
             <IconButton
               size="medium"
               onClick={toggleSidebar}
@@ -816,25 +698,30 @@ const Chart: React.FC<Props> = ({
             </IconButton>
           </Box>
 
-          {/* City list */}
           <List dense sx={{ flex: 1, overflowY: 'auto' }}>
             {displayedLocs.map((ploc) => {
               const overallVal = computeOverallAqi(ploc.parameters);
               const bkgColor = aqiColor(overallVal) + '33';
 
-              // Create the parameter lines for each location
               const paramLines: JSX.Element[] = [];
               for (const [p, v] of Object.entries(ploc.parameters)) {
                 const subAqi = computeAqiForPollutant(p, v);
-                if (subAqi < 0) continue; // Exclude invalid measurements
+                if (subAqi < 0) continue;
                 const color = aqiColor(subAqi);
                 paramLines.push(
                   <React.Fragment key={p}>
-                    <Box
-                      component="span"
-                      sx={{ color: color, fontWeight: 'bold' }}
-                    >
-                      {formatParamNameJSX(p)}: {v.toFixed(2)} (AQI {subAqi})
+                    <Box component="span" sx={{ color, fontWeight: 'bold' }}>
+                      {p.toLowerCase() === 'pm25' ||
+                      p.toLowerCase() === 'pm10' ? (
+                        <>
+                          {p.toLowerCase() === 'pm25' ? 'PM₂.₅' : 'PM₁₀'}:{' '}
+                          {v.toFixed(2)} (AQI {subAqi})
+                        </>
+                      ) : (
+                        <>
+                          {p.toUpperCase()}: {v.toFixed(2)} (AQI {subAqi})
+                        </>
+                      )}
                     </Box>
                     <br />
                   </React.Fragment>
@@ -893,12 +780,10 @@ const Chart: React.FC<Props> = ({
       </Drawer>
       {showSidebar && chart === '2' && <Box sx={{ width: 300 }} />}
 
-      {/* Main chart area */}
       <Box
         className="charts"
         sx={{ height: '95vh', display: 'flex', flexDirection: 'row' }}
       >
-        {/* Sidebar toggle button for the map */}
         {chart === '2' && !showSidebar && (
           <IconButton
             onClick={toggleSidebar}
@@ -922,152 +807,23 @@ const Chart: React.FC<Props> = ({
         <Box sx={{ flex: 1, height: '100%' }}>
           {chart === '2' ? (
             <>
-              {/* Card Container */}
+              {/* The map */}
               <div
                 ref={mapContainerRef}
                 className="map-area"
                 style={{ width: '100%', height: '100%' }}
               />
 
-              {/* AQI-Legend */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: 22,
-                  left: showSidebar && chart === '2' ? 310 : 10, // shift right by 300px + some padding
-                  backgroundColor: 'rgba(255,255,255,0.8)',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  borderBottomLeftRadius: '0px',
-                  fontSize: '14px',
-                  fontFamily: 'sans-serif',
-                  zIndex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  transition: 'left 0.3s ease-in-out', // smooth transition when sidebar toggles
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  AQI-Legend
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      mr: 1,
-                      background: '#2a9d8f',
-                    }}
-                  />
-                  <Typography variant="body2">0-50 (Good)</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      mr: 1,
-                      background: '#e9c46a',
-                    }}
-                  />
-                  <Typography variant="body2">51-100 (Moderate)</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      mr: 1,
-                      background: '#f4a261',
-                    }}
-                  />
-                  <Typography variant="body2">101-150 (Unhealthy)</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      mr: 1,
-                      background: '#d62828',
-                    }}
-                  />
-                  <Typography variant="body2">
-                    151-200 (Very Unhealthy)
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      mr: 1,
-                      background: '#9d0208',
-                    }}
-                  />
-                  <Typography variant="body2">201+ (Hazardous)</Typography>
-                </Box>
-              </Box>
+              {/* Legend */}
+              <Legend showSidebar={showSidebar} chart={chart} />
 
-              {/* Mini-Average Chart */}
-              <Box
-                className="average-plot"
-                sx={{
-                  position: 'fixed',
-                  bottom: 70,
-                  right: 30,
-                  width: miniChartExpanded ? 280 : 50,
-                  height: miniChartExpanded ? 240 : 50,
-                  backgroundColor: 'rgba(255,255,255,0.8)',
-                  borderRadius: 2,
-                  padding: miniChartExpanded ? '5px' : '0px',
-                  zIndex: 1200,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                  transition: 'width 0.3s, height 0.3s',
-                }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={toggleMiniChart}
-                  sx={{
-                    position: 'absolute',
-                    top: 2,
-                    right: 2,
-                    zIndex: 1300,
-                    border: '1px solid rgba(0,0,0,0.2)',
-                    backgroundColor: 'white',
-                    '&:hover': { backgroundColor: 'whitesmoke' },
-                  }}
-                >
-                  {miniChartExpanded ? (
-                    <CloseCircleOutlined />
-                  ) : (
-                    <ArrowUpOutlined />
-                  )}
-                </IconButton>
-                {miniChartExpanded && miniChartData.length > 0 && (
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: 'rgba(255,255,255,0.8)',
-                    }}
-                  >
-                    <Plot
-                      data={miniChartData}
-                      layout={miniChartLayout}
-                      style={{ width: '100%', height: '100%' }}
-                      config={{ displayModeBar: false }}
-                    />
-                  </Box>
-                )}
-              </Box>
+              {/* Mini Chart */}
+              <MiniChart
+                miniChartData={miniChartData}
+                miniChartLayout={miniChartLayout}
+                miniChartExpanded={miniChartExpanded}
+                toggleMiniChart={toggleMiniChart}
+              />
             </>
           ) : plotData && plotData.length > 0 ? (
             <Box className="chart-area" sx={{ width: '100%', height: '100%' }}>

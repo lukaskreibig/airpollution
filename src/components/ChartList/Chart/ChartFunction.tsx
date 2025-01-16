@@ -176,7 +176,7 @@ export function calculateBigChart(
         (m) => m.parameter === para.value
       );
       if (!measurement) return;
-      if (measurement.value <= 0) return; // skip negative
+      if (measurement.value <= 0) return;
       if (measurement.value >= para.min && measurement.value <= para.max) {
         const value = measurement.value;
         const locationName = loc.location + (loc.city ? `, ${loc.city}` : '');

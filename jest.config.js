@@ -3,7 +3,4 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
   preset: 'ts-jest/presets/js-with-babel',
   transformIgnorePatterns: ['/node_modules/(?!(@bundled-es-modules)/)'],
-  moduleNameMapper: {
-    '^mapbox-gl$': '<rootDir>/src/__mocks__/mapbox-gl.js',
-  },
 };

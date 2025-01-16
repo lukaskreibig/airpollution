@@ -9,15 +9,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default [
-  // Configuration for TypeScript files
   {
-    files: ['**/*.{ts,tsx}'], // Target TypeScript files
+    files: ['**/*.{ts,tsx}'],
     ignores: ['src/setupTests.ts'],
     languageOptions: {
       parser: typescriptEslintParser,
       parserOptions: {
-        tsconfigRootDir: __dirname, // Use the directory of the eslint.config.js
-        project: ['./tsconfig.json'], // Path to your tsconfig.json
+        tsconfigRootDir: __dirname,
+        project: ['./tsconfig.json'],
       },
     },
     plugins: {
@@ -30,9 +29,8 @@ export default [
       'prettier/prettier': ['error'],
     },
   },
-  // Configuration for JavaScript files
   {
-    files: ['**/*.{js,jsx}'], // Target JavaScript files
+    files: ['**/*.{js,jsx}'],
     plugins: {
       prettier: eslintPluginPrettier,
     },
