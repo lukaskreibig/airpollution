@@ -41,7 +41,6 @@ import {
   aqiColor,
   isValidMeasurement,
   formatDate,
-  convertIfNeeded,
   truncateAndConvert,
   useWindowDimensions,
   ALLOWED_PARAMS,
