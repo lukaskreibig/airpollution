@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LatestResult, Country } from '../../react-app-env';
 import Chart from './Chart/Chart';
 
@@ -21,6 +21,10 @@ const ChartList: React.FC<Props> = ({
   setShowSidebar,
   onMapLoadEnd,
 }) => {
+  useEffect(() => {
+    console.log('chart', chart);
+  }, [chart]);
+
   if (!locations.length) {
     return (
       <div className="charts" id="message">

@@ -1,4 +1,9 @@
-// src/App.tsx
+/**
+ * @file App.tsx
+ * @desc Main application component that fetches data from OpenAQ and renders a scatter or map view.
+ *       It also controls a Joyride tutorial for first-time users and displays a legal/privacy link
+ *       once the map has fully loaded.
+ */
 
 import React, { useEffect, useState, useCallback } from 'react';
 import './App.css';
@@ -6,7 +11,7 @@ import ChartList from './components/ChartList/ChartList';
 import Dropdown from './components/Dropdown/Dropdown';
 import { SelectChangeEvent, Box } from '@mui/material';
 import { Country, Data } from './react-app-env';
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+import Joyride, { CallBackProps, Step } from 'react-joyride';
 import LoadingOverlay from './assets/LoadingOverlay';
 import { Analytics } from '@vercel/analytics/react';
 import LegalModal from './components/LegalModal';
@@ -14,55 +19,57 @@ import tourSteps from './components/tourSteps';
 import PersistentOverlay from './components/PersistentOverlay';
 
 /**
- * This App fetches data from OpenAQ, displaying scatter (chart=1), or map (2).
- * The LoadingOverlay re-appears whenever "country/time" changes.
- * For chart=2, we wait for the map to fully load (onMapLoadEnd -> setMapLoaded(true)).
- * For chart=1 there's no map, so we automatically set mapLoaded=true once data is fetched.
+ * Fetches data from OpenAQ, displays it as either a scatter chart (chart=1) or map (chart=2),
+ * and coordinates application state such as loading indicators, Joyride steps, and legal disclaimers.
+ * @returns The main React component for the application.
  */
-
 const App: React.FC = () => {
+  /**
+   * @property data - The fetched data from OpenAQ.
+   * @property countriesList - A list of countries from the API.
+   * @property dataLoaded - Controls the spinner for data load state.
+   * @property mapLoaded - Controls the spinner for map load state.
+   * @property error - Any error message from fetching data.
+   * @property time - The selected temporal range.
+   * @property chart - The selected chart type (1=scatter, 2=map).
+   * @property country - The selected country ID.
+   * @property showSidebar - Whether the sidebar is visible.
+   * @property runTour - Whether the Joyride tutorial should run.
+   * @property steps - Steps for the Joyride tutorial.
+   * @property isLegalOpen - Whether the legal modal is open.
+   * @property linkVisible - Whether to show the legal link (after map load).
+   * @property baseUrl - The base URL for the data API.
+   */
   const [data, setData] = useState<Data | null>(null);
   const [countriesList, setCountriesList] = useState<Country[]>([]);
-
-  // Flags to control spinner logic
   const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
-
   const [error, setError] = useState<string | null>(null);
-
-  // States for time, chart, country
   const [time, setTime] = useState<string>('month');
   const [chart, setChart] = useState<string>('2');
-  const [country, setCountry] = useState<string>('50'); // Germany
-
+  const [country, setCountry] = useState<string>('50');
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
-
-  // Joyride states
   const [runTour, setRunTour] = useState<boolean>(false);
   const [steps, setSteps] = useState<Step[]>([]);
-
-  // Legal modal
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
 
-  // Show "Legal & Privacy" link only after map is fully loaded
   const linkVisible = mapLoaded;
-
   const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData';
 
-  // Async fetch data
+  /**
+   * Asynchronously fetches air quality data and a list of countries from the API.
+   * Resets the loading flags before fetching and handles error or success states.
+   */
   const getData = useCallback(async () => {
     try {
-      // Whenever the user picks a new country/time, reset both flags => show spinner
       setDataLoaded(false);
       setMapLoaded(false);
-
       const [latestFetch, countriesFetch] = await Promise.all([
         fetch(
           `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=2000`
         ),
         fetch(`${baseUrl}?path=/v3/countries?limit=200`),
       ]);
-
       if (!latestFetch.ok || !countriesFetch.ok) {
         throw new Error(
           `Error fetching data: ${
@@ -75,7 +82,6 @@ const App: React.FC = () => {
 
       const airQualityData: Data = await latestFetch.json();
       const countriesData: { results: Country[] } = await countriesFetch.json();
-
       setData(airQualityData);
       setCountriesList(countriesData.results);
       setError(null);
@@ -91,20 +97,26 @@ const App: React.FC = () => {
     }
   }, [baseUrl, country, time]);
 
+  /**
+   * Initializes data fetching and sets Joyride steps on mount.
+   */
   useEffect(() => {
     getData();
-    // Setzen der aus der separaten Datei importierten Tour-Steps
     setSteps(tourSteps);
   }, [getData]);
 
-  // Wenn chart !== '2', gibt es keine Map => setze mapLoaded true, sobald die Daten geladen wurden
+  /**
+   * If there's no map (chart !== '2'), mark the map loaded once data is fetched.
+   */
   useEffect(() => {
     if (dataLoaded && chart !== '2') {
       setMapLoaded(true);
     }
   }, [chart, dataLoaded]);
 
-  // Tour bei chart === '2' starten (wenn noch nicht besucht)
+  /**
+   * Starts the Joyride tour if chart=2, data is loaded, and no localStorage visit flag is set.
+   */
   useEffect(() => {
     if (dataLoaded && chart === '2') {
       const hasVisited = localStorage.getItem('hasVisited');
@@ -116,18 +128,27 @@ const App: React.FC = () => {
     }
   }, [chart, dataLoaded]);
 
+  /**
+   * Handles Joyride's callback. Skips or finishes the tutorial and sets localStorage accordingly.
+   * @param info - Contains status information about Joyride events.
+   */
   const handleJoyrideCallback = (info: CallBackProps) => {
-    const { status } = info;
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      setRunTour(false);
-      localStorage.setItem('hasVisited', 'true');
+    if (info.status === 'skipped' || info.status === 'finished') {
+      setTimeout(() => {
+        setRunTour(false);
+        localStorage.setItem('hasVisited', 'true');
+      }, 100);
     }
   };
 
+  /**
+   * Handles dropdown selections for country, chart type, and time.
+   * @param event - The select change event.
+   */
   const handleSelect = (event: SelectChangeEvent) => {
     if (event.target.name === 'Country') {
       setCountry(event.target.value as string);
-    } else if (event.target.name === 'Chart') {
+    } else if (event.target.name === 'View') {
       setChart(event.target.value as string);
     } else if (event.target.name === 'Time') {
       setTime(event.target.value as string);
@@ -136,6 +157,10 @@ const App: React.FC = () => {
 
   const loadingOverlayActive = !dataLoaded || !mapLoaded;
 
+  /**
+   * Renders the main application layout including the Joyride tutorial,
+   * loading overlay, chart/map display, and legal/privacy modal.
+   */
   return (
     <div className="App" style={{ height: '90vh', position: 'relative' }}>
       {runTour && <PersistentOverlay />}
@@ -153,12 +178,10 @@ const App: React.FC = () => {
           },
         }}
       />
-
       <LoadingOverlay
         loading={loadingOverlayActive}
         message="Loading data & map..."
       />
-
       <Box
         style={{
           position: 'relative',
@@ -193,19 +216,16 @@ const App: React.FC = () => {
             )}
           </Box>
         </Box>
-
         {error && (
           <Box className="charts" id="message">
             {`Error fetching data: ${error}`}
           </Box>
         )}
-
         {!data && !dataLoaded && (
           <Box className="charts" id="message">
             Loading data for the first time. This might take a while!
           </Box>
         )}
-
         {data && (
           <ChartList
             locations={data.results}
@@ -218,7 +238,6 @@ const App: React.FC = () => {
           />
         )}
       </Box>
-
       {linkVisible && (
         <Box
           sx={{
@@ -260,7 +279,6 @@ const App: React.FC = () => {
           </Box>
         </Box>
       )}
-
       <Analytics />
       <LegalModal open={isLegalOpen} onClose={() => setIsLegalOpen(false)} />
     </div>
