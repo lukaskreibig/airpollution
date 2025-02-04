@@ -5,12 +5,10 @@
  *       once the map has fully loaded.
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import './App.css';
 import ChartList from './components/ChartList/ChartList';
-import Dropdown from './components/Dropdown/Dropdown';
-import { SelectChangeEvent, Box } from '@mui/material';
-import { Country, Data } from './react-app-env';
+import { Box } from '@mui/material';
 import Joyride, { CallBackProps, Step } from 'react-joyride';
 import LoadingOverlay from './assets/LoadingOverlay';
 import { Analytics } from '@vercel/analytics/react';
@@ -25,100 +23,52 @@ import PersistentOverlay from './components/PersistentOverlay';
  */
 const App: React.FC = () => {
   /**
-   * @property data - The fetched data from OpenAQ.
-   * @property countriesList - A list of countries from the API.
    * @property dataLoaded - Controls the spinner for data load state.
    * @property mapLoaded - Controls the spinner for map load state.
    * @property error - Any error message from fetching data.
-   * @property time - The selected temporal range.
-   * @property chart - The selected chart type (1=scatter, 2=map).
-   * @property country - The selected country ID.
    * @property showSidebar - Whether the sidebar is visible.
    * @property runTour - Whether the Joyride tutorial should run.
    * @property steps - Steps for the Joyride tutorial.
    * @property isLegalOpen - Whether the legal modal is open.
    * @property linkVisible - Whether to show the legal link (after map load).
-   * @property baseUrl - The base URL for the data API.
    */
-  const [data, setData] = useState<Data | null>(null);
-  const [countriesList, setCountriesList] = useState<Country[]>([]);
   const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [time, setTime] = useState<string>('month');
-  const [chart, setChart] = useState<string>('2');
-  const [country, setCountry] = useState<string>('50');
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [runTour, setRunTour] = useState<boolean>(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
+  const [waqiData, setWaqiData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const linkVisible = mapLoaded;
-  const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData';
-
-  /**
-   * Asynchronously fetches air quality data and a list of countries from the API.
-   * Resets the loading flags before fetching and handles error or success states.
-   */
-  const getData = useCallback(async () => {
-    try {
-      setDataLoaded(false);
-      setMapLoaded(false);
-      const [latestFetch, countriesFetch] = await Promise.all([
-        fetch(
-          `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=2000`
-        ),
-        fetch(`${baseUrl}?path=/v3/countries?limit=200`),
-      ]);
-      if (!latestFetch.ok || !countriesFetch.ok) {
-        throw new Error(
-          `Error fetching data: ${
-            !latestFetch.ok
-              ? `Latest Data ${latestFetch.status}`
-              : `Country Data: ${countriesFetch.status}`
-          }`
-        );
-      }
-
-      const airQualityData: Data = await latestFetch.json();
-      const countriesData: { results: Country[] } = await countriesFetch.json();
-      setData(airQualityData);
-      setCountriesList(countriesData.results);
-      setError(null);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(String(err));
-      }
-      setData(null);
-    } finally {
-      setDataLoaded(true);
-    }
-  }, [baseUrl, country, time]);
 
   /**
    * Initializes data fetching and sets Joyride steps on mount.
    */
   useEffect(() => {
-    getData();
     setSteps(tourSteps);
-  }, [getData]);
+  }, []);
 
   /**
    * If there's no map (chart !== '2'), mark the map loaded once data is fetched.
    */
   useEffect(() => {
-    if (dataLoaded && chart !== '2') {
+    if (dataLoaded) {
       setMapLoaded(true);
     }
-  }, [chart, dataLoaded]);
+  }, [dataLoaded]);
+
+  useEffect(() => {
+    console.log('waqiData', waqiData);
+  }, [waqiData]);
 
   /**
    * Starts the Joyride tour if chart=2, data is loaded, and no localStorage visit flag is set.
    */
   useEffect(() => {
-    if (dataLoaded && chart === '2') {
+    if (dataLoaded) {
       const hasVisited = localStorage.getItem('hasVisited');
       if (!hasVisited) {
         setShowSidebar(true);
@@ -126,7 +76,35 @@ const App: React.FC = () => {
         return () => clearTimeout(timer);
       }
     }
-  }, [chart, dataLoaded]);
+  }, [dataLoaded]);
+
+  /**
+   * Fetches WAQI data from the backend endpoint on mount.
+   */
+  useEffect(() => {
+    const token =
+      process.env.REACT_APP_WAQI_TOKEN ||
+      '5c0b5d3ed39e6f3835ec52a347f4a0243fd7ad6e';
+    // Direct WAQI API endpoint
+    fetch(
+      `https://api.waqi.info/map/bounds?latlng=47.2701,5.8663,55.0992,15.0419&token=${token}`,
+      { cache: 'no-store' }
+    )
+      .then((r) => r.json())
+      .then((result) => {
+        // Filter out items with aqi equal to "-"
+        const filteredData = result.data.filter(
+          (item: any) => item.aqi !== '-'
+        );
+        setWaqiData({ ...result, data: filteredData });
+        setDataLoaded(true); // <-- mark data as loaded
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Initial WAQI fetch error:', err);
+        setLoading(false);
+      });
+  }, []);
 
   /**
    * Handles Joyride's callback. Skips or finishes the tutorial and sets localStorage accordingly.
@@ -141,21 +119,38 @@ const App: React.FC = () => {
     }
   };
 
-  /**
-   * Handles dropdown selections for country, chart type, and time.
-   * @param event - The select change event.
-   */
-  const handleSelect = (event: SelectChangeEvent) => {
-    if (event.target.name === 'Country') {
-      setCountry(event.target.value as string);
-    } else if (event.target.name === 'View') {
-      setChart(event.target.value as string);
-    } else if (event.target.name === 'Time') {
-      setTime(event.target.value as string);
-    }
-  };
+  const loadingOverlayActive = loading || !mapLoaded;
 
-  const loadingOverlayActive = !dataLoaded || !mapLoaded;
+  // Debounce reference for map moveend callbacks.
+  const moveEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Memoize handleMapMoveEnd with debounce.
+  const handleMapMoveEnd = useCallback((bbox: string) => {
+    if (moveEndTimeoutRef.current) {
+      clearTimeout(moveEndTimeoutRef.current);
+    }
+    moveEndTimeoutRef.current = setTimeout(() => {
+      const token =
+        process.env.REACT_APP_WAQI_TOKEN ||
+        '5c0b5d3ed39e6f3835ec52a347f4a0243fd7ad6e';
+      fetch(`https://api.waqi.info/map/bounds?latlng=${bbox}&token=${token}`, {
+        cache: 'no-store',
+      })
+        .then((r) => r.json())
+        .then((result) => {
+          // Only update state if new data is different
+          setWaqiData((prevData: any) => {
+            if (JSON.stringify(prevData) === JSON.stringify(result)) {
+              return prevData;
+            }
+            return result;
+          });
+        })
+        .catch((err) => {
+          console.error('Fetch on map moveend error:', err);
+        });
+    }, 500);
+  }, []);
 
   /**
    * Renders the main application layout including the Joyride tutorial,
@@ -190,53 +185,21 @@ const App: React.FC = () => {
           height: '100%',
         }}
       >
-        <Box
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: showSidebar && chart === '2' ? '320px' : '70px',
-            zIndex: 1,
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
-            <Dropdown
-              handleSelect={handleSelect}
-              dataValue={chart}
-              dropdown="View"
-              className="chart-dropdown"
-            />
-            {countriesList.length > 0 && (
-              <Dropdown
-                handleSelect={handleSelect}
-                dataValue={country}
-                dropdown="Country"
-                countries={countriesList}
-                className="country-dropdown"
-              />
-            )}
-          </Box>
-        </Box>
         {error && (
           <Box className="charts" id="message">
             {`Error fetching data: ${error}`}
           </Box>
         )}
-        {!data && !dataLoaded && (
+        {!dataLoaded && (
           <Box className="charts" id="message">
             Loading data for the first time. This might take a while!
           </Box>
         )}
-        {data && (
-          <ChartList
-            locations={data.results}
-            chart={chart}
-            country={country}
-            countriesList={countriesList}
-            showSidebar={showSidebar}
-            setShowSidebar={setShowSidebar}
-            onMapLoadEnd={() => setMapLoaded(true)}
-          />
-        )}
+        <ChartList
+          waqiData={waqiData?.data}
+          onDataChange={(data) => setWaqiData({ data })}
+          onMapMoveEnd={handleMapMoveEnd}
+        />
       </Box>
       {linkVisible && (
         <Box
@@ -269,12 +232,12 @@ const App: React.FC = () => {
           <Box>
             Data courtesy of{' '}
             <a
-              href="https://openaq.org/"
+              href="https://waqi.info/"
               target="_blank"
               rel="noopener noreferrer"
               style={{ textDecoration: 'underline', color: '#555' }}
             >
-              OpenAQ
+              WAQI
             </a>
           </Box>
         </Box>

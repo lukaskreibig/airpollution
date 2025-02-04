@@ -14,11 +14,14 @@ export interface Meta {
 }
 
 export interface LatestResult {
-  location: string;
-  city: string | null;
-  country: string;
-  coordinates: Coordinates;
-  measurements: Measurement[];
+  lat: number;
+  lon: number;
+  uid: number;
+  aqi: string; // string from the API, convert to number as needed
+  station: {
+    name: string;
+    time: string;
+  };
 }
 
 export interface Coordinates {

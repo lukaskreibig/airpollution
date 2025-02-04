@@ -1,51 +1,38 @@
-import React, { useEffect } from 'react';
-import { LatestResult, Country } from '../../react-app-env';
+import React from 'react';
 import Chart from './Chart/Chart';
+import Sidebar from '../Sidebar/Sidebar';
 
-type Props = {
-  locations: LatestResult[];
-  chart: string;
-  country: string;
-  countriesList: Country[];
-  showSidebar: boolean;
-  setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
-  onMapLoadEnd?: () => void;
-};
+interface ChartListProps {
+  waqiData?: Array<any>;
+  locations?: Array<any>;
+  chart?: string;
+  country?: string;
+  countriesList?: Array<any>;
+  showSidebar?: boolean;
+  setShowSidebar?: React.Dispatch<React.SetStateAction<boolean>>;
+  onDataChange?: (data: any[]) => void;
+  onMapMoveEnd?: (bbox: string) => void;
+}
 
-const ChartList: React.FC<Props> = ({
+function ChartList({
+  waqiData,
   locations,
-  chart,
-  country,
-  countriesList,
-  showSidebar,
-  setShowSidebar,
-  onMapLoadEnd,
-}) => {
-  useEffect(() => {
-    console.log('chart', chart);
-  }, [chart]);
-
-  if (!locations.length) {
-    return (
-      <div className="charts" id="message">
-        No data found. Possibly no up-to-date data for this country.
-      </div>
-    );
-  }
-
+  onDataChange,
+  onMapMoveEnd,
+}: ChartListProps) {
+  const data = waqiData || locations || [];
   return (
-    <div style={{ width: '100%', height: '100%', flex: 1 }}>
-      <Chart
-        locations={locations}
-        chart={chart}
-        country={country}
-        countriesList={countriesList}
-        showSidebar={showSidebar}
-        setShowSidebar={setShowSidebar}
-        onMapLoadEnd={onMapLoadEnd}
-      />
+    <div style={{ display: 'flex', height: '100%' }}>
+      <Sidebar points={data} />
+      <div style={{ flexGrow: 1 }}>
+        <Chart
+          waqiData={data}
+          onDataChange={onDataChange}
+          onMapMoveEnd={onMapMoveEnd}
+        />
+      </div>
     </div>
   );
-};
+}
 
 export default ChartList;
