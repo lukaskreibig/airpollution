@@ -1,9 +1,0 @@
-
-{
-  "rewrites": [
-    {
-      "source": "/api/fetchData",
-      "destination": "/api/fetchData.js"
-    }
-  ]
-}
