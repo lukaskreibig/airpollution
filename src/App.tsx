@@ -87,7 +87,7 @@ const App: React.FC = () => {
       '5c0b5d3ed39e6f3835ec52a347f4a0243fd7ad6e';
     // Direct WAQI API endpoint
     fetch(
-      `https://api.waqi.info/map/bounds?latlng=47.2701,5.8663,55.0992,15.0419&token=${token}`,
+      `https://api.waqi.info/map/bounds?latlng=-85.05112899999966,-190.25546258719436,85.05112877980659,288.47015888445804&token=${token}`,
       { cache: 'no-store' }
     )
       .then((r) => r.json())
