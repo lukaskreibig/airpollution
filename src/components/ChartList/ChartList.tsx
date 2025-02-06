@@ -1,50 +1,43 @@
-import React, { useEffect } from 'react';
-import { LatestResult, Country } from '../../react-app-env';
-import Chart from './Chart/Chart';
+import React from 'react';
+import { Box } from '@mui/material';
+import ChartOrMap from './Chart/ChartOrMap';
 
-type Props = {
-  locations: LatestResult[];
+interface ChartListProps {
+  locations: any[];
   chart: string;
-  country: string;
-  countriesList: Country[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
-  onMapLoadEnd?: () => void;
-};
+  onMapIdle?: () => void;
+  onMapBoundsChange?: (sw: [number, number], ne: [number, number]) => void;
+}
 
-const ChartList: React.FC<Props> = ({
+const ChartList: React.FC<ChartListProps> = ({
   locations,
   chart,
-  country,
-  countriesList,
   showSidebar,
   setShowSidebar,
-  onMapLoadEnd,
+  onMapIdle,
+  onMapBoundsChange,
 }) => {
-  useEffect(() => {
-    console.log('chart', chart);
-  }, [chart]);
-
   if (!locations.length) {
     return (
-      <div className="charts" id="message">
-        No data found. Possibly no up-to-date data for this country.
-      </div>
+      <Box className="charts" id="message">
+        No air quality data found for this region at this time.
+      </Box>
     );
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', flex: 1 }}>
-      <Chart
+    <Box sx={{ width: '100%', height: '100%', flex: 1 }}>
+      <ChartOrMap
         locations={locations}
         chart={chart}
-        country={country}
-        countriesList={countriesList}
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
-        onMapLoadEnd={onMapLoadEnd}
+        onMapIdle={onMapIdle}
+        onMapBoundsChange={onMapBoundsChange}
       />
-    </div>
+    </Box>
   );
 };
 
