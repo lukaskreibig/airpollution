@@ -1,4 +1,3 @@
-// api/waqi/[...path].js
 export default async function handler(req, res) {
   try {
     const { path = [], ...query } = req.query;
