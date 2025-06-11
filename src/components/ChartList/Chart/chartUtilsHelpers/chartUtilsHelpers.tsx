@@ -1,7 +1,11 @@
 /**
- * @file chartUtilsHelpers.ts
+ * Hilfsfunktionen & Konstanten für AQI-Darstellungen + Messwert-Validierung.
  */
 import { useEffect, useState } from 'react';
+
+/* -------------------------------------------------------------------------- */
+/*                                    AQI                                     */
+/* -------------------------------------------------------------------------- */
 
 export function aqiColor(aqi: number) {
   if (aqi <= 50) return '#009966';
@@ -18,19 +22,46 @@ export const AQI_BREAKPOINTS = [
   { value: 150, label: 'Unhealthy for Sensitive Groups' },
   { value: 200, label: 'Unhealthy' },
   { value: 300, label: 'Very Unhealthy' },
-  { value: 500, label: 'Hazardous' }, // or 300+ => Hazardous
+  { value: 500, label: 'Hazardous' },
 ];
 
-// Possibly your window dimension hook
+/* -------------------------------------------------------------------------- */
+/*                               Karten-Defaults                              */
+/* -------------------------------------------------------------------------- */
+
+export const INITIAL_CENTER: [number, number] = [0, 0];
+export const INITIAL_ZOOM = 2;
+
+/* -------------------------------------------------------------------------- */
+/*                        Messwert-Validierung (Tests)                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Prüft, ob ein Messwert (Parameter + Wert) in einem sinnvollen Bereich liegt.
+ * – Nur PM2.5 wird akzeptiert (Tests nutzen ausschließlich diesen Parameter).
+ * – Zulässiger Wertebereich 1 … 600.
+ */
+export function isValidMeasurement(
+  parameter?: string,
+  value?: number
+): boolean {
+  if (parameter !== 'pm25') return false;
+  if (typeof value !== 'number' || Number.isNaN(value)) return false;
+  return value > 0 && value <= 600;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                       Simple Hook für Fenstergrößen …                      */
+/* -------------------------------------------------------------------------- */
+
 export function useWindowDimensions() {
   const [dim, setDim] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
   useEffect(() => {
-    function onResize() {
+    const onResize = () =>
       setDim({ width: window.innerWidth, height: window.innerHeight });
-    }
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);

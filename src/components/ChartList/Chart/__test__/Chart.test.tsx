@@ -36,10 +36,10 @@ describe('Chart (Unit Tests)', () => {
 
     render(
       <Chart
-        locations={mockLocations}
         chart="1"
         showSidebar={false}
         setShowSidebar={jest.fn()}
+        locations={[]}
       />
     );
 

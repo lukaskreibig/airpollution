@@ -82,12 +82,6 @@
     "lint:fix": "eslint './src/**/*.{ts,tsx}' --fix",
     "format": "prettier --write './src/**/*.{ts,tsx,js,jsx,json,css,scss}'"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "browserslist": {
     "production": [
       ">0.2%",

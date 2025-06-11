@@ -21,37 +21,34 @@ import {
 } from '@mui/material';
 import { MenuOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Plot from 'react-plotly.js';
-import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
-
+import mapboxgl, { GeoJSONSource, LngLatBounds } from 'mapbox-gl';
 import Logo from './Logo';
 import Legend from './Legend/Legend';
 import MiniChart from './MiniChart/MiniChart';
-
 import {
   calculateBigChart,
   calculateBigLayout,
   calculateAverageChart,
 } from './ChartFunction';
-
 import {
   aqiColor,
   AQI_BREAKPOINTS,
   useWindowDimensions,
 } from './chartUtilsHelpers/chartUtilsHelpers';
-
 import './sidebarTransitions.css';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || '';
 
+/* -------------------------------------------------------------------------- */
+/*                                    TYPES                                   */
+/* -------------------------------------------------------------------------- */
+
 interface StationData {
   lat: number;
   lon: number;
   aqi: string;
-  station?: {
-    name?: string;
-    time?: string;
-  };
+  station?: { name?: string; time?: string };
 }
 
 interface LocalPoint {
@@ -72,6 +69,10 @@ interface ChartOrMapProps {
   onMapBoundsChange?: (sw: [number, number], ne: [number, number]) => void;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               MAIN COMPONENT                               */
+/* -------------------------------------------------------------------------- */
+
 const ChartOrMap: React.FC<ChartOrMapProps> = ({
   chart,
   locations,
@@ -80,63 +81,77 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
   onMapIdle,
   onMapBoundsChange,
 }) => {
+  /* ------------------------------ window dims ----------------------------- */
   const { width, height } = useWindowDimensions();
+
+  /* ------------------------------- plot state ----------------------------- */
   const [revision, setRevision] = useState(0);
 
+  /* ------------------------------ mini-chart ------------------------------ */
   const [miniChartData, setMiniChartData] = useState<{ aqi: number }[]>([]);
   const [miniChartLayout, setMiniChartLayout] = useState<any>({});
   const [miniChartExpanded, setMiniChartExpanded] = useState(true);
 
+  /* -------------------------------- map refs ------------------------------ */
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
-
   const [mapIsIdle, setMapIsIdle] = useState(false);
 
+  /* ----------------------------- sidebar state ---------------------------- */
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<'name' | 'aqi'>('aqi');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  /* ----------------------------- processed pts --------------------------- */
   const [points, setPoints] = useState<LocalPoint[]>([]);
 
-  useEffect(() => {
-    const arr = locations
-      .map((loc) => {
-        const aqiNum = parseInt(loc.aqi, 10);
-        if (!loc.lat || !loc.lon || isNaN(aqiNum) || aqiNum < 0) return null;
+  /* ------------------------------------------------------------------------ */
+  /*                               DATA MAPPING                               */
+  /* ------------------------------------------------------------------------ */
 
-        const stationName = loc.station?.name || 'Unknown';
+  useEffect(() => {
+    const arr: LocalPoint[] = locations
+      .map((loc, i) => {
+        const aqiNum = parseInt(loc.aqi, 10);
+        if (!loc.lat || !loc.lon || Number.isNaN(aqiNum) || aqiNum < 0)
+          return null;
+
+        const stationName = loc.station?.name || `Station #${i + 1}`;
         const updated = loc.station?.time
           ? new Date(loc.station.time).toLocaleString()
           : '';
 
-        const popupHTML = `
-          <div style="font-size:14px;line-height:1.4;">
-            <strong>${stationName}</strong><br/>
-            AQI: <span style="color:${aqiColor(aqiNum)};font-weight:bold;">${aqiNum}</span><br/>
-            ${
-              updated
-                ? `<span style="font-size:11px; color:gray;">Last Update: <b>${updated}</b></span>`
-                : ''
-            }
-          </div>
-        `;
         return {
           name: stationName,
           lat: loc.lat,
           lon: loc.lon,
           aqi: aqiNum,
           timestamp: updated,
-          popupHTML,
+          popupHTML: `<div style="font-size:14px;line-height:1.4;">
+              <strong>${stationName}</strong><br/>
+              AQI: <span style="color:${aqiColor(
+                aqiNum
+              )};font-weight:bold;">${aqiNum}</span><br/>
+              ${
+                updated
+                  ? `<span style="font-size:11px;color:gray;">Last Update: <b>${updated}</b></span>`
+                  : ''
+              }
+            </div>`,
         };
       })
       .filter(Boolean) as LocalPoint[];
+
     setPoints(arr);
   }, [locations]);
 
+  /* ------------------------------------------------------------------------ */
+  /*                              MAP INITIALISIERUNG                         */
+  /* ------------------------------------------------------------------------ */
+
   useEffect(() => {
-    if (chart !== '2') return;
-    if (mapRef.current || !mapContainerRef.current) return;
+    if (chart !== '2' || mapRef.current || !mapContainerRef.current) return;
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -151,7 +166,9 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
       closeOnClick: false,
     });
 
+    /* --------------------------- Quelle + Layer --------------------------- */
     map.on('load', () => {
+      /* ---------------------- GEOJSON-Quelle (clustering) --------------------- */
       map.addSource('locations-source', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -163,6 +180,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
         },
       });
 
+      /* ----------------------------- Cluster-Kreise --------------------------- */
       map.addLayer({
         id: 'clusters',
         type: 'circle',
@@ -191,6 +209,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
         },
       });
 
+      /* ------------------------- Cluster-Label (AQI) -------------------------- */
       map.addLayer({
         id: 'cluster-label',
         type: 'symbol',
@@ -202,7 +221,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
             ['round', ['/', ['get', 'sumAQI'], ['get', 'point_count']]],
           ],
           'text-size': 12,
-          'text-offset': [0, 0.0],
+          'text-offset': [0, 0],
         },
         paint: {
           'text-color': '#ffffff',
@@ -211,6 +230,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
         },
       });
 
+      /* -------------------------- Einzelpunkt-Kreise -------------------------- */
       map.addLayer({
         id: 'unclustered-point',
         type: 'circle',
@@ -226,6 +246,8 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
           'circle-color-transition': { duration: 600, delay: 0 },
         },
       });
+
+      /* ------------------------ Einzelpunkt-Label (AQI) ----------------------- */
       map.addLayer({
         id: 'unclustered-label',
         type: 'symbol',
@@ -243,36 +265,35 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
         },
       });
 
+      /* -------------------- Hover-Popup für Einzelpunkte ---------------------- */
       map.on('mouseenter', 'unclustered-point', (e) => {
         map.getCanvas().style.cursor = 'pointer';
         const feat = e.features?.[0];
-        console.log('feat', feat);
         if (!feat) return;
         const html = feat.properties?.popupHTML || '';
         popupRef.current?.setLngLat(e.lngLat).setHTML(html).addTo(map);
-        console.log('html', html);
-        console.log(
-          'popupref',
-          popupRef.current?.setLngLat(e.lngLat).setHTML(html).addTo(map)
-        );
       });
       map.on('mouseleave', 'unclustered-point', () => {
         map.getCanvas().style.cursor = '';
         popupRef.current?.remove();
       });
 
+      /* ----------------------- Hover-Popup für Cluster ------------------------ */
       map.on('mouseenter', 'clusters', (e) => {
         map.getCanvas().style.cursor = 'pointer';
         const clusterFeature = e.features?.[0];
         if (!clusterFeature) return;
 
-        const clusterId = clusterFeature.id;
+        /* clusterFeature.id kann string | number | undefined sein -> absichern  */
+        const idRaw = clusterFeature.id;
+        if (typeof idRaw !== 'number') return;
+
         const source = map.getSource('locations-source') as GeoJSONSource;
-        source.getClusterLeaves(clusterId, 25, 0, (err, leaves) => {
-          if (err) {
-            console.error('getClusterLeaves error:', err);
-            return;
-          }
+
+        /* leaves ggf. undefined -> Default [] + Null-Check */
+        source.getClusterLeaves(idRaw, 25, 0, (err, leaves) => {
+          if (err || !leaves) return;
+
           let html = `
             <div style="max-height:200px;overflow:auto;font-size:13px;line-height:1.4;">
               <strong>Clustered Stations (showing up to 25):</strong><br/>
@@ -283,8 +304,8 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
                     <th style="padding:2px 6px;text-align:center;">AQI</th>
                   </tr>
                 </thead>
-                <tbody>
-          `;
+                <tbody>`;
+
           leaves.forEach((leaf: any) => {
             const props = leaf.properties || {};
             const stationMatch = props.popupHTML?.match(
@@ -292,18 +313,17 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
             );
             const stationName = stationMatch ? stationMatch[1] : 'Unknown';
             const aqiVal = props.overallAQI || '?';
-            html += `
-              <tr style="border-bottom:1px dashed #aaa;">
+            html += `<tr style="border-bottom:1px dashed #aaa;">
                 <td style="padding:2px 6px;">${stationName}</td>
                 <td style="padding:2px 6px;text-align:center;">${aqiVal}</td>
-              </tr>
-            `;
+              </tr>`;
           });
-          html += `</tbody></table></div>`;
 
+          html += '</tbody></table></div>';
           popupRef.current?.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
       });
+
       map.on('mouseleave', 'clusters', () => {
         map.getCanvas().style.cursor = '';
         popupRef.current?.remove();
@@ -315,9 +335,10 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
       onMapIdle?.();
     });
 
+    /* --------------------------- Bounding Fetch --------------------------- */
     map.on('moveend', () => {
       if (!mapRef.current || !onMapBoundsChange) return;
-      const b = map.getBounds();
+      const b: LngLatBounds | null = map.getBounds() as any;
       if (!b) return;
       const sw: [number, number] = [b.getSouthWest().lng, b.getSouthWest().lat];
       const ne: [number, number] = [b.getNorthEast().lng, b.getNorthEast().lat];
@@ -325,48 +346,51 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
     });
   }, [chart, onMapIdle, onMapBoundsChange]);
 
-  const createGeoJSON = useCallback((arr: LocalPoint[]) => {
-    return {
-      type: 'FeatureCollection',
-      features: arr.map((p) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [p.lon, p.lat],
-        },
-        properties: {
-          overallColor: aqiColor(p.aqi),
-          overallAQI: p.aqi < 0 ? '?' : String(p.aqi),
-          popupHTML: p.popupHTML,
-        },
-      })),
-    } as GeoJSON.FeatureCollection<GeoJSON.Geometry>;
-  }, []);
+  /* ------------------------------------------------------------------------ */
+  /*                             GEOJSON (Updates)                            */
+  /* ------------------------------------------------------------------------ */
+
+  const createGeoJSON = useCallback(
+    (arr: LocalPoint[]) =>
+      ({
+        type: 'FeatureCollection',
+        features: arr.map((p) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+          properties: {
+            overallColor: aqiColor(p.aqi),
+            overallAQI: p.aqi < 0 ? '?' : String(p.aqi),
+            popupHTML: p.popupHTML,
+          },
+        })),
+      }) as GeoJSON.FeatureCollection<GeoJSON.Geometry>,
+    []
+  );
 
   useEffect(() => {
     if (!mapIsIdle || chart !== '2' || !points.length || !mapRef.current)
       return;
     const geo = createGeoJSON(points);
     const src = mapRef.current.getSource('locations-source') as GeoJSONSource;
-    if (src) {
-      src.setData(geo);
-      mapRef.current.resize();
-    }
+    src.setData(geo);
+    mapRef.current.resize();
   }, [mapIsIdle, chart, points, createGeoJSON]);
+
+  /* ------------------------------------------------------------------------ */
+  /*                SCATTER-CHART & MINI-CHART generieren …                   */
+  /* ------------------------------------------------------------------------ */
 
   const [scatterData, setScatterData] = useState<any[]>([]);
   const [scatterLayout, setScatterLayout] = useState<any>({});
+
+  /* ---------- Scatter ---------- */
   useEffect(() => {
-    if (chart !== '1') {
+    if (chart !== '1' || !points.length) {
       setScatterData([]);
       setScatterLayout({});
       return;
     }
-    if (!points.length) {
-      setScatterData([]);
-      setScatterLayout({});
-      return;
-    }
+
     const sData = calculateBigChart(chart, locations);
     const layout = calculateBigLayout(chart, locations, width, height);
 
@@ -378,11 +402,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
       yref: 'y',
       y0: b.value,
       y1: b.value,
-      line: {
-        color: aqiColor(b.value),
-        width: 2,
-        dash: 'dash',
-      },
+      line: { color: aqiColor(b.value), width: 2, dash: 'dash' },
     }));
     layout.annotations = (layout.annotations || []).concat(
       AQI_BREAKPOINTS.map((b) => ({
@@ -412,6 +432,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
     setRevision((r) => r + 1);
   }, [chart, points, locations, width, height]);
 
+  /* ---------- MiniChart ---------- */
   useEffect(() => {
     if (chart !== '2' || !points.length) {
       setMiniChartData([]);
@@ -424,31 +445,32 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
       setMiniChartLayout({});
       return;
     }
-    let upper = maxVal * 1.2;
-    if (upper < 50) upper = 50;
-    if (upper > 500) upper = 500;
+
     const miniLayout = {
       width: 280,
       height: 240,
-      title: 'Average AQI',
+      title: { text: 'Average AQI' },
       margin: { l: 30, r: 20, t: 40, b: 30 },
     };
     setMiniChartData(groupedData);
     setMiniChartLayout(miniLayout);
   }, [chart, points]);
 
+  /* ------------------------------------------------------------------------ */
+  /*                                SIDE LIST                                 */
+  /* ------------------------------------------------------------------------ */
+
   const displayedPoints = useMemo(() => {
     let filtered = points;
     const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter((p) => p.name.toLowerCase().includes(q));
-    }
+    if (q) filtered = filtered.filter((p) => p.name.toLowerCase().includes(q));
+
     if (sortMode === 'aqi') {
-      filtered.sort((a, b) =>
+      filtered = [...filtered].sort((a, b) =>
         sortDirection === 'asc' ? a.aqi - b.aqi : b.aqi - a.aqi
       );
     } else {
-      filtered.sort((a, b) =>
+      filtered = [...filtered].sort((a, b) =>
         sortDirection === 'asc'
           ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name)
@@ -457,23 +479,26 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
     return filtered;
   }, [points, searchQuery, sortMode, sortDirection]);
 
+  /* --------------------------- UI Handler ---------------------------------- */
+
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
       if (chart === '2' && mapRef.current) {
-        setTimeout(() => {
-          mapRef.current?.resize();
-        }, 300);
+        setTimeout(() => mapRef.current?.resize(), 300);
       }
       return !prev;
     });
   };
 
-  const toggleMiniChart = () => {
-    setMiniChartExpanded((prev) => !prev);
-  };
+  const toggleMiniChart = () => setMiniChartExpanded((prev) => !prev);
+
+  /* ------------------------------------------------------------------------ */
+  /*                                   RENDER                                 */
+  /* ------------------------------------------------------------------------ */
 
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
+      {/* ============= SIDEBAR ============ */}
       <Drawer
         variant="persistent"
         anchor="left"
@@ -485,6 +510,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
           },
         }}
       >
+        {/* Logo */}
         <Box
           sx={{
             display: 'flex',
@@ -496,6 +522,8 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
         >
           <Logo />
         </Box>
+
+        {/* Controls & Liste */}
         <Box
           sx={{
             p: 1,
@@ -505,6 +533,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
             flex: 1,
           }}
         >
+          {/* Search & Sort */}
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <TextField
               label="Search"
@@ -538,54 +567,54 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
             </IconButton>
           </Box>
 
+          {/* List */}
           <Box sx={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
             <TransitionGroup component={null}>
-              {displayedPoints.map((p) => {
-                const rowColor = aqiColor(p.aqi) + '33';
-                return (
-                  <CSSTransition
-                    key={`${p.name}-${p.lat}-${p.lon}`}
-                    timeout={300}
-                    classNames="fade"
+              {displayedPoints.map((p) => (
+                <CSSTransition
+                  key={`${p.name}-${p.lat}-${p.lon}`}
+                  timeout={300}
+                  classNames="fade"
+                >
+                  <ListItem
+                    sx={{
+                      backgroundColor: `${aqiColor(p.aqi)}33`,
+                      borderRadius: 2,
+                      mb: 1,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s',
+                      '&:hover': { backgroundColor: 'rgba(0,0,0,0.1)' },
+                    }}
                   >
-                    <ListItem
-                      sx={{
-                        backgroundColor: rowColor,
-                        borderRadius: 2,
-                        mb: 1,
-                        cursor: 'pointer',
-                        transition: 'background-color 0.3s',
-                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.1)' },
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ fontWeight: 'bold' }}>
-                            {p.name}
-                            <span style={{ float: 'right' }}>
-                              {p.aqi < 0 ? '?' : p.aqi}
-                            </span>
-                          </Box>
-                        }
-                        secondary={
-                          p.timestamp && (
-                            <Typography variant="caption" sx={{ mt: 1 }}>
-                              Last Update: {p.timestamp}
-                            </Typography>
-                          )
-                        }
-                      />
-                    </ListItem>
-                  </CSSTransition>
-                );
-              })}
+                    <ListItemText
+                      primary={
+                        <Box sx={{ fontWeight: 'bold' }}>
+                          {p.name}
+                          <span style={{ float: 'right' }}>
+                            {p.aqi < 0 ? '?' : p.aqi}
+                          </span>
+                        </Box>
+                      }
+                      secondary={
+                        p.timestamp && (
+                          <Typography variant="caption" sx={{ mt: 1 }}>
+                            Last Update: {p.timestamp}
+                          </Typography>
+                        )
+                      }
+                    />
+                  </ListItem>
+                </CSSTransition>
+              ))}
             </TransitionGroup>
           </Box>
         </Box>
       </Drawer>
       {showSidebar && chart === '2' && <Box sx={{ width: 300 }} />}
 
+      {/* ============= CONTENT ============ */}
       <Box sx={{ flex: 1, position: 'relative' }}>
+        {/* Map Container */}
         <Box
           ref={mapContainerRef}
           sx={{
@@ -595,9 +624,10 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
           }}
         />
 
+        {/* Scatter Plot */}
         {chart === '1' && (
           <>
-            {scatterData.length > 0 ? (
+            {scatterData.length ? (
               <Plot
                 data={scatterData}
                 layout={scatterLayout}
@@ -621,6 +651,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
           </>
         )}
 
+        {/* Extras für Map */}
         {chart === '2' && (
           <>
             {!showSidebar && (
@@ -640,6 +671,7 @@ const ChartOrMap: React.FC<ChartOrMapProps> = ({
                 <MenuOutlined />
               </IconButton>
             )}
+
             <Legend showSidebar={showSidebar} chart={chart} />
             <MiniChart
               miniChartData={miniChartData}
