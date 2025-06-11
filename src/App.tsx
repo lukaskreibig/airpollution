@@ -46,7 +46,10 @@ const App: React.FC = () => {
         if (!isInitial) {
           setIsFetchingBounds(true);
         }
-        const url = `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${WAQI_TOKEN}`;
+        const url =
+          process.env.NODE_ENV === 'development'
+            ? `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${process.env.REACT_APP_WAQI_TOKEN}`
+            : `/api/waqi/map/bounds?latlng=${bounds}`;
         const resp = await fetch(url);
         const json = await resp.json();
         const filtered = (json.data || []).filter((d: any) => d.aqi !== '-');
