@@ -47,7 +47,7 @@ const App: React.FC = () => {
           setIsFetchingBounds(true);
         }
         const urlDev = `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${process.env.REACT_APP_WAQI_TOKEN}`;
-        const urlProd = `/api/waqi/map/bounds?latlng=${bounds}`;
+        const urlProd = `/api/map/bounds?latlng=${bounds}`;
         const url = process.env.NODE_ENV === 'development' ? urlDev : urlProd;
         const resp = await fetch(url);
         const json = await resp.json();
