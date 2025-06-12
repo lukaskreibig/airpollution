@@ -6,6 +6,8 @@
       "dom.iterable",
       "esnext"
     ],
+    "baseUrl": "",
+    "paths": {},
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -18,9 +20,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "preserve"
   },
-  "include": [
-    "src"
-  ]
+    "include": ["next-env.d.ts", "app/**/*", "pages/**/*", "next.config.js"],
+  "exclude": ["node_modules"]
 }
