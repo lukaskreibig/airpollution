@@ -122,7 +122,7 @@ const MiniChart: React.FC<MiniChartProps> = ({
               type: 'indicator',
               mode: 'gauge+number',
               value: displayValue,
-              title: { text: 'Average AQI', font: { size: 16 } },
+              title: { text: 'The average value of all points on the map view.', font: { size: 11 } },
               number: { font: { color: aqiColor(displayValue), size: 28 } },
               gauge: {
                 axis: { range: [0, 500], tickwidth: 1 },

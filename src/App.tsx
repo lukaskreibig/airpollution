@@ -12,16 +12,12 @@ import { Analytics } from '@vercel/analytics/react';
 
 import tourSteps from './components/tourSteps';
 
-const WAQI_TOKEN = process.env.REACT_APP_WAQI_TOKEN;
-
 const WORLD_BOUNDS = '-85,-180,85,180';
 
 const App: React.FC = () => {
   const [waqiData, setWaqiData] = useState<any[] | null>(null);
 
   const [initialLoad, setInitialLoad] = useState(true);
-
-  const [isFetchingBounds, setIsFetchingBounds] = useState(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
 
@@ -43,11 +39,7 @@ const App: React.FC = () => {
   const fetchWaqiData = useCallback(
     async (bounds: string, isInitial = false) => {
       try {
-        if (!isInitial) {
-          setIsFetchingBounds(true);
-        }
         const urlDev = `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${process.env.REACT_APP_WAQI_TOKEN}`;
-        // const urlProd = `/api/map/bounds?latlng=${bounds}`;
         const urlProd = `/api/waqi?path=map/bounds&latlng=${bounds}`;
         const url = process.env.NODE_ENV === 'development' ? urlDev : urlProd;
         const resp = await fetch(url);
@@ -60,8 +52,6 @@ const App: React.FC = () => {
       } finally {
         if (isInitial) {
           setInitialLoad(false);
-        } else {
-          setIsFetchingBounds(false);
         }
       }
     },
@@ -137,7 +127,7 @@ const App: React.FC = () => {
 
   return (
     <div className="App" style={{ height: '90vh', position: 'relative' }}>
-      {runTour && <PersistentOverlay />}
+      {/* {runTour && <PersistentOverlay />}
       <Joyride
         steps={steps}
         run={runTour}
@@ -147,7 +137,7 @@ const App: React.FC = () => {
         callback={handleJoyrideCallback}
         disableOverlay
         styles={{ options: { zIndex: 10000 } }}
-      />
+      /> */}
 
       <LoadingOverlay
         loading={loadingOverlayActive}
