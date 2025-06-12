@@ -21,7 +21,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve"
+    
   },
-    "include": ["next-env.d.ts", "app/**/*", "pages/**/*", "next.config.js"],
+  "include": ["src", "api"],
   "exclude": ["node_modules"]
 }
