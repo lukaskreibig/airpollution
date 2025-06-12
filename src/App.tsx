@@ -36,8 +36,6 @@ const App: React.FC = () => {
 
   const [isLegalOpen, setIsLegalOpen] = useState(false);
 
-  const baseUrl = '/api/fetchData';
-
   /**
    * @function fetchWaqiData
    * Single function for both initial + bounding fetch
@@ -48,12 +46,9 @@ const App: React.FC = () => {
         if (!isInitial) {
           setIsFetchingBounds(true);
         }
-        const url =
-          process.env.NODE_ENV === 'development'
-            ? // Direkt an WAQI bei CRA-Dev
-              `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${process.env.REACT_APP_WAQI_TOKEN}`
-            : // über Serverless-Proxy im Build
-              `${baseUrl}?path=/map/bounds&latlng=${bounds}`;
+        const urlDev = `https://api.waqi.info/map/bounds?latlng=${bounds}&token=${process.env.REACT_APP_WAQI_TOKEN}`;
+        const urlProd = `/api/waqi/map/bounds?latlng=${bounds}`;
+        const url = process.env.NODE_ENV === 'development' ? urlDev : urlProd;
         const resp = await fetch(url);
         const json = await resp.json();
         const filtered = (json.data || []).filter((d: any) => d.aqi !== '-');
