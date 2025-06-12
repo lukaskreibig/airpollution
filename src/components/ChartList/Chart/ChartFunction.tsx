@@ -64,11 +64,15 @@ export function calculateBigLayout(
     width: width - 40,
     height: height - 45,
     title: { text: `AQI from ${locations.length} Stations` },
-    xaxis: { title: 'Station', automargin: true },
     yaxis: { title: 'AQI', range: [0, 500] },
     margin: { l: 60, r: 10, t: 80, b: 80 },
     legend: { x: 0, y: 1, font: { size: 15 }, yanchor: 'top', xanchor: 'left' },
     hovermode: 'closest',
+    xaxis: {
+      showgrid: false,
+      showline: false,
+      showticklabels: false,
+    },
   };
 }
 
