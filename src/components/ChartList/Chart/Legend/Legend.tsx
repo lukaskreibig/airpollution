@@ -22,7 +22,7 @@ const Legend: React.FC<LegendProps> = ({ showSidebar, chart }) => {
       sx={{
         position: 'absolute',
         bottom: 22,
-        left: showSidebar ? 310 : 10,
+        left: showSidebar ? 25 : 25,
         backgroundColor: 'rgba(255,255,255,0.8)',
         padding: '5px 10px',
         borderRadius: '4px',

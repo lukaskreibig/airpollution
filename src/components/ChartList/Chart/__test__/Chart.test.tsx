@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Chart from '../Chart';
+import Chart from '../ChartOrMap';
 
 // Mock Plotly so we don't do real rendering
 jest.mock('react-plotly.js', () => ({
@@ -36,12 +36,10 @@ describe('Chart (Unit Tests)', () => {
 
     render(
       <Chart
-        locations={mockLocations}
         chart="1"
-        country="50"
-        countriesList={[]}
         showSidebar={false}
         setShowSidebar={jest.fn()}
+        locations={[]}
       />
     );
 

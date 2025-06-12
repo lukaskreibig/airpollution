@@ -15,8 +15,6 @@ describe('ChartList (Unit Tests)', () => {
       <ChartList
         locations={[]}
         chart="3"
-        country="50"
-        countriesList={[]}
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />
@@ -32,18 +30,13 @@ describe('ChartList (Unit Tests)', () => {
   it('renders <Chart> if locations is non-empty', () => {
     const mockLocations = [
       {
-        location: 'Test Location',
-        city: 'Test City',
-        country: 'US',
-        coordinates: { latitude: 40, longitude: -74 },
-        measurements: [
-          {
-            parameter: 'pm25',
-            value: 15,
-            lastUpdated: '2025-01-01T12:00:00Z',
-            unit: 'µg/m³',
-          },
-        ],
+        lat: 40,
+        lon: -74,
+        aqi: '45',
+        station: {
+          name: 'Test Station',
+          time: '2025-01-01T12:00:00Z',
+        },
       },
     ];
 
@@ -51,8 +44,6 @@ describe('ChartList (Unit Tests)', () => {
       <ChartList
         locations={mockLocations}
         chart="3"
-        country="50"
-        countriesList={[]}
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />
