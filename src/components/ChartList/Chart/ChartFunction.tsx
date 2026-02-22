@@ -262,14 +262,14 @@ export function calculateBigLayout(
   return {
     width: width - 40,
     height: height - 45,
-    title: `Air Pollution - from ${locations.length} Stations`,
+    title: { text: `Air Pollution - from ${locations.length} Stations` },
     xaxis: {
       showgrid: false,
       showline: false,
       showticklabels: false,
     },
     yaxis: {
-      title: 'Concentration (µg/m³)',
+      title: { text: 'Concentration (µg/m³)' },
     },
     margin: { l: 60, r: 10, t: 80, b: 40 },
     legend: { x: 0, y: 1, font: { size: 15 }, yanchor: 'top', xanchor: 'left' },
@@ -386,9 +386,9 @@ export function calculateAverageLayout(maxVal: number): Partial<Layout> {
   return {
     width: 600,
     height: 300,
-    title: 'AQI Pollutant Averages',
-    xaxis: { title: 'Pollutants & Overall' },
-    yaxis: { title: 'AQI', range: [0, upper] },
+    title: { text: 'AQI Pollutant Averages' },
+    xaxis: { title: { text: 'Pollutants & Overall' } },
+    yaxis: { title: { text: 'AQI' }, range: [0, upper] },
     margin: { l: 40, r: 20, t: 50, b: 40 },
   };
 }

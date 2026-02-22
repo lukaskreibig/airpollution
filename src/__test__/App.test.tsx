@@ -61,36 +61,53 @@ jest.mock('react-plotly.js', () => ({
   default: () => <div data-testid="plotly-mock">Mocked Plotly</div>,
 }));
 
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from '../App';
 
 const API_BASE = 'https://airpollution-mocha.vercel.app/api/fetchData';
-const defaultHandlers = [
-  rest.get(API_BASE, (req, res, ctx) => {
-    const path = req.url.searchParams.get('path');
+const originalFetch = global.fetch;
 
+const makeJsonResponse = (body: unknown, status = 200): Response =>
+  ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  }) as Response;
+
+const defaultFetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
+  async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    if (url.origin + url.pathname !== API_BASE) {
+      return makeJsonResponse({});
+    }
+
+    const path = url.searchParams.get('path');
     if (path === '/v2/latest') {
-      return res(
-        ctx.json({ results: [{ id: 1, parameter: 'pm25', value: 12 }] })
-      );
+      return makeJsonResponse({
+        results: [{ id: 1, parameter: 'pm25', value: 12 }],
+      });
     }
     if (path === '/v3/countries') {
-      return res(ctx.json({ results: [{ code: 'DE', name: 'Germany' }] }));
+      return makeJsonResponse({
+        results: [{ code: 'DE', name: 'Germany' }],
+      });
     }
     if (path === '/v2/averages') {
-      return res(ctx.json({ results: [] }));
+      return makeJsonResponse({ results: [] });
     }
-    return res(ctx.json({ results: [] }));
-  }),
-];
-const server = setupServer(...defaultHandlers);
+    return makeJsonResponse({ results: [] });
+  }
+) as jest.MockedFunction<typeof fetch>;
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeEach(() => {
+  defaultFetchMock.mockClear();
+  global.fetch = defaultFetchMock;
+});
+
+afterAll(() => {
+  global.fetch = originalFetch;
+});
 
 test('Shows loading overlay text', async () => {
   render(<App />);
@@ -100,15 +117,14 @@ test('Shows loading overlay text', async () => {
 
 describe('Server Error Tests', () => {
   test('Simulate error on /v3/countries', async () => {
-    server.use(
-      rest.get(API_BASE, (req, res, ctx) => {
-        const path = req.url.searchParams.get('path');
-        if (path === '/v3/countries') {
-          return res(ctx.status(500));
-        }
-        return res(ctx.json({ results: [] }));
-      })
-    );
+    defaultFetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const path = url.searchParams.get('path');
+      if (path === '/v3/countries') {
+        return makeJsonResponse({}, 500);
+      }
+      return makeJsonResponse({ results: [] });
+    });
 
     render(<App />);
 

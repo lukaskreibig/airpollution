@@ -491,10 +491,10 @@ const Chart: React.FC<ChartProps> = ({
     const miniLayout: Partial<Plotly.Layout> = {
       width: 280,
       height: 240,
-      title: `Avg AQI in ${activeCountryName}`,
+      title: { text: `Avg AQI in ${activeCountryName}` },
       margin: { l: 30, r: 20, t: 30, b: 35 },
       xaxis: { tickangle: -30 },
-      yaxis: { range: [0, upper], title: '' },
+      yaxis: { range: [0, upper], title: { text: '' } },
       font: { size: window.innerWidth < 600 ? 10 : 12 },
     };
     setMiniChartData(groupedData);
