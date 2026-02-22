@@ -54,7 +54,7 @@ const App: React.FC = () => {
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
 
   const linkVisible = mapLoaded;
-  const baseUrl = 'https://airpollution-mocha.vercel.app/api/fetchData';
+  const baseUrl = process.env.REACT_APP_API_BASE_URL || '/api/fetchData';
 
   /**
    * Asynchronously fetches air quality data and a list of countries from the API.
@@ -68,7 +68,7 @@ const App: React.FC = () => {
         fetch(
           `${baseUrl}?path=/v2/latest&spatial=country&country_id=${country}&temporal=${time}&parameter=pm10&parameter=pm25&limit=2000`
         ),
-        fetch(`${baseUrl}?path=/v3/countries?limit=200`),
+        fetch(`${baseUrl}?path=/v3/countries&limit=200`),
       ]);
       if (!latestFetch.ok || !countriesFetch.ok) {
         throw new Error(
