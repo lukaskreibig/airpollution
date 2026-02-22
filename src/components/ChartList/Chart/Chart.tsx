@@ -26,6 +26,7 @@ import {
 import { MenuOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Plot from 'react-plotly.js';
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
+import type { StyleSpecification } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 import Logo from './Logo';
@@ -54,9 +55,49 @@ import Legend from './Legend/Legend';
 import MiniChart from './MiniChart/MiniChart';
 
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN?.trim();
-const MAP_STYLE_URL = MAPBOX_ACCESS_TOKEN
+
+// Fallback basemap when no Mapbox token is configured. The previous demotiles
+// style only provides low-detail world polygons (maxzoom 6), which appears as a
+// blank/white map at this app's zoom levels.
+const FALLBACK_RASTER_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    'carto-light': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 20,
+      attribution:
+        '&copy; OpenStreetMap contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    },
+  },
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#eef2f7',
+      },
+    },
+    {
+      id: 'carto-light',
+      type: 'raster',
+      source: 'carto-light',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+  ],
+};
+
+const MAP_STYLE: string | StyleSpecification = MAPBOX_ACCESS_TOKEN
   ? 'mapbox://styles/mapbox/light-v10'
-  : 'https://demotiles.maplibre.org/style.json';
+  : FALLBACK_RASTER_STYLE;
 
 if (MAPBOX_ACCESS_TOKEN) {
   mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
@@ -336,7 +377,7 @@ const Chart: React.FC<ChartProps> = ({
     try {
       map = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: MAP_STYLE_URL,
+        style: MAP_STYLE,
         center: INITIAL_CENTER,
         zoom: INITIAL_ZOOM,
       });
