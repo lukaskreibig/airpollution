@@ -65,8 +65,18 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from '../App';
 
-const API_BASE = 'https://airpollution-mocha.vercel.app/api/fetchData';
 const originalFetch = global.fetch;
+const TEST_ORIGIN = 'http://localhost';
+
+const toUrl = (input: RequestInfo | URL): URL =>
+  new URL(
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url,
+    TEST_ORIGIN
+  );
 
 const makeJsonResponse = (body: unknown, status = 200): Response =>
   ({
@@ -77,8 +87,8 @@ const makeJsonResponse = (body: unknown, status = 200): Response =>
 
 const defaultFetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
   async (input: RequestInfo | URL) => {
-    const url = new URL(String(input));
-    if (url.origin + url.pathname !== API_BASE) {
+    const url = toUrl(input);
+    if (url.pathname !== '/api/fetchData') {
       return makeJsonResponse({});
     }
 
@@ -118,7 +128,7 @@ test('Shows loading overlay text', async () => {
 describe('Server Error Tests', () => {
   test('Simulate error on /v3/countries', async () => {
     defaultFetchMock.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = new URL(String(input));
+      const url = toUrl(input);
       const path = url.searchParams.get('path');
       if (path === '/v3/countries') {
         return makeJsonResponse({}, 500);
@@ -128,7 +138,7 @@ describe('Server Error Tests', () => {
 
     render(<App />);
 
-    const errorText = await screen.findByText(/No data found/i);
+    const errorText = await screen.findByText(/Error fetching data/i);
     expect(errorText).toBeInTheDocument();
   });
 });

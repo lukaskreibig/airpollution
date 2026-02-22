@@ -53,7 +53,14 @@ import { PlotData } from 'plotly.js';
 import Legend from './Legend/Legend';
 import MiniChart from './MiniChart/MiniChart';
 
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || '';
+const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN?.trim();
+const MAP_STYLE_URL = MAPBOX_ACCESS_TOKEN
+  ? 'mapbox://styles/mapbox/light-v10'
+  : 'https://demotiles.maplibre.org/style.json';
+
+if (MAPBOX_ACCESS_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+}
 
 /**
  * @interface ChartProps
@@ -325,16 +332,27 @@ const Chart: React.FC<ChartProps> = ({
    */
   const mapRefInit = useCallback(() => {
     if (!mapContainerRef.current) return;
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/light-v10',
-      center: INITIAL_CENTER,
-      zoom: INITIAL_ZOOM,
-    });
+    let map: mapboxgl.Map;
+    try {
+      map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: MAP_STYLE_URL,
+        center: INITIAL_CENTER,
+        zoom: INITIAL_ZOOM,
+      });
+    } catch (error) {
+      console.error('Failed to initialize map', error);
+      if (onMapLoadEnd) onMapLoadEnd();
+      return;
+    }
     mapRef.current = map;
     popupRef.current = new mapboxgl.Popup({
       closeButton: false,
       closeOnClick: false,
+    });
+
+    map.once('error', () => {
+      if (onMapLoadEnd) onMapLoadEnd();
     });
 
     map.on('load', () => {
