@@ -61,12 +61,12 @@ test.describe('MapTheAir App Basic Tests', () => {
     await expect(page.locator('.search-field')).toBeVisible();
   });
 
-  test('can switch between map and scatter chart', async ({ page }) => {
-    await page.getByLabel('View').click();
-    await page.getByRole('option', { name: 'Scatter Chart' }).click();
+  test('can switch between map and insights dashboard', async ({ page }) => {
+    await page.getByRole('button', { name: 'Insights' }).click();
 
-    await expect(page.locator('.chart-area')).toBeVisible();
+    await expect(page.locator('.insights-dashboard')).toBeVisible();
     await expect(page.locator('.map-area')).toHaveCount(0);
+    await expect(page.getByText('Air quality insights')).toBeVisible();
   });
 
   test('filters the station list by search query', async ({ page }) => {

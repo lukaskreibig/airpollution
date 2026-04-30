@@ -2,11 +2,13 @@ import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Country } from '../../react-app-env';
 
 type Props = {
-  handleSelect: (event: SelectChangeEvent) => void;
+  handleSelect: (value: string) => void;
   dataValue: string | undefined;
   dropdown: string;
   countries?: Country[];
@@ -26,9 +28,9 @@ const Dropdown: React.FC<Props> = ({
     { input: 'year', description: 'This Year' },
   ];
 
-  const chartData = [
-    { input: '1', description: 'Scatter Chart' },
-    { input: '2', description: 'Map View' },
+  const viewData = [
+    { input: 'map', description: 'Map' },
+    { input: 'insights', description: 'Insights' },
   ];
 
   let options: { value: string; label: string }[] = [];
@@ -46,10 +48,44 @@ const Dropdown: React.FC<Props> = ({
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } else {
-    options = chartData.map((data) => ({
+    options = viewData.map((data) => ({
       value: data.input,
       label: data.description,
     }));
+  }
+
+  if (dropdown === 'View') {
+    return (
+      <Box className={className}>
+        <ToggleButtonGroup
+          exclusive
+          value={dataValue || 'map'}
+          onChange={(_event, value) => {
+            if (value) handleSelect(value);
+          }}
+          aria-label="View"
+          size="small"
+          sx={{
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            borderRadius: 2,
+            boxShadow: '0 8px 22px rgba(15, 23, 42, 0.12)',
+            '& .MuiToggleButton-root': {
+              px: 2,
+              py: 1,
+              borderColor: 'rgba(17,24,39,0.12)',
+              fontWeight: 800,
+              textTransform: 'none',
+            },
+          }}
+        >
+          {options.map((option) => (
+            <ToggleButton key={option.value} value={option.value}>
+              {option.label}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Box>
+    );
   }
 
   return (
@@ -62,7 +98,7 @@ const Dropdown: React.FC<Props> = ({
           value={dataValue || ''}
           name={dropdown}
           label={dropdown}
-          onChange={handleSelect}
+          onChange={(event) => handleSelect(event.target.value)}
           sx={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
             '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },

@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import {
   Box,
+  Chip,
   Drawer,
   FormControl,
   IconButton,
@@ -20,10 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import { CloseCircleOutlined, MenuOutlined } from '@ant-design/icons';
-import Plot from 'react-plotly.js';
 import maplibregl, { GeoJSONSource } from 'maplibre-gl';
-import type { StyleSpecification } from 'maplibre-gl';
-import type { PlotData } from 'plotly.js';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import {
@@ -32,54 +30,31 @@ import {
   aqiColor,
   formatAqi,
 } from '../../../aqi';
+import { computeAqiInsights } from '../../../insights';
+import { ViewMode } from '../../../viewMode';
+import InsightsDashboard from '../../InsightsDashboard/InsightsDashboard';
 import Logo from './Logo';
 import Legend from './Legend/Legend';
-import MiniChart from './MiniChart/MiniChart';
-import { useWindowDimensions } from './chartUtilsHelpers/chartUtilsHelpers';
 
-const FALLBACK_RASTER_STYLE: StyleSpecification = {
-  version: 8,
-  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-  sources: {
-    'carto-light': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      minzoom: 0,
-      maxzoom: 20,
-      attribution:
-        '&copy; OpenStreetMap contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    },
-  },
-  layers: [
-    {
-      id: 'background',
-      type: 'background',
-      paint: { 'background-color': '#eef2f7' },
-    },
-    {
-      id: 'carto-light',
-      type: 'raster',
-      source: 'carto-light',
-      minzoom: 0,
-      maxzoom: 22,
-    },
-  ],
-};
+const MAPTILER_API_KEY = process.env.VITE_MAPTILER_API_KEY?.trim();
+const MAPTILER_STYLE_ID =
+  process.env.VITE_MAPTILER_STYLE_ID?.trim() || 'dataviz-light';
 
-const MAP_STYLE: StyleSpecification = FALLBACK_RASTER_STYLE;
+const OPENFREEMAP_VECTOR_STYLE =
+  'https://tiles.openfreemap.org/styles/positron';
+
+const MAP_STYLE = MAPTILER_API_KEY
+  ? `https://api.maptiler.com/maps/${encodeURIComponent(
+      MAPTILER_STYLE_ID
+    )}/style.json?key=${encodeURIComponent(MAPTILER_API_KEY)}`
+  : OPENFREEMAP_VECTOR_STYLE;
 
 type SortMode = 'aqi' | 'name';
 type SortDirection = 'asc' | 'desc';
 type MapStatus = 'idle' | 'ready' | 'unsupported' | 'error';
 
 interface ChartProps {
-  chart: string;
+  viewMode: ViewMode;
   locations: AirQualityStation[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
@@ -163,18 +138,16 @@ function canCreateWebGlContext(): boolean {
 }
 
 const Chart: React.FC<ChartProps> = ({
-  chart,
+  viewMode,
   locations,
   showSidebar,
   setShowSidebar,
   onMapLoadEnd,
   onMapBoundsChange,
 }) => {
-  const { width, height } = useWindowDimensions();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortMode, setSortMode] = useState<SortMode>('aqi');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [miniChartExpanded, setMiniChartExpanded] = useState<boolean>(true);
   const [activeStationId, setActiveStationId] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<MapStatus>('idle');
 
@@ -200,88 +173,7 @@ const Chart: React.FC<ChartProps> = ({
     });
   }, [locations, searchQuery, sortDirection, sortMode]);
 
-  const scatterData = useMemo<Partial<PlotData>[]>(() => {
-    if (chart !== '1') return [];
-    return [
-      {
-        type: 'scatter',
-        mode: 'markers',
-        x: visibleStations.map((station) => station.name),
-        y: visibleStations.map((station) => station.aqi),
-        text: visibleStations.map(
-          (station) =>
-            `${station.name}<br>AQI ${station.aqi}<br>${station.category.label}`
-        ),
-        hoverinfo: 'text',
-        marker: {
-          color: visibleStations.map((station) => station.category.color),
-          size: 12,
-          line: { color: '#1f2933', width: 1 },
-        },
-        name: 'Station AQI',
-      },
-    ];
-  }, [chart, visibleStations]);
-
-  const scatterLayout = useMemo<Partial<Plotly.Layout>>(
-    () => ({
-      width: Math.max(width - 40, 320),
-      height: Math.max(height - 80, 320),
-      title: { text: `AQI from ${visibleStations.length} stations` },
-      yaxis: { title: { text: 'AQI' }, range: [0, 500] },
-      xaxis: {
-        showgrid: false,
-        showline: false,
-        showticklabels: false,
-      },
-      shapes: AQI_CATEGORIES.slice(0, 5).map((category) => {
-        const high = category.range.split('-')[1];
-        return {
-          type: 'line',
-          xref: 'paper',
-          x0: 0,
-          x1: 1,
-          yref: 'y',
-          y0: Number(high),
-          y1: Number(high),
-          line: { color: category.color, width: 1, dash: 'dot' },
-        };
-      }),
-      margin: { l: 60, r: 20, t: 70, b: 40 },
-      hovermode: 'closest',
-    }),
-    [height, visibleStations.length, width]
-  );
-
-  const miniChartData = useMemo<Partial<PlotData>[]>(() => {
-    if (!locations.length) return [];
-    const average =
-      locations.reduce((sum, station) => sum + station.aqi, 0) /
-      locations.length;
-    return [
-      {
-        type: 'bar',
-        x: ['Visible avg'],
-        y: [average],
-        marker: { color: aqiColor(average) },
-        text: [average.toFixed(0)],
-        textposition: 'auto',
-        hoverinfo: 'y',
-      },
-    ];
-  }, [locations]);
-
-  const miniChartLayout = useMemo<Partial<Plotly.Layout>>(
-    () => ({
-      width: 280,
-      height: 240,
-      title: { text: 'Average AQI' },
-      margin: { l: 36, r: 20, t: 38, b: 35 },
-      yaxis: { range: [0, 500], title: { text: 'AQI' } },
-      font: { size: 12 },
-    }),
-    []
-  );
+  const insights = useMemo(() => computeAqiInsights(locations), [locations]);
 
   const updateMapData = useCallback(() => {
     const map = mapRef.current;
@@ -291,7 +183,9 @@ const Chart: React.FC<ChartProps> = ({
   }, [locations, mapStatus]);
 
   const initializeMap = useCallback(() => {
-    if (chart !== '2' || mapRef.current || !mapContainerRef.current) return;
+    if (viewMode !== 'map' || mapRef.current || !mapContainerRef.current) {
+      return;
+    }
 
     if (!canCreateWebGlContext()) {
       setMapStatus('unsupported');
@@ -495,10 +389,10 @@ const Chart: React.FC<ChartProps> = ({
       setMapStatus('error');
       onMapLoadEnd?.();
     }
-  }, [chart, onMapBoundsChange, onMapLoadEnd]);
+  }, [onMapBoundsChange, onMapLoadEnd, viewMode]);
 
   useEffect(() => {
-    if (chart === '2') {
+    if (viewMode === 'map') {
       initializeMap();
       return;
     }
@@ -508,7 +402,7 @@ const Chart: React.FC<ChartProps> = ({
       mapRef.current = null;
       setMapStatus('idle');
     }
-  }, [chart, initializeMap]);
+  }, [initializeMap, viewMode]);
 
   useEffect(() => {
     updateMapData();
@@ -553,12 +447,16 @@ const Chart: React.FC<ChartProps> = ({
       ? 'This browser or device does not support the WebGL map. Live AQI station data is still available in the list.'
       : 'The map could not be initialized. Live AQI station data is still available in the list.';
 
+  if (viewMode === 'insights') {
+    return <InsightsDashboard stations={locations} />;
+  }
+
   return (
     <Box display="flex" sx={{ height: '100%' }}>
       <Drawer
         variant="persistent"
         anchor="left"
-        open={showSidebar && chart === '2'}
+        open={showSidebar}
         sx={{
           '& .MuiDrawer-paper': {
             width: { xs: '100%', sm: 300 },
@@ -715,13 +613,13 @@ const Chart: React.FC<ChartProps> = ({
         </Box>
       </Drawer>
 
-      {showSidebar && chart === '2' && <Box sx={{ width: 300 }} />}
+      {showSidebar && <Box sx={{ width: 300 }} />}
 
       <Box
         className="charts"
-        sx={{ height: '95vh', display: 'flex', flexDirection: 'row' }}
+        sx={{ height: '100%', display: 'flex', flexDirection: 'row' }}
       >
-        {chart === '2' && !showSidebar && (
+        {!showSidebar && (
           <IconButton
             onClick={toggleSidebar}
             sx={{
@@ -743,71 +641,99 @@ const Chart: React.FC<ChartProps> = ({
         )}
 
         <Box sx={{ flex: 1, height: '100%', position: 'relative' }}>
-          {chart === '2' ? (
-            <>
-              {(mapStatus === 'unsupported' || mapStatus === 'error') && (
-                <Box
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    p: 3,
-                    textAlign: 'center',
-                    backgroundColor: '#eef2f7',
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      Map unavailable
-                    </Typography>
-                    <Typography>{mapFallbackMessage}</Typography>
-                  </Box>
-                </Box>
-              )}
-
-              {mapStatus !== 'unsupported' && mapStatus !== 'error' && (
-                <div
-                  ref={mapContainerRef}
-                  className="map-area"
-                  style={{ width: '100%', height: '100%' }}
-                />
-              )}
-
-              <Legend showSidebar={showSidebar} chart={chart} />
-              <MiniChart
-                miniChartData={miniChartData}
-                miniChartLayout={miniChartLayout}
-                miniChartExpanded={miniChartExpanded}
-                toggleMiniChart={() =>
-                  setMiniChartExpanded((expanded) => !expanded)
-                }
-              />
-            </>
-          ) : scatterData.length > 0 ? (
-            <Box className="chart-area" sx={{ width: '100%', height: '100%' }}>
-              <Plot
-                data={scatterData}
-                layout={scatterLayout}
-                style={{ width: '100%', height: '100%' }}
-                useResizeHandler
-                config={{ displayModeBar: true, responsive: true }}
-              />
-            </Box>
-          ) : (
+          {(mapStatus === 'unsupported' || mapStatus === 'error') && (
             <Box
               sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
                 height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                p: 3,
+                textAlign: 'center',
+                backgroundColor: '#eef2f7',
               }}
             >
-              <Typography variant="h6">
-                No AQI data available to display.
-              </Typography>
+              <Box>
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                  Map unavailable
+                </Typography>
+                <Typography>{mapFallbackMessage}</Typography>
+              </Box>
             </Box>
           )}
+
+          {mapStatus !== 'unsupported' && mapStatus !== 'error' && (
+            <div
+              ref={mapContainerRef}
+              className="map-area"
+              style={{ width: '100%', height: '100%' }}
+            />
+          )}
+
+          <Legend showSidebar={showSidebar} />
+          <Box
+            className="aqi-summary"
+            sx={{
+              position: 'absolute',
+              right: 18,
+              bottom: 34,
+              zIndex: 2,
+              display: 'grid',
+              gap: 1,
+              width: { xs: 230, sm: 280 },
+              p: 1.5,
+              borderRadius: 2,
+              backgroundColor: 'rgba(255,255,255,0.92)',
+              boxShadow: '0 10px 28px rgba(15, 23, 42, 0.14)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Live AQI summary
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                  {formatAqi(insights.averageAqi)}
+                </Typography>
+                <Typography variant="caption">Average</Typography>
+              </Box>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 900,
+                    color: insights.worstStation?.category.color,
+                  }}
+                >
+                  {formatAqi(insights.worstStation?.aqi)}
+                </Typography>
+                <Typography variant="caption">Worst</Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+              <Chip
+                size="small"
+                label={`${insights.stationCount} stations`}
+                sx={{ borderRadius: 1, fontWeight: 700 }}
+              />
+              <Chip
+                size="small"
+                label={`${insights.unhealthyCount} unhealthy+`}
+                sx={{
+                  borderRadius: 1,
+                  fontWeight: 700,
+                  backgroundColor: '#cc003324',
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
       </Box>
     </Box>

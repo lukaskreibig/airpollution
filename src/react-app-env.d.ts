@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 export interface Data {
   meta?: Meta;
   results: LatestResult[];

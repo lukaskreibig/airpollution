@@ -15,7 +15,7 @@ describe('ChartList (Unit Tests)', () => {
     render(
       <ChartList
         locations={[]}
-        chart="3"
+        viewMode="map"
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />
@@ -43,7 +43,7 @@ describe('ChartList (Unit Tests)', () => {
     render(
       <ChartList
         locations={mockLocations}
-        chart="3"
+        viewMode="map"
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />

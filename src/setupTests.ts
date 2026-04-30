@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import 'jest-canvas-mock';
 import { TextEncoder, TextDecoder } from 'util';
 import {
   ReadableStream,
@@ -6,7 +7,7 @@ import {
   TransformStream,
 } from 'node:stream/web';
 
-/** Polyfill URL.createObjectURL so Plotly or other libs won't crash */
+/** Polyfill URL.createObjectURL so browser-only libs do not crash */
 if (!window.URL.createObjectURL) {
   window.URL.createObjectURL = () => 'mocked-object-url';
 }

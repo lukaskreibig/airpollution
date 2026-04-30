@@ -1,7 +1,5 @@
 import React from 'react';
-import { Box, Typography, Fade } from '@mui/material';
-import Lottie from 'lottie-react';
-import loadingAnimation from './loadingworld.json';
+import { Box, CircularProgress, Fade, Typography } from '@mui/material';
 
 interface LoadingOverlayProps {
   loading: boolean;
@@ -29,8 +27,23 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
           zIndex: 2000,
         }}
       >
-        <Box sx={{ width: 200, height: 200 }}>
-          <Lottie animationData={loadingAnimation} loop={true} />
+        <Box
+          sx={{
+            display: 'grid',
+            placeItems: 'center',
+            width: 96,
+            height: 96,
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle at 35% 30%, #ffffff 0, #d9f3ee 46%, #2a9d8f 100%)',
+            boxShadow: '0 20px 48px rgba(42,157,143,0.24)',
+          }}
+        >
+          <CircularProgress
+            size={74}
+            thickness={2.5}
+            sx={{ color: '#17202a' }}
+          />
         </Box>
         {message && (
           <Typography variant="h6" sx={{ mt: 2, color: 'text.primary' }}>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
-import { Box, SelectChangeEvent } from '@mui/material';
+import { Box } from '@mui/material';
 import { Analytics } from '@vercel/analytics/react';
 
 import LoadingOverlay from './assets/LoadingOverlay';
@@ -8,26 +8,33 @@ import ChartList from './components/ChartList/ChartList';
 import Dropdown from './components/Dropdown/Dropdown';
 import LegalModal from './components/LegalModal';
 import { AirQualityStation, normalizeWaqiStations } from './aqi';
+import { ViewMode } from './viewMode';
 
 const WORLD_BOUNDS = '-85,-180,85,180';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+const BOUNDS_REFRESH_DEBOUNCE_MS = 600;
 
 const App: React.FC = () => {
   const [stations, setStations] = useState<AirQualityStation[]>([]);
   const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [chart, setChart] = useState<string>('2');
+  const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
   const latestRequestId = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const boundsRefreshTimeoutRef = useRef<number | null>(null);
 
-  const baseUrl = process.env.REACT_APP_WAQI_API_BASE_URL || '/api/waqi';
+  const baseUrl = process.env.VITE_WAQI_API_BASE_URL || '/api/waqi';
 
   const fetchWaqiData = useCallback(
     async (bounds: string = WORLD_BOUNDS, showInitialLoading = false) => {
       const requestId = latestRequestId.current + 1;
       latestRequestId.current = requestId;
+      abortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
       if (showInitialLoading) {
         setDataLoaded(false);
@@ -35,7 +42,8 @@ const App: React.FC = () => {
 
       try {
         const response = await fetch(
-          `${baseUrl}?latlng=${encodeURIComponent(bounds)}`
+          `${baseUrl}?latlng=${encodeURIComponent(bounds)}`,
+          { signal: abortController.signal }
         );
 
         const payload = await response.json();
@@ -55,6 +63,7 @@ const App: React.FC = () => {
         setError(null);
       } catch (err: unknown) {
         if (requestId !== latestRequestId.current) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         const message = err instanceof Error ? err.message : String(err);
         setError(message);
         if (showInitialLoading) {
@@ -63,6 +72,7 @@ const App: React.FC = () => {
       } finally {
         if (requestId === latestRequestId.current) {
           setDataLoaded(true);
+          abortControllerRef.current = null;
         }
       }
     },
@@ -75,34 +85,58 @@ const App: React.FC = () => {
       () => fetchWaqiData(WORLD_BOUNDS),
       REFRESH_INTERVAL_MS
     );
-    return () => window.clearInterval(intervalId);
+    return () => {
+      window.clearInterval(intervalId);
+      abortControllerRef.current?.abort();
+    };
   }, [fetchWaqiData]);
 
   useEffect(() => {
-    if (chart !== '2' && dataLoaded) {
+    if (viewMode !== 'map' && dataLoaded) {
       setMapLoaded(true);
     }
-  }, [chart, dataLoaded]);
+  }, [dataLoaded, viewMode]);
 
-  const handleSelect = (event: SelectChangeEvent) => {
-    if (event.target.name === 'View') {
-      setChart(event.target.value as string);
+  useEffect(() => {
+    if (viewMode === 'map') {
+      setMapLoaded(false);
+    }
+  }, [viewMode]);
+
+  const handleSelect = (value: string) => {
+    if (value === 'map' || value === 'insights') {
+      setViewMode(value);
     }
   };
 
   const handleMapBoundsChange = useCallback(
     (bounds: string) => {
-      fetchWaqiData(bounds);
+      if (boundsRefreshTimeoutRef.current) {
+        window.clearTimeout(boundsRefreshTimeoutRef.current);
+      }
+      boundsRefreshTimeoutRef.current = window.setTimeout(() => {
+        fetchWaqiData(bounds);
+      }, BOUNDS_REFRESH_DEBOUNCE_MS);
     },
     [fetchWaqiData]
   );
 
-  const loadingOverlayActive = !dataLoaded || (chart === '2' && !mapLoaded);
-  const linkVisible = dataLoaded && (mapLoaded || chart !== '2');
+  useEffect(
+    () => () => {
+      if (boundsRefreshTimeoutRef.current) {
+        window.clearTimeout(boundsRefreshTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  const loadingOverlayActive =
+    !dataLoaded || (viewMode === 'map' && !mapLoaded);
+  const linkVisible = dataLoaded && (mapLoaded || viewMode !== 'map');
   const hasStations = stations.length > 0;
 
   return (
-    <div className="App" style={{ height: '90vh', position: 'relative' }}>
+    <div className="App" style={{ height: '100vh', position: 'relative' }}>
       <LoadingOverlay
         loading={loadingOverlayActive}
         message="Loading AQI stations..."
@@ -118,14 +152,14 @@ const App: React.FC = () => {
         <Box
           style={{
             position: 'absolute',
-            top: '10px',
-            left: showSidebar && chart === '2' ? '320px' : '70px',
+            top: '16px',
+            left: showSidebar && viewMode === 'map' ? '320px' : '70px',
             zIndex: 1,
           }}
         >
           <Dropdown
             handleSelect={handleSelect}
-            dataValue={chart}
+            dataValue={viewMode}
             dropdown="View"
             className="chart-dropdown"
           />
@@ -148,7 +182,7 @@ const App: React.FC = () => {
             sx={{
               position: 'absolute',
               top: 70,
-              left: showSidebar && chart === '2' ? 320 : 70,
+              left: showSidebar && viewMode === 'map' ? 320 : 70,
               right: 20,
               zIndex: 2,
               maxWidth: 520,
@@ -166,7 +200,7 @@ const App: React.FC = () => {
         {dataLoaded && (!error || hasStations) && (
           <ChartList
             locations={stations}
-            chart={chart}
+            viewMode={viewMode}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             onMapLoadEnd={() => setMapLoaded(true)}

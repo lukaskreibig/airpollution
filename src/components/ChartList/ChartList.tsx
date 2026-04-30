@@ -1,10 +1,11 @@
 import React from 'react';
 import { AirQualityStation } from '../../aqi';
+import { ViewMode } from '../../viewMode';
 import Chart from './Chart/Chart';
 
 type Props = {
   locations: AirQualityStation[];
-  chart: string;
+  viewMode: ViewMode;
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
   onMapLoadEnd?: () => void;
@@ -13,7 +14,7 @@ type Props = {
 
 const ChartList: React.FC<Props> = ({
   locations,
-  chart,
+  viewMode,
   showSidebar,
   setShowSidebar,
   onMapLoadEnd,
@@ -31,7 +32,7 @@ const ChartList: React.FC<Props> = ({
     <div style={{ width: '100%', height: '100%', flex: 1 }}>
       <Chart
         locations={locations}
-        chart={chart}
+        viewMode={viewMode}
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
         onMapLoadEnd={onMapLoadEnd}

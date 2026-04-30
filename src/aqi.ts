@@ -25,6 +25,7 @@ export interface AirQualityStation {
   aqi: number;
   category: AqiCategory;
   updatedAt?: string;
+  updatedAtTimestamp?: number;
   source: 'WAQI' | 'OpenAQ';
 }
 
@@ -236,6 +237,12 @@ export function formatStationTime(value?: string): string | undefined {
   });
 }
 
+function parseStationTimestamp(value?: string): number | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.getTime();
+}
+
 export function normalizeWaqiStation(
   station: WaqiMapStation,
   index: number
@@ -256,6 +263,7 @@ export function normalizeWaqiStation(
     aqi,
     category: getAqiCategory(aqi),
     updatedAt: formatStationTime(station.station?.time),
+    updatedAtTimestamp: parseStationTimestamp(station.station?.time),
     source: 'WAQI',
   };
 }

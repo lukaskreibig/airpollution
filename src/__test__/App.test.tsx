@@ -1,20 +1,8 @@
-jest.mock('lottie-react', () => ({
-  __esModule: true,
-  default: () => (
-    <div data-testid="lottie-mock">Lottie Animation Placeholder</div>
-  ),
-}));
-
 jest.mock('@vercel/analytics/react', () => ({
   __esModule: true,
   Analytics: () => (
     <div data-testid="analytics-mock">Analytics Placeholder</div>
   ),
-}));
-
-jest.mock('react-joyride', () => ({
-  __esModule: true,
-  default: () => <div data-testid="joyride-mock">Joyride Placeholder</div>,
 }));
 
 jest.mock('maplibre-gl', () => {
@@ -86,11 +74,6 @@ jest.mock('maplibre-gl', () => {
     supported: () => true,
   };
 });
-
-jest.mock('react-plotly.js', () => ({
-  __esModule: true,
-  default: () => <div data-testid="plotly-mock">Mocked Plotly</div>,
-}));
 
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';

@@ -5,6 +5,9 @@
 server/node_modules
 /.pnp
 .pnp.js
+.yarn/
+.yarnrc.yml
+package-lock.json
 
 # testing
 /coverage
@@ -21,6 +24,8 @@ yarn-debug.log*
 yarn-error.log*
 .vercel
 node_modules/
+/build/
+/dist/
 /test-results/
 /playwright-report/
 /blob-report/

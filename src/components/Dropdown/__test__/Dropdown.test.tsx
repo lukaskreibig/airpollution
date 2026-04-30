@@ -3,23 +3,15 @@ import '@testing-library/jest-dom';
 import Dropdown from '../Dropdown';
 
 describe('Dropdown Component', () => {
-  it('renders chart dropdown and updates on selection', async () => {
+  it('renders view toggle and updates on selection', () => {
     const handleSelect = jest.fn();
     render(
-      <Dropdown handleSelect={handleSelect} dataValue="2" dropdown="Chart" />
+      <Dropdown handleSelect={handleSelect} dataValue="map" dropdown="View" />
     );
 
-    const chartSelect = screen.getByLabelText(/Chart/i);
-    expect(chartSelect).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Insights/i }));
 
-    fireEvent.mouseDown(chartSelect);
-
-    const scatterOption = await screen.findByRole('option', {
-      name: /Scatter Chart/i,
-    });
-    fireEvent.click(scatterOption);
-
-    expect(handleSelect).toHaveBeenCalled();
+    expect(handleSelect).toHaveBeenCalledWith('insights');
   });
 
   it('renders country dropdown with countries', async () => {

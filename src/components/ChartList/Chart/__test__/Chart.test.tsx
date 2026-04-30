@@ -3,14 +3,8 @@ import '@testing-library/jest-dom';
 import Chart from '../Chart';
 import { getAqiCategory } from '../../../../aqi';
 
-// Mock Plotly so we don't do real rendering
-jest.mock('react-plotly.js', () => ({
-  __esModule: true,
-  default: () => <div data-testid="plotly-mock">Mocked Plotly</div>,
-}));
-
 describe('Chart (Unit Tests)', () => {
-  it('renders the Plot if valid AQI stations exist (chart="1")', () => {
+  it('renders insights if valid AQI stations exist', () => {
     const mockLocations = [
       {
         id: 'station-1',
@@ -27,17 +21,13 @@ describe('Chart (Unit Tests)', () => {
     render(
       <Chart
         locations={mockLocations}
-        chart="1"
+        viewMode="insights"
         showSidebar={false}
         setShowSidebar={jest.fn()}
       />
     );
 
-    expect(screen.getByTestId('plotly-mock')).toBeInTheDocument();
-
-    // Confirm the fallback text is NOT present
-    expect(
-      screen.queryByText(/No data available to display\./i)
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/Air quality insights/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Good Location/i).length).toBeGreaterThan(0);
   });
 });

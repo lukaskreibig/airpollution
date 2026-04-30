@@ -8,16 +8,13 @@ import { AQI_CATEGORIES } from '../../../../aqi';
 
 interface LegendProps {
   showSidebar: boolean;
-  chart: string;
 }
 
 /**
  * @function Legend
  * @desc Displays the colored AQI categories on the map.
  */
-const Legend: React.FC<LegendProps> = ({ showSidebar, chart }) => {
-  if (chart !== '2') return null;
-
+const Legend: React.FC<LegendProps> = ({ showSidebar }) => {
   return (
     <Box
       sx={{
