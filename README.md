@@ -1,6 +1,6 @@
 # Map The Air - Air Quality Visualization Dashboard (Beta)
 
-An interactive web application for visualizing live Air Quality Index (AQI) data using **Plotly**, **Mapbox**, and **React**. The main map uses WAQI/AQICN station AQI values so users can quickly understand current air quality conditions and health categories.
+An interactive web application for visualizing live Air Quality Index (AQI) data using **Plotly**, **MapLibre**, and **React**. The main map uses WAQI/AQICN station AQI values so users can quickly understand current air quality conditions and health categories.
 
 **Note:** This is a **Beta version**, and some features are still under development or subject to change based on user feedback.
 
@@ -27,7 +27,7 @@ An interactive web application for visualizing live Air Quality Index (AQI) data
 ## ✨ Features
 
 - **Interactive Map**  
-  Visualize air quality metrics across locations using Mapbox. Threshold-based coloring provides instant insights into air quality conditions.
+  Visualize air quality metrics across locations using a tokenless MapLibre map. Threshold-based coloring provides instant insights into air quality conditions.
 
 - **Mini Average Chart**  
   A compact chart displays average AQI for the currently loaded stations.
@@ -91,7 +91,7 @@ The main application uses live AQI values from the **World Air Quality Index (WA
 - **React**: For building the user interface, ensuring component reusability and state management.
 - **Material UI**: For styling and theming the application with prebuilt components and accessibility in mind.
 - **Plotly.js**: For creating highly interactive and customizable charts.
-- **Mapbox GL JS**: For rendering detailed and interactive maps with customizable layers and markers.
+- **MapLibre GL JS**: For rendering detailed and interactive maps with customizable layers and markers without requiring a Mapbox access token.
 
 ### Backend and Data
 

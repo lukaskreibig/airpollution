@@ -1,9 +1,10 @@
 /**
  * @file MapContainer.tsx
- * @desc Manages the Mapbox map, including sources, layers, popups, and bounding logic.
+ * @desc Manages the MapLibre map, including sources, layers, popups, and bounding logic.
  */
 import React, { useCallback, useEffect } from 'react';
-import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
+import maplibregl, { GeoJSONSource } from 'maplibre-gl';
+import type { StyleSpecification } from 'maplibre-gl';
 import { LatestResult } from '../../../../react-app-env';
 import { ProcessedLocation } from '../ChartFunction';
 import { Box } from '@mui/material';
@@ -15,21 +16,21 @@ import {
 interface MapContainerProps {
   chart: string;
   locations: LatestResult[];
-  mapRef: React.MutableRefObject<mapboxgl.Map | null>;
+  mapRef: React.MutableRefObject<maplibregl.Map | null>;
   mapContainerRef: React.MutableRefObject<HTMLDivElement | null>;
-  popupRef: React.MutableRefObject<mapboxgl.Popup | null>;
+  popupRef: React.MutableRefObject<maplibregl.Popup | null>;
   onMapLoadEnd?: () => void;
   processLocations: (locs: LatestResult[]) => ProcessedLocation[];
   createGeoJSON: (
     plocs: ProcessedLocation[]
   ) => GeoJSON.FeatureCollection<GeoJSON.Point>;
-  adjustMapView: (map: mapboxgl.Map, plocs: ProcessedLocation[]) => void;
+  adjustMapView: (map: maplibregl.Map, plocs: ProcessedLocation[]) => void;
   setProcessedLocs: React.Dispatch<React.SetStateAction<ProcessedLocation[]>>;
 }
 
 /**
  * @function MapContainer
- * @desc Renders the map container div and handles the Mapbox initialization if chart=2.
+ * @desc Renders the map container div and handles the MapLibre initialization if chart=2.
  */
 const MapContainer: React.FC<MapContainerProps> = ({
   chart,
@@ -45,15 +46,50 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
   const initMap = useCallback(() => {
     if (!mapContainerRef.current) return;
-    const map = new mapboxgl.Map({
+    const rasterStyle: StyleSpecification = {
+      version: 8,
+      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+      sources: {
+        'carto-light': {
+          type: 'raster',
+          tiles: [
+            'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          minzoom: 0,
+          maxzoom: 20,
+          attribution:
+            '&copy; OpenStreetMap contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        },
+      },
+      layers: [
+        {
+          id: 'background',
+          type: 'background',
+          paint: { 'background-color': '#eef2f7' },
+        },
+        {
+          id: 'carto-light',
+          type: 'raster',
+          source: 'carto-light',
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
+    };
+
+    const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/light-v10',
+      style: rasterStyle,
       center: INITIAL_CENTER,
       zoom: INITIAL_ZOOM,
     });
     mapRef.current = map;
 
-    popupRef.current = new mapboxgl.Popup({
+    popupRef.current = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
     });
@@ -80,6 +116,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         layout: {
           'text-field': ['get', 'overallAQI'],
           'text-size': 10,
+          'text-font': ['Noto Sans Bold'],
         },
         paint: {
           'text-color': '#ffffff',
@@ -100,9 +137,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
         popupObj.remove();
       });
 
-      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
       map.addControl(
-        new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
+        new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
         'bottom-left'
       );
 

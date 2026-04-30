@@ -13,7 +13,7 @@
     "install": "^0.13.0",
     "lodash.debounce": "^4.0.8",
     "lottie-react": "^2.4.1",
-    "mapbox-gl": "^3.18.1",
+    "maplibre-gl": "^5.24.0",
     "npm": "^11.10.1",
     "plotly.js": "^3.4.0",
     "plotly.js-basic-dist-min": "^3.4.0",

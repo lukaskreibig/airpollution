@@ -17,7 +17,7 @@ jest.mock('react-joyride', () => ({
   default: () => <div data-testid="joyride-mock">Joyride Placeholder</div>,
 }));
 
-jest.mock('mapbox-gl', () => {
+jest.mock('maplibre-gl', () => {
   class FakeMap {
     constructor() {}
     on(event: string, _layerOrHandler?: unknown, maybeHandler?: unknown) {

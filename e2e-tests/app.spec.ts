@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const runtimeErrors = new WeakMap<object, string[]>();
+
 const waqiFixture = {
   status: 'ok',
   data: [
@@ -22,6 +24,15 @@ const waqiFixture = {
 
 test.describe('MapTheAir App Basic Tests', () => {
   test.beforeEach(async ({ page }) => {
+    const errors: string[] = [];
+    runtimeErrors.set(page, errors);
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    page.on('pageerror', (error) => {
+      errors.push(error.message);
+    });
+
     await page.route('**/api/waqi?**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -31,6 +42,10 @@ test.describe('MapTheAir App Basic Tests', () => {
     });
 
     await page.goto('/');
+  });
+
+  test.afterEach(async ({ page }) => {
+    expect(runtimeErrors.get(page) || []).toEqual([]);
   });
 
   test('loads live AQI station data', async ({ page }) => {

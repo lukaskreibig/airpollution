@@ -21,10 +21,10 @@ import {
 } from '@mui/material';
 import { CloseCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import Plot from 'react-plotly.js';
-import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
-import type { StyleSpecification } from 'mapbox-gl';
+import maplibregl, { GeoJSONSource } from 'maplibre-gl';
+import type { StyleSpecification } from 'maplibre-gl';
 import type { PlotData } from 'plotly.js';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 import {
   AirQualityStation,
@@ -37,10 +37,9 @@ import Legend from './Legend/Legend';
 import MiniChart from './MiniChart/MiniChart';
 import { useWindowDimensions } from './chartUtilsHelpers/chartUtilsHelpers';
 
-const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN?.trim();
-
 const FALLBACK_RASTER_STYLE: StyleSpecification = {
   version: 8,
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
     'carto-light': {
       type: 'raster',
@@ -73,13 +72,7 @@ const FALLBACK_RASTER_STYLE: StyleSpecification = {
   ],
 };
 
-const MAP_STYLE: string | StyleSpecification = MAPBOX_ACCESS_TOKEN
-  ? 'mapbox://styles/mapbox/light-v11'
-  : FALLBACK_RASTER_STYLE;
-
-if (MAPBOX_ACCESS_TOKEN) {
-  mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
-}
+const MAP_STYLE: StyleSpecification = FALLBACK_RASTER_STYLE;
 
 type SortMode = 'aqi' | 'name';
 type SortDirection = 'asc' | 'desc';
@@ -146,12 +139,27 @@ function buildGeoJSON(
   };
 }
 
-function getMapBoundsString(map: mapboxgl.Map): string {
+function getMapBoundsString(map: maplibregl.Map): string {
   const bounds = map.getBounds();
   if (!bounds) return '-85,-180,85,180';
   const southWest = bounds.getSouthWest();
   const northEast = bounds.getNorthEast();
   return [southWest.lat, southWest.lng, northEast.lat, northEast.lng].join(',');
+}
+
+function canCreateWebGlContext(): boolean {
+  if (typeof document === 'undefined') return true;
+
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(
+      canvas.getContext('webgl2') ||
+      canvas.getContext('webgl') ||
+      canvas.getContext('experimental-webgl')
+    );
+  } catch {
+    return false;
+  }
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -170,9 +178,9 @@ const Chart: React.FC<ChartProps> = ({
   const [activeStationId, setActiveStationId] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<MapStatus>('idle');
 
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
 
   const visibleStations = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -285,16 +293,14 @@ const Chart: React.FC<ChartProps> = ({
   const initializeMap = useCallback(() => {
     if (chart !== '2' || mapRef.current || !mapContainerRef.current) return;
 
-    const isSupported =
-      typeof mapboxgl.supported !== 'function' || mapboxgl.supported();
-    if (!isSupported) {
+    if (!canCreateWebGlContext()) {
       setMapStatus('unsupported');
       onMapLoadEnd?.();
       return;
     }
 
     try {
-      const map = new mapboxgl.Map({
+      const map = new maplibregl.Map({
         container: mapContainerRef.current,
         style: MAP_STYLE,
         center: [10, 30],
@@ -302,17 +308,21 @@ const Chart: React.FC<ChartProps> = ({
       });
 
       mapRef.current = map;
-      popupRef.current = new mapboxgl.Popup({
+      let mapHasLoaded = false;
+      popupRef.current = new maplibregl.Popup({
         closeButton: false,
         closeOnClick: false,
       });
 
-      map.once('error', () => {
-        setMapStatus('error');
-        onMapLoadEnd?.();
+      map.on('error', () => {
+        if (!mapHasLoaded) {
+          setMapStatus('error');
+          onMapLoadEnd?.();
+        }
       });
 
       map.on('load', () => {
+        mapHasLoaded = true;
         map.addSource('locations-source', {
           type: 'geojson',
           data: buildGeoJSON([]),
@@ -370,7 +380,7 @@ const Chart: React.FC<ChartProps> = ({
               ['round', ['/', ['get', 'sumAQI'], ['get', 'point_count']]],
             ],
             'text-size': 12,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-font': ['Noto Sans Bold'],
           },
           paint: {
             'text-color': '#ffffff',
@@ -413,7 +423,7 @@ const Chart: React.FC<ChartProps> = ({
           layout: {
             'text-field': ['get', 'label'],
             'text-size': 10,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-font': ['Noto Sans Bold'],
           },
           paint: {
             'text-color': '#ffffff',
@@ -456,22 +466,25 @@ const Chart: React.FC<ChartProps> = ({
             number,
             number,
           ];
-          source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-            if (error || typeof zoom !== 'number') return;
-            map.easeTo({
-              center,
-              zoom,
-            });
-          });
+          source
+            .getClusterExpansionZoom(clusterId)
+            .then((zoom) => {
+              if (typeof zoom !== 'number') return;
+              map.easeTo({
+                center,
+                zoom,
+              });
+            })
+            .catch(() => undefined);
         });
 
         map.on('moveend', () => {
           onMapBoundsChange?.(getMapBoundsString(map));
         });
 
-        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
         map.addControl(
-          new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
+          new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
           'bottom-left'
         );
 
