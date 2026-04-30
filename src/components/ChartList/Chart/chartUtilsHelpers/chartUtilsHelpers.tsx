@@ -3,6 +3,7 @@
  * @desc Contains shared helpers for the Chart component: color function, dimension hooks, etc.
  */
 import { useEffect, useState } from 'react';
+import { aqiColor as getStandardAqiColor } from '../../../../aqi';
 
 /**
  * The set of ALLOWED_PARAMS relevant for AQI calculations.
@@ -32,12 +33,7 @@ export const INITIAL_ZOOM = 10.12;
  * @returns {string} - CSS color hex
  */
 export function aqiColor(aqi: number): string {
-  if (aqi < 0) return '#bfbfbf';
-  if (aqi <= 50) return '#2a9d8f';
-  if (aqi <= 100) return '#e9c46a';
-  if (aqi <= 150) return '#f4a261';
-  if (aqi <= 200) return '#d62828';
-  return '#9d0208';
+  return getStandardAqiColor(aqi);
 }
 
 /**

@@ -6,7 +6,7 @@ import React from 'react';
 import { Box, IconButton } from '@mui/material';
 import Plot from 'react-plotly.js';
 import { ArrowUpOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { PlotData, Layout } from 'plotly.js';
+import type { PlotData, Layout } from 'plotly.js';
 
 interface MiniChartProps {
   miniChartData: Partial<PlotData>[];

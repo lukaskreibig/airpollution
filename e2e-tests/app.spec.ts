@@ -1,74 +1,68 @@
 import { test, expect } from '@playwright/test';
 
+const waqiFixture = {
+  status: 'ok',
+  data: [
+    {
+      uid: 1,
+      aqi: 42,
+      lat: 52.52,
+      lon: 13.405,
+      station: { name: 'Berlin AQI Station', time: '2026-04-30T12:00:00Z' },
+    },
+    {
+      uid: 2,
+      aqi: 156,
+      lat: 48.137,
+      lon: 11.575,
+      station: { name: 'Munich AQI Station', time: '2026-04-30T12:00:00Z' },
+    },
+  ],
+};
+
 test.describe('MapTheAir App Basic Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.route('**/api/waqi?**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(waqiFixture),
+      });
+    });
 
-    await page.waitForLoadState('networkidle');
+    await page.goto('/');
   });
 
-  // Test #1: Can we load the page and see the loading overlay?
-  test('loads the page and shows loading overlay', async ({ page }) => {
-    await page.goto('/');
-
-    await expect(page.getByText('Loading data & map...')).toBeVisible();
+  test('loads live AQI station data', async ({ page }) => {
+    await expect(page.getByText('Berlin AQI Station')).toBeVisible();
+    await expect(page.getByText('Munich AQI Station')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Munich AQI Station 156/i })
+    ).toBeVisible();
   });
 
-  // Test #2: Ensure dropdowns are on the page (Chart / Country).
-  test('renders the Chart and Country dropdowns', async ({ page }) => {
-    await page.goto('/');
-
-    const chartDropdown = page.locator('.chart-dropdown');
-    await expect(chartDropdown).toBeVisible();
-
-    const countryDropdown = page.locator('.country-dropdown');
-    await expect(countryDropdown).toBeVisible();
+  test('renders the view control and station search', async ({ page }) => {
+    await expect(page.locator('.chart-dropdown')).toBeVisible();
+    await expect(page.locator('.search-field')).toBeVisible();
   });
 
-  // Test #3: Switch chart from 'Map View' (2) to 'Scatter Chart' (1)
   test('can switch between map and scatter chart', async ({ page }) => {
-    await page.goto('/');
-
-    await expect(page.locator('.map-area')).toBeVisible();
-
-    const skipButton = page.locator('[data-test-id="button-skip"]');
-    await skipButton.click();
-
     await page.getByLabel('View').click();
     await page.getByRole('option', { name: 'Scatter Chart' }).click();
 
-    // The map-area should no longer be visible
+    await expect(page.locator('.chart-area')).toBeVisible();
     await expect(page.locator('.map-area')).toHaveCount(0);
-
-    // Instead, we should see the Plotly chart
-    const chartArea = page.locator('.chart-area');
-    await expect(chartArea).toBeVisible();
   });
 
-  // Test #4: Check that "Legal & Privacy" link only appears when the map is loaded
-  test('displays "Legal & Privacy" link only after map is loaded', async ({
-    page,
-  }) => {
-    await page.goto('/');
+  test('filters the station list by search query', async ({ page }) => {
+    await page.getByLabel('Search').fill('Munich');
 
-    const link = page.getByText('Legal & Privacy');
-
-    await expect(link).toBeVisible();
+    await expect(page.getByText('Munich AQI Station')).toBeVisible();
+    await expect(page.getByText('Berlin AQI Station')).toHaveCount(0);
   });
 
-  // Test #5: Change the country and verify no error is displayed
-  test('changes country selection without error', async ({ page }) => {
-    await page.goto('/');
-
-    const skipButton = page.locator('[data-test-id="button-skip"]');
-    await skipButton.click();
-
-    await page.getByLabel('Country').click();
-    await page.getByRole('option', { name: 'France' }).click();
-
-    const errorMessage = page.locator('#message', {
-      hasText: 'Error fetching data:',
-    });
-    await expect(errorMessage).toHaveCount(0);
+  test('displays legal and WAQI attribution after load', async ({ page }) => {
+    await expect(page.getByText('Legal & Privacy')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'WAQI' })).toBeVisible();
   });
 });

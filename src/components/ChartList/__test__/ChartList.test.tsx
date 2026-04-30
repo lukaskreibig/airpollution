@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ChartList from '../ChartList';
+import { getAqiCategory } from '../../../aqi';
 
 // 1) Mock the *child* Chart component
 jest.mock('../Chart/Chart', () => ({
@@ -15,16 +16,12 @@ describe('ChartList (Unit Tests)', () => {
       <ChartList
         locations={[]}
         chart="3"
-        country="50"
-        countriesList={[]}
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />
     );
 
-    expect(
-      screen.getByText(/No data found\. Possibly no up-to-date data/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No live AQI stations found/i)).toBeInTheDocument();
 
     expect(screen.queryByText('Mocked Chart')).not.toBeInTheDocument();
   });
@@ -32,18 +29,14 @@ describe('ChartList (Unit Tests)', () => {
   it('renders <Chart> if locations is non-empty', () => {
     const mockLocations = [
       {
-        location: 'Test Location',
-        city: 'Test City',
-        country: 'US',
-        coordinates: { latitude: 40, longitude: -74 },
-        measurements: [
-          {
-            parameter: 'pm25',
-            value: 15,
-            lastUpdated: '2025-01-01T12:00:00Z',
-            unit: 'µg/m³',
-          },
-        ],
+        id: 'station-1',
+        name: 'Test Location',
+        lat: 40,
+        lon: -74,
+        aqi: 42,
+        category: getAqiCategory(42),
+        updatedAt: 'Jan 1, 2025, 12:00 PM UTC',
+        source: 'WAQI' as const,
       },
     ];
 
@@ -51,15 +44,13 @@ describe('ChartList (Unit Tests)', () => {
       <ChartList
         locations={mockLocations}
         chart="3"
-        country="50"
-        countriesList={[]}
         showSidebar={true}
         setShowSidebar={jest.fn()}
       />
     );
 
     expect(
-      screen.queryByText(/No data found\. Possibly no up-to-date data/i)
+      screen.queryByText(/No live AQI stations found/i)
     ).not.toBeInTheDocument();
 
     expect(screen.getByText('Mocked Chart')).toBeInTheDocument();

@@ -1,64 +1,44 @@
-/**
- * @file Chart.tsx
- * @desc Main Chart component that coordinates the map, plotly charts, sidebar, mini chart, and legend.
- */
 import React, {
-  useEffect,
-  useState,
-  useRef,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
 } from 'react';
 import {
   Box,
-  IconButton,
-  Typography,
   Drawer,
-  TextField,
   FormControl,
+  IconButton,
   InputLabel,
-  Select,
-  MenuItem,
+  List,
   ListItem,
   ListItemText,
-  List,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { MenuOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import Plot from 'react-plotly.js';
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
 import type { StyleSpecification } from 'mapbox-gl';
+import type { PlotData } from 'plotly.js';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import Logo from './Logo';
 import {
-  calculateBigChart,
-  calculateBigLayout,
-  calculateAverageChart,
-  computeAqiForPollutant,
-  computeOverallAqi,
-  ProcessedLocation,
-} from './ChartFunction';
-import {
+  AirQualityStation,
+  AQI_CATEGORIES,
   aqiColor,
-  isValidMeasurement,
-  formatDate,
-  truncateAndConvert,
-  useWindowDimensions,
-  ALLOWED_PARAMS,
-  INITIAL_CENTER,
-  INITIAL_ZOOM,
-} from './chartUtilsHelpers/chartUtilsHelpers';
-
-import { LatestResult, Country } from '../../../react-app-env';
-import { PlotData } from 'plotly.js';
+  formatAqi,
+} from '../../../aqi';
+import Logo from './Logo';
 import Legend from './Legend/Legend';
 import MiniChart from './MiniChart/MiniChart';
+import { useWindowDimensions } from './chartUtilsHelpers/chartUtilsHelpers';
 
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN?.trim();
 
-// Fallback basemap when no Mapbox token is configured. The previous demotiles
-// style only provides low-detail world polygons (maxzoom 6), which appears as a
-// blank/white map at this app's zoom levels.
 const FALLBACK_RASTER_STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -81,9 +61,7 @@ const FALLBACK_RASTER_STYLE: StyleSpecification = {
     {
       id: 'background',
       type: 'background',
-      paint: {
-        'background-color': '#eef2f7',
-      },
+      paint: { 'background-color': '#eef2f7' },
     },
     {
       id: 'carto-light',
@@ -96,556 +74,474 @@ const FALLBACK_RASTER_STYLE: StyleSpecification = {
 };
 
 const MAP_STYLE: string | StyleSpecification = MAPBOX_ACCESS_TOKEN
-  ? 'mapbox://styles/mapbox/light-v10'
+  ? 'mapbox://styles/mapbox/light-v11'
   : FALLBACK_RASTER_STYLE;
 
 if (MAPBOX_ACCESS_TOKEN) {
   mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 }
 
-/**
- * @interface ChartProps
- * @property {string} chart - The chart type ("1" or "2").
- * @property {LatestResult[]} locations - Array of measurement data.
- * @property {string} country - Selected country ID.
- * @property {Country[]} countriesList - Array of countries.
- * @property {boolean} showSidebar - Whether the sidebar (drawer) is open.
- * @property {React.Dispatch<React.SetStateAction<boolean>>} setShowSidebar - Function to toggle sidebar open/close.
- * @property {() => void} [onMapLoadEnd] - Optional callback after the map finishes loading.
- */
+type SortMode = 'aqi' | 'name';
+type SortDirection = 'asc' | 'desc';
+type MapStatus = 'idle' | 'ready' | 'unsupported' | 'error';
+
 interface ChartProps {
   chart: string;
-  locations: LatestResult[];
-  country: string;
-  countriesList: Country[];
+  locations: AirQualityStation[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
   onMapLoadEnd?: () => void;
+  onMapBoundsChange?: (bounds: string) => void;
 }
 
-/**
- * @function Chart
- * @desc Main chart component for displaying scatter or map-based air quality data, along with a sidebar and mini chart.
- */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function stationPopupHtml(station: AirQualityStation): string {
+  return `
+    <div style="font-size:14px;line-height:1.45;max-width:240px;">
+      <strong>${escapeHtml(station.name)}</strong><br/>
+      AQI: <span style="color:${station.category.color};font-weight:bold;">${station.aqi}</span><br/>
+      <span>${escapeHtml(station.category.label)}</span><br/>
+      <span style="font-size:12px;color:#555;">${escapeHtml(station.category.healthMessage)}</span><br/>
+      ${
+        station.updatedAt
+          ? `<span style="font-size:11px;color:gray;">Updated: <b>${escapeHtml(
+              station.updatedAt
+            )}</b></span><br/>`
+          : ''
+      }
+      <span style="font-size:11px;color:gray;">Source: ${station.source}</span>
+    </div>
+  `;
+}
+
+function buildGeoJSON(
+  stations: AirQualityStation[]
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: 'FeatureCollection',
+    features: stations.map((station) => ({
+      type: 'Feature',
+      id: station.id,
+      geometry: {
+        type: 'Point',
+        coordinates: [station.lon, station.lat],
+      },
+      properties: {
+        stationId: station.id,
+        name: station.name,
+        aqi: station.aqi,
+        label: formatAqi(station.aqi),
+        color: aqiColor(station.aqi),
+        popupHTML: stationPopupHtml(station),
+      },
+    })),
+  };
+}
+
+function getMapBoundsString(map: mapboxgl.Map): string {
+  const bounds = map.getBounds();
+  if (!bounds) return '-85,-180,85,180';
+  const southWest = bounds.getSouthWest();
+  const northEast = bounds.getNorthEast();
+  return [southWest.lat, southWest.lng, northEast.lat, northEast.lng].join(',');
+}
+
 const Chart: React.FC<ChartProps> = ({
   chart,
   locations,
-  country,
-  countriesList,
   showSidebar,
   setShowSidebar,
   onMapLoadEnd,
+  onMapBoundsChange,
 }) => {
-  // -- Window dims
   const { width, height } = useWindowDimensions();
-
-  // -- Plotly chart states
-  const [plotData, setPlotData] = useState<Partial<PlotData>[]>([]);
-  const [plotLayout, setPlotLayout] = useState<Partial<Plotly.Layout>>({});
-  const [revision, setRevision] = useState<number>(0);
-
-  // -- Mini chart states
-  const [miniChartData, setMiniChartData] = useState<Partial<PlotData>[]>([]);
-  const [miniChartLayout, setMiniChartLayout] = useState<
-    Partial<Plotly.Layout>
-  >({});
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortMode, setSortMode] = useState<SortMode>('aqi');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [miniChartExpanded, setMiniChartExpanded] = useState<boolean>(true);
+  const [activeStationId, setActiveStationId] = useState<string | null>(null);
+  const [mapStatus, setMapStatus] = useState<MapStatus>('idle');
 
-  // -- Map references
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
 
-  // -- Sidebar search/sort states
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortMode, setSortMode] = useState<
-    'name' | 'aqi' | 'pm25' | 'pm10' | 'so2' | 'no2' | 'co'
-  >('aqi');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const visibleStations = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = query
+      ? locations.filter((station) =>
+          station.name.toLowerCase().includes(query)
+        )
+      : locations;
 
-  // -- Processed locations
-  const [processedLocs, setProcessedLocs] = useState<ProcessedLocation[]>([]);
+    return [...filtered].sort((a, b) => {
+      if (sortMode === 'name') {
+        const comparison = a.name.localeCompare(b.name);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
 
-  // -- Active country name
-  const activeCountryName = useMemo(() => {
-    const found = countriesList.find((c) => String(c.id) === country);
-    return found ? found.name : 'Unknown Country';
-  }, [country, countriesList]);
+      return sortDirection === 'asc' ? a.aqi - b.aqi : b.aqi - a.aqi;
+    });
+  }, [locations, searchQuery, sortDirection, sortMode]);
 
-  /**
-   * @function formatParamNameHTML
-   * @desc Formats a pollutant parameter to an HTML string with sub/superscripts.
-   * @param {string} param - The pollutant parameter name
-   * @returns {string} - Formatted HTML string for use in popups
-   */
-  const formatParamNameHTML = useCallback((param: string): string => {
-    const mapping: Record<string, string> = {
-      o3: 'O<sub>3</sub>',
-      pm25: 'PM<sub>2.5</sub>',
-      pm10: 'PM<sub>10</sub>',
-      so2: 'SO<sub>2</sub>',
-      no2: 'NO<sub>2</sub>',
-      co: 'CO',
-    };
-    return mapping[param.toLowerCase()] || param.toUpperCase();
-  }, []);
+  const scatterData = useMemo<Partial<PlotData>[]>(() => {
+    if (chart !== '1') return [];
+    return [
+      {
+        type: 'scatter',
+        mode: 'markers',
+        x: visibleStations.map((station) => station.name),
+        y: visibleStations.map((station) => station.aqi),
+        text: visibleStations.map(
+          (station) =>
+            `${station.name}<br>AQI ${station.aqi}<br>${station.category.label}`
+        ),
+        hoverinfo: 'text',
+        marker: {
+          color: visibleStations.map((station) => station.category.color),
+          size: 12,
+          line: { color: '#1f2933', width: 1 },
+        },
+        name: 'Station AQI',
+      },
+    ];
+  }, [chart, visibleStations]);
 
-  /**
-   * @function processLocations
-   * @desc Converts raw LatestResult locations into a filtered array of ProcessedLocation, excluding invalid data.
-   * @param {LatestResult[]} locs - Raw measurement data
-   * @returns {ProcessedLocation[]} - Array of processed locations
-   */
-  const processLocations = useCallback(
-    (locs: LatestResult[]): ProcessedLocation[] => {
-      const results = locs.map((loc) => {
-        if (!loc.coordinates) return null;
-        if (!loc.measurements || loc.measurements.length === 0) return null;
-
-        const paramObj: Record<string, number> = {};
-        let timestamp = '';
-
-        loc.measurements.forEach((m) => {
-          const p = m.parameter?.toLowerCase() || '';
-          if (!isValidMeasurement(p, m.value)) return;
-          const conv = truncateAndConvert(p, m.value);
-          if (!timestamp && m.lastUpdated) {
-            timestamp = formatDate(m.lastUpdated);
-          }
-          paramObj[p] = conv;
-        });
-
-        if (Object.keys(paramObj).length === 0) return null;
-
-        const overallAQI = computeOverallAqi(paramObj);
-        if (overallAQI <= 0) return null;
-        if (Object.keys(paramObj).length < 2) return null;
-
-        let html = `<div style="font-size:14px;line-height:1.4;">`;
-        html += `<strong>${loc.location}</strong><br/>`;
-        if (loc.city) html += `City: ${loc.city}<br/>`;
-        html += `Overall AQI: <span style="color:${aqiColor(
-          overallAQI
-        )};font-weight:bold;">${overallAQI < 0 ? '?' : overallAQI}</span><br/>`;
-
-        for (const [p, val] of Object.entries(paramObj)) {
-          const subAqi = computeAqiForPollutant(p, val);
-          const color = aqiColor(subAqi);
-          html += `<span style="color:${color};font-weight:bold;">${formatParamNameHTML(
-            p
-          )}: ${val.toFixed(2)} (AQI ${subAqi < 0 ? '?' : subAqi})</span><br/>`;
-        }
-        if (timestamp) {
-          html += `<span style="font-size:11px; color:gray;">Last Update: <span style="font-weight:bold;">${timestamp}</span></span><br/>`;
-        }
-        html += `</div>`;
-
+  const scatterLayout = useMemo<Partial<Plotly.Layout>>(
+    () => ({
+      width: Math.max(width - 40, 320),
+      height: Math.max(height - 80, 320),
+      title: { text: `AQI from ${visibleStations.length} stations` },
+      yaxis: { title: { text: 'AQI' }, range: [0, 500] },
+      xaxis: {
+        showgrid: false,
+        showline: false,
+        showticklabels: false,
+      },
+      shapes: AQI_CATEGORIES.slice(0, 5).map((category) => {
+        const high = category.range.split('-')[1];
         return {
-          name: typeof loc.location === 'string' ? loc.location : 'Unknown',
-          city: typeof loc.city === 'string' ? loc.city : 'Unknown',
-          lat: loc.coordinates.latitude,
-          lon: loc.coordinates.longitude,
-          parameters: paramObj,
-          timestamp,
-          popupHTML: html,
+          type: 'line',
+          xref: 'paper',
+          x0: 0,
+          x1: 1,
+          yref: 'y',
+          y0: Number(high),
+          y1: Number(high),
+          line: { color: category.color, width: 1, dash: 'dot' },
         };
-      });
-      return results.filter((r) => r !== null) as ProcessedLocation[];
-    },
-    [formatParamNameHTML]
+      }),
+      margin: { l: 60, r: 20, t: 70, b: 40 },
+      hovermode: 'closest',
+    }),
+    [height, visibleStations.length, width]
   );
 
-  /**
-   * @function createGeoJSON
-   * @desc Builds a GeoJSON FeatureCollection from an array of ProcessedLocation objects.
-   * @param {ProcessedLocation[]} plocs - Processed location data
-   * @returns {GeoJSON.FeatureCollection<GeoJSON.Point>} - The resulting GeoJSON data
-   */
-  const createGeoJSON = useCallback(
-    (plocs: ProcessedLocation[]): GeoJSON.FeatureCollection<GeoJSON.Point> => {
-      const features = plocs.map<GeoJSON.Feature<GeoJSON.Point>>((ploc) => {
-        const overallVal = computeOverallAqi(ploc.parameters);
-        const color = aqiColor(overallVal);
-        const label = overallVal < 0 ? '?' : String(overallVal);
+  const miniChartData = useMemo<Partial<PlotData>[]>(() => {
+    if (!locations.length) return [];
+    const average =
+      locations.reduce((sum, station) => sum + station.aqi, 0) /
+      locations.length;
+    return [
+      {
+        type: 'bar',
+        x: ['Visible avg'],
+        y: [average],
+        marker: { color: aqiColor(average) },
+        text: [average.toFixed(0)],
+        textposition: 'auto',
+        hoverinfo: 'y',
+      },
+    ];
+  }, [locations]);
 
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [ploc.lon, ploc.lat],
-          },
-          properties: {
-            popupHTML: ploc.popupHTML,
-            overallAQI: label,
-            overallColor: color,
-          },
-        };
-      });
-      return { type: 'FeatureCollection', features };
-    },
-    []
-  );
-
-  /**
-   * @function centerMapOnCountry
-   * @desc Centers the map on the currently selected country if coordinates are present.
-   */
-  const centerMapOnCountry = useCallback(() => {
-    const foundCountry = countriesList.find((c) => String(c.id) === country);
-    if (foundCountry && foundCountry.coordinates && mapRef.current) {
-      const { lat, lon } = foundCountry.coordinates;
-      mapRef.current.flyTo({
-        center: [lon, lat],
-        zoom: 5,
-        essential: true,
-        duration: 1000,
-      });
-    }
-  }, [countriesList, country]);
-
-  /**
-   * Convert raw locations => processedLocs any time locations changes.
-   */
-  useEffect(() => {
-    const plocs = processLocations(locations);
-    setProcessedLocs(plocs);
-  }, [locations, processLocations]);
-
-  /**
-   * @function adjustMapView
-   * @desc Fits or centers the map around the processed location boundaries.
-   */
-  const adjustMapView = useCallback(
-    (map: mapboxgl.Map, plocs: ProcessedLocation[]) => {
-      if (plocs.length === 0) {
-        map.flyTo({
-          center: INITIAL_CENTER,
-          zoom: INITIAL_ZOOM,
-          duration: 300,
-        });
-        return;
-      }
-      if (plocs.length === 1) {
-        map.flyTo({
-          center: [plocs[0].lon, plocs[0].lat],
-          zoom: 10,
-          duration: 300,
-        });
-        return;
-      }
-      let minLat = Infinity,
-        maxLat = -Infinity,
-        minLon = Infinity,
-        maxLon = -Infinity;
-      for (const p of plocs) {
-        if (p.lat < minLat) minLat = p.lat;
-        if (p.lat > maxLat) maxLat = p.lat;
-        if (p.lon < minLon) minLon = p.lon;
-        if (p.lon > maxLon) maxLon = p.lon;
-      }
-      if (
-        isFinite(minLat) &&
-        isFinite(minLon) &&
-        isFinite(maxLat) &&
-        isFinite(maxLon)
-      ) {
-        map.fitBounds(
-          [
-            [minLon, minLat],
-            [maxLon, maxLat],
-          ],
-          { padding: 50, duration: 300 }
-        );
-      } else {
-        map.flyTo({
-          center: INITIAL_CENTER,
-          zoom: INITIAL_ZOOM,
-          duration: 300,
-        });
-      }
-    },
-    []
-  );
-
-  /**
-   * @function mapRefInit
-   * @desc Initializes the Mapbox map when chart=2.
-   */
-  const mapRefInit = useCallback(() => {
-    if (!mapContainerRef.current) return;
-    let map: mapboxgl.Map;
-    try {
-      map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: MAP_STYLE,
-        center: INITIAL_CENTER,
-        zoom: INITIAL_ZOOM,
-      });
-    } catch (error) {
-      console.error('Failed to initialize map', error);
-      if (onMapLoadEnd) onMapLoadEnd();
-      return;
-    }
-    mapRef.current = map;
-    popupRef.current = new mapboxgl.Popup({
-      closeButton: false,
-      closeOnClick: false,
-    });
-
-    map.once('error', () => {
-      if (onMapLoadEnd) onMapLoadEnd();
-    });
-
-    map.on('load', () => {
-      map.dragPan.enable();
-      map.addSource('locations-source', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-      map.addLayer({
-        id: 'locations-layer',
-        type: 'circle',
-        source: 'locations-source',
-        paint: {
-          'circle-radius': 10,
-          'circle-color': ['get', 'overallColor'],
-        },
-      });
-      map.addLayer({
-        id: 'locations-label',
-        type: 'symbol',
-        source: 'locations-source',
-        layout: {
-          'text-field': ['get', 'overallAQI'],
-          'text-size': 10,
-        },
-        paint: {
-          'text-color': '#ffffff',
-          'text-halo-color': '#000000',
-          'text-halo-width': 1,
-        },
-      });
-
-      const popupObj = popupRef.current!;
-      map.on('mouseenter', 'locations-layer', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        if (!e.features || !e.features[0]) return;
-        const html = e.features[0].properties?.popupHTML || '';
-        popupObj.setLngLat(e.lngLat).setHTML(html).addTo(map);
-      });
-      map.on('mouseleave', 'locations-layer', () => {
-        map.getCanvas().style.cursor = '';
-        popupObj.remove();
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.addControl(
-        new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
-        'bottom-left'
-      );
-
-      const plocs = processLocations(locations);
-      setProcessedLocs(plocs);
-
-      const geojson = createGeoJSON(plocs);
-      const src = map.getSource('locations-source') as GeoJSONSource;
-      src.setData(geojson);
-
-      adjustMapView(map, plocs);
-      if (onMapLoadEnd) onMapLoadEnd();
-    });
-  }, [locations, processLocations, createGeoJSON, adjustMapView, onMapLoadEnd]);
-
-  /**
-   * If chart=2 => init map; else remove map
-   */
-  useEffect(() => {
-    if (chart !== '2') {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      return;
-    }
-    if (!mapRef.current && mapContainerRef.current) {
-      mapRefInit();
-    }
-  }, [chart, mapRefInit]);
-
-  /**
-   * Refresh map if chart=2 changes or when data updates
-   */
-  useEffect(() => {
-    if (chart === '2' && mapRef.current && mapRef.current.isStyleLoaded()) {
-      mapRef.current.resize();
-      const plocs = processLocations(locations);
-      setProcessedLocs(plocs);
-
-      const geojson = createGeoJSON(plocs);
-      const src = mapRef.current.getSource('locations-source') as GeoJSONSource;
-      src.setData(geojson);
-
-      adjustMapView(mapRef.current, plocs);
-      if (onMapLoadEnd) onMapLoadEnd();
-    }
-  }, [
-    chart,
-    locations,
-    processLocations,
-    createGeoJSON,
-    adjustMapView,
-    onMapLoadEnd,
-  ]);
-
-  /**
-   * Build the big Plotly chart if chart=1
-   */
-  useEffect(() => {
-    if (!locations.length) {
-      setPlotData([]);
-      setPlotLayout({});
-      return;
-    }
-    if (chart === '1') {
-      const scatterData = calculateBigChart(chart, locations);
-      if (!scatterData.length) {
-        setPlotData([]);
-        setPlotLayout({});
-      } else {
-        const scatterLayout = calculateBigLayout(
-          chart,
-          locations,
-          width,
-          height
-        );
-        setPlotData(scatterData);
-        setPlotLayout(scatterLayout);
-      }
-      setRevision((r) => r + 1);
-    } else {
-      setPlotData([]);
-      setPlotLayout({});
-    }
-  }, [chart, locations, width, height, processedLocs]);
-
-  /**
-   * Build the mini average chart if chart=2
-   */
-  useEffect(() => {
-    if (chart !== '2' || !processedLocs.length) {
-      setMiniChartData([]);
-      setMiniChartLayout({});
-      return;
-    }
-    const { data: groupedData, maxVal } = calculateAverageChart(processedLocs);
-    if (!groupedData.length) {
-      setMiniChartData([]);
-      setMiniChartLayout({});
-      return;
-    }
-    let upper = maxVal * 1.2;
-    if (upper < 50) upper = 50;
-    if (upper > 500) upper = 500;
-
-    const miniLayout: Partial<Plotly.Layout> = {
+  const miniChartLayout = useMemo<Partial<Plotly.Layout>>(
+    () => ({
       width: 280,
       height: 240,
-      title: { text: `Avg AQI in ${activeCountryName}` },
-      margin: { l: 30, r: 20, t: 30, b: 35 },
-      xaxis: { tickangle: -30 },
-      yaxis: { range: [0, upper], title: { text: '' } },
-      font: { size: window.innerWidth < 600 ? 10 : 12 },
-    };
-    setMiniChartData(groupedData);
-    setMiniChartLayout(miniLayout);
-  }, [chart, processedLocs, activeCountryName]);
+      title: { text: 'Average AQI' },
+      margin: { l: 36, r: 20, t: 38, b: 35 },
+      yaxis: { range: [0, 500], title: { text: 'AQI' } },
+      font: { size: 12 },
+    }),
+    []
+  );
 
-  /**
-   * @function handleCityMouseEnter
-   * @desc Flies map to a city location on mouse enter (optional).
-   */
-  const handleCityMouseEnter = (ploc: ProcessedLocation) => {
-    if (chart === '2' && mapRef.current && popupRef.current) {
-      mapRef.current.flyTo({
-        center: [ploc.lon, ploc.lat],
-        zoom: 10,
-        duration: 300,
-      });
+  const updateMapData = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || mapStatus !== 'ready') return;
+    const source = map.getSource('locations-source') as GeoJSONSource;
+    source?.setData(buildGeoJSON(locations));
+  }, [locations, mapStatus]);
+
+  const initializeMap = useCallback(() => {
+    if (chart !== '2' || mapRef.current || !mapContainerRef.current) return;
+
+    const isSupported =
+      typeof mapboxgl.supported !== 'function' || mapboxgl.supported();
+    if (!isSupported) {
+      setMapStatus('unsupported');
+      onMapLoadEnd?.();
+      return;
     }
-  };
-  const handleCityMouseLeave = () => {};
-  const handleCityClick = (ploc: ProcessedLocation) => {
-    if (chart === '2' && mapRef.current) {
-      mapRef.current.flyTo({
-        center: [ploc.lon, ploc.lat],
-        zoom: 10,
-        duration: 300,
+
+    try {
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: MAP_STYLE,
+        center: [10, 30],
+        zoom: 1.4,
       });
+
+      mapRef.current = map;
+      popupRef.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      });
+
+      map.once('error', () => {
+        setMapStatus('error');
+        onMapLoadEnd?.();
+      });
+
+      map.on('load', () => {
+        map.addSource('locations-source', {
+          type: 'geojson',
+          data: buildGeoJSON([]),
+          cluster: true,
+          clusterMaxZoom: 5,
+          clusterRadius: 36,
+          clusterProperties: {
+            sumAQI: ['+', ['to-number', ['get', 'aqi']]],
+          },
+        });
+
+        map.addLayer({
+          id: 'clusters',
+          type: 'circle',
+          source: 'locations-source',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': [
+              'step',
+              ['/', ['get', 'sumAQI'], ['get', 'point_count']],
+              AQI_CATEGORIES[0].color,
+              51,
+              AQI_CATEGORIES[1].color,
+              101,
+              AQI_CATEGORIES[2].color,
+              151,
+              AQI_CATEGORIES[3].color,
+              201,
+              AQI_CATEGORIES[4].color,
+              301,
+              AQI_CATEGORIES[5].color,
+            ],
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              17,
+              20,
+              22,
+              80,
+              28,
+            ],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1,
+          },
+        });
+
+        map.addLayer({
+          id: 'cluster-label',
+          type: 'symbol',
+          source: 'locations-source',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': [
+              'to-string',
+              ['round', ['/', ['get', 'sumAQI'], ['get', 'point_count']]],
+            ],
+            'text-size': 12,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          },
+          paint: {
+            'text-color': '#ffffff',
+            'text-halo-color': '#1f2933',
+            'text-halo-width': 1,
+          },
+        });
+
+        map.addLayer({
+          id: 'station-point',
+          type: 'circle',
+          source: 'locations-source',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 11,
+            'circle-color': ['get', 'color'],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+          },
+        });
+
+        map.addLayer({
+          id: 'station-highlight',
+          type: 'circle',
+          source: 'locations-source',
+          filter: ['==', ['get', 'stationId'], ''],
+          paint: {
+            'circle-radius': 17,
+            'circle-color': 'rgba(0,0,0,0)',
+            'circle-stroke-color': '#111827',
+            'circle-stroke-width': 2,
+          },
+        });
+
+        map.addLayer({
+          id: 'station-label',
+          type: 'symbol',
+          source: 'locations-source',
+          filter: ['!', ['has', 'point_count']],
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-size': 10,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          },
+          paint: {
+            'text-color': '#ffffff',
+            'text-halo-color': '#1f2933',
+            'text-halo-width': 1,
+          },
+        });
+
+        const popup = popupRef.current;
+        map.on('mouseenter', 'station-point', (event) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const feature = event.features?.[0];
+          if (!feature) return;
+          const stationId = feature.properties?.stationId;
+          if (typeof stationId === 'string') setActiveStationId(stationId);
+          popup
+            ?.setLngLat(event.lngLat)
+            .setHTML(feature.properties?.popupHTML || '')
+            .addTo(map);
+        });
+
+        map.on('mouseleave', 'station-point', () => {
+          map.getCanvas().style.cursor = '';
+          popup?.remove();
+          setActiveStationId(null);
+        });
+
+        map.on('click', 'clusters', (event) => {
+          const feature = event.features?.[0];
+          const clusterId = feature?.properties?.cluster_id;
+          const source = map.getSource('locations-source') as GeoJSONSource;
+          if (
+            !feature ||
+            typeof clusterId !== 'number' ||
+            !source.getClusterExpansionZoom
+          ) {
+            return;
+          }
+          const center = (feature.geometry as GeoJSON.Point).coordinates as [
+            number,
+            number,
+          ];
+          source.getClusterExpansionZoom(clusterId, (error, zoom) => {
+            if (error || typeof zoom !== 'number') return;
+            map.easeTo({
+              center,
+              zoom,
+            });
+          });
+        });
+
+        map.on('moveend', () => {
+          onMapBoundsChange?.(getMapBoundsString(map));
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.addControl(
+          new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
+          'bottom-left'
+        );
+
+        setMapStatus('ready');
+        onMapLoadEnd?.();
+      });
+    } catch {
+      setMapStatus('error');
+      onMapLoadEnd?.();
     }
+  }, [chart, onMapBoundsChange, onMapLoadEnd]);
+
+  useEffect(() => {
+    if (chart === '2') {
+      initializeMap();
+      return;
+    }
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      setMapStatus('idle');
+    }
+  }, [chart, initializeMap]);
+
+  useEffect(() => {
+    updateMapData();
+  }, [updateMapData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mapStatus !== 'ready') return;
+    map.setFilter('station-highlight', [
+      '==',
+      ['get', 'stationId'],
+      activeStationId || '',
+    ]);
+  }, [activeStationId, mapStatus]);
+
+  const handleStationSelect = (station: AirQualityStation) => {
+    setActiveStationId(station.id);
+    const map = mapRef.current;
+    if (!map || mapStatus !== 'ready') return;
+
+    map.easeTo({
+      center: [station.lon, station.lat],
+      zoom: Math.max(map.getZoom(), 8),
+      duration: 500,
+    });
+    popupRef.current
+      ?.setLngLat([station.lon, station.lat])
+      .setHTML(stationPopupHtml(station))
+      .addTo(map);
   };
 
-  /**
-   * @function toggleSidebar
-   * @desc Opens or closes the sidebar drawer.
-   */
   const toggleSidebar = () => {
     setShowSidebar((prev) => {
-      const newVal = !prev;
-      if (chart === '2' && mapRef.current) {
-        setTimeout(() => {
-          mapRef.current?.resize();
-          if (newVal) {
-            centerMapOnCountry();
-          } else {
-            adjustMapView(mapRef.current!, processedLocs);
-          }
-        }, 300);
-      }
-      return newVal;
+      const next = !prev;
+      window.setTimeout(() => mapRef.current?.resize(), 300);
+      return next;
     });
   };
 
-  /**
-   * @function toggleMiniChart
-   * @desc Expands or collapses the mini average chart overlay.
-   */
-  const toggleMiniChart = () => setMiniChartExpanded((prev) => !prev);
-
-  /**
-   * @constant displayedLocs
-   * @desc Filtered and sorted array of processedLocs for the sidebar.
-   */
-  const displayedLocs = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const filtered = processedLocs.filter((ploc) => {
-      if (!q) return true;
-      const nameMatch = ploc.name.toLowerCase().includes(q);
-      const cityMatch = ploc.city?.toLowerCase().includes(q) ?? false;
-      return nameMatch || cityMatch;
-    });
-    const sorted = [...filtered].sort((a, b) => {
-      const getValue = (
-        loc: ProcessedLocation,
-        param: keyof typeof loc.parameters
-      ): number => loc.parameters[param] ?? -Infinity;
-
-      if (sortMode === 'aqi') {
-        const aVal = computeOverallAqi(a.parameters);
-        const bVal = computeOverallAqi(b.parameters);
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      } else if (ALLOWED_PARAMS.has(sortMode)) {
-        const aVal = getValue(a, sortMode as keyof typeof a.parameters);
-        const bVal = getValue(b, sortMode as keyof typeof b.parameters);
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      const cmp = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-      return sortDirection === 'asc' ? cmp : -cmp;
-    });
-    return sorted;
-  }, [processedLocs, searchQuery, sortMode, sortDirection]);
+  const mapFallbackMessage =
+    mapStatus === 'unsupported'
+      ? 'This browser or device does not support the WebGL map. Live AQI station data is still available in the list.'
+      : 'The map could not be initialized. Live AQI station data is still available in the list.';
 
   return (
-    <Box display="flex">
+    <Box display="flex" sx={{ height: '100%' }}>
       <Drawer
         variant="persistent"
         anchor="left"
@@ -657,15 +553,7 @@ const Chart: React.FC<ChartProps> = ({
           },
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            p: 1,
-            pt: 2,
-            alignSelf: 'center',
-          }}
-        >
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2 }}>
           <Logo />
         </Box>
 
@@ -676,65 +564,35 @@ const Chart: React.FC<ChartProps> = ({
             flexDirection: 'column',
             gap: 1,
             flex: 1,
+            minHeight: 0,
           }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'row',
-              gap: 1,
-              alignItems: 'center',
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <TextField
-                label="Search"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-field"
-              />
-            </Box>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              label="Search"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="search-field"
+            />
             <FormControl
               size="small"
               variant="outlined"
               className="choose-sort"
-              sx={{ minWidth: 100 }}
+              sx={{ minWidth: 96 }}
             >
               <InputLabel>Sort</InputLabel>
               <Select
                 label="Sort"
                 value={sortMode}
-                onChange={(e) =>
-                  setSortMode(
-                    e.target.value as
-                      | 'name'
-                      | 'aqi'
-                      | 'pm25'
-                      | 'pm10'
-                      | 'so2'
-                      | 'no2'
-                      | 'co'
-                  )
+                onChange={(event) =>
+                  setSortMode(event.target.value as SortMode)
                 }
               >
-                <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="aqi">AQI</MenuItem>
-                <MenuItem value="pm25">
-                  PM<sub>2.5</sub>
-                </MenuItem>
-                <MenuItem value="pm10">
-                  PM<sub>10</sub>
-                </MenuItem>
-                <MenuItem value="so2">
-                  SO<sub>2</sub>
-                </MenuItem>
-                <MenuItem value="no2">
-                  NO<sub>2</sub>
-                </MenuItem>
-                <MenuItem value="co">CO</MenuItem>
+                <MenuItem value="name">Name</MenuItem>
               </Select>
             </FormControl>
             <IconButton
@@ -744,6 +602,7 @@ const Chart: React.FC<ChartProps> = ({
                 setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
               }
               className="sort-select"
+              aria-label="Toggle sort direction"
             >
               {sortDirection === 'asc' ? '▲' : '▼'}
             </IconButton>
@@ -751,91 +610,98 @@ const Chart: React.FC<ChartProps> = ({
               size="medium"
               onClick={toggleSidebar}
               className="close-list"
+              aria-label="Close station list"
             >
               <CloseCircleOutlined />
             </IconButton>
           </Box>
 
-          <List dense sx={{ flex: 1, overflowY: 'auto' }}>
-            {displayedLocs.map((ploc) => {
-              const overallVal = computeOverallAqi(ploc.parameters);
-              const bkgColor = aqiColor(overallVal) + '33';
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Showing {visibleStations.length} of {locations.length} live AQI
+            stations. Default sorting shows the highest AQI first.
+          </Typography>
 
-              const paramLines: JSX.Element[] = [];
-              for (const [p, v] of Object.entries(ploc.parameters)) {
-                const subAqi = computeAqiForPollutant(p, v);
-                if (subAqi < 0) continue;
-                const color = aqiColor(subAqi);
-                paramLines.push(
-                  <React.Fragment key={p}>
-                    <Box component="span" sx={{ color, fontWeight: 'bold' }}>
-                      {p.toLowerCase() === 'pm25' ||
-                      p.toLowerCase() === 'pm10' ? (
-                        <>
-                          {p.toLowerCase() === 'pm25' ? 'PM₂.₅' : 'PM₁₀'}:{' '}
-                          {v.toFixed(2)} (AQI {subAqi})
-                        </>
-                      ) : (
-                        <>
-                          {p.toUpperCase()}: {v.toFixed(2)} (AQI {subAqi})
-                        </>
-                      )}
-                    </Box>
-                    <br />
-                  </React.Fragment>
-                );
-              }
-
-              return (
-                <ListItem
-                  key={`${ploc.name}-${ploc.lat}-${ploc.lon}-${Math.random()}`}
-                  component="li"
-                  onMouseEnter={() => handleCityMouseEnter(ploc)}
-                  onMouseLeave={handleCityMouseLeave}
-                  onClick={() => handleCityClick(ploc)}
-                  sx={{
-                    backgroundColor: bkgColor,
-                    borderRadius: 2,
-                    mb: 1,
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0,0,0,0.1)',
-                    },
-                  }}
-                  role="button"
-                >
-                  <ListItemText
-                    primary={
-                      <Box sx={{ fontWeight: 'bold' }}>
-                        {ploc.name}
-                        {ploc.city ? `, ${ploc.city}` : ''}
-                        <span style={{ float: 'right', fontSize: '0.9rem' }}>
-                          {overallVal < 0 ? '?' : overallVal}
-                        </span>
+          <List dense sx={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            {visibleStations.map((station) => (
+              <ListItem
+                key={station.id}
+                component="li"
+                onMouseEnter={() => setActiveStationId(station.id)}
+                onMouseLeave={() => setActiveStationId(null)}
+                onClick={() => handleStationSelect(station)}
+                sx={{
+                  backgroundColor: `${station.category.color}24`,
+                  borderLeft: `5px solid ${station.category.color}`,
+                  borderRadius: 1,
+                  mb: 1,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s, transform 0.2s',
+                  transform:
+                    activeStationId === station.id ? 'translateX(2px)' : 'none',
+                  '&:hover': {
+                    backgroundColor: `${station.category.color}3d`,
+                  },
+                }}
+                role="button"
+              >
+                <ListItemText
+                  secondaryTypographyProps={{ component: 'div' }}
+                  primary={
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        gap: 1,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 700, lineHeight: 1.2 }}
+                      >
+                        {station.name}
+                      </Typography>
+                      <Box
+                        sx={{
+                          minWidth: 44,
+                          textAlign: 'center',
+                          px: 1,
+                          py: 0.4,
+                          borderRadius: 1,
+                          fontWeight: 700,
+                          color: station.category.foreground,
+                          backgroundColor: station.category.color,
+                        }}
+                      >
+                        {station.aqi}
                       </Box>
-                    }
-                    secondary={
-                      <>
-                        {paramLines}
-                        {ploc.timestamp && (
-                          <Typography
-                            variant="caption"
-                            display="block"
-                            sx={{ mt: 1 }}
-                          >
-                            Last Sensor Update: {ploc.timestamp}
-                          </Typography>
-                        )}
-                      </>
-                    }
-                  />
-                </ListItem>
-              );
-            })}
+                    </Box>
+                  }
+                  secondary={
+                    <Box sx={{ display: 'grid', gap: 0.25, mt: 0.5 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                        {station.category.label}
+                      </Typography>
+                      <Typography variant="caption">
+                        {station.category.healthMessage}
+                      </Typography>
+                      {station.updatedAt && (
+                        <Typography variant="caption" color="text.secondary">
+                          Updated: {station.updatedAt}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        Source: {station.source}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
           </List>
         </Box>
       </Drawer>
+
       {showSidebar && chart === '2' && <Box sx={{ width: 300 }} />}
 
       <Box
@@ -853,48 +719,66 @@ const Chart: React.FC<ChartProps> = ({
               borderStyle: 'solid',
               borderWidth: 0.5,
               zIndex: 1300,
-              backgroundColor: 'rgba(255,255,255,0.8)',
+              backgroundColor: 'rgba(255,255,255,0.9)',
               '&:hover': { backgroundColor: 'rgba(255,255,255,1)' },
             }}
             className="sidebar-toggle-button"
+            aria-label="Open station list"
           >
             <MenuOutlined />
           </IconButton>
         )}
 
-        <Box sx={{ flex: 1, height: '100%' }}>
+        <Box sx={{ flex: 1, height: '100%', position: 'relative' }}>
           {chart === '2' ? (
             <>
-              {/* The map */}
-              <div
-                ref={mapContainerRef}
-                className="map-area"
-                style={{ width: '100%', height: '100%' }}
-              />
+              {(mapStatus === 'unsupported' || mapStatus === 'error') && (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    p: 3,
+                    textAlign: 'center',
+                    backgroundColor: '#eef2f7',
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                      Map unavailable
+                    </Typography>
+                    <Typography>{mapFallbackMessage}</Typography>
+                  </Box>
+                </Box>
+              )}
 
-              {/* Legend */}
+              {mapStatus !== 'unsupported' && mapStatus !== 'error' && (
+                <div
+                  ref={mapContainerRef}
+                  className="map-area"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              )}
+
               <Legend showSidebar={showSidebar} chart={chart} />
-
-              {/* Mini Chart */}
               <MiniChart
                 miniChartData={miniChartData}
                 miniChartLayout={miniChartLayout}
                 miniChartExpanded={miniChartExpanded}
-                toggleMiniChart={toggleMiniChart}
+                toggleMiniChart={() =>
+                  setMiniChartExpanded((expanded) => !expanded)
+                }
               />
             </>
-          ) : plotData && plotData.length > 0 ? (
+          ) : scatterData.length > 0 ? (
             <Box className="chart-area" sx={{ width: '100%', height: '100%' }}>
               <Plot
-                data={plotData}
-                layout={plotLayout}
-                revision={revision}
+                data={scatterData}
+                layout={scatterLayout}
                 style={{ width: '100%', height: '100%' }}
                 useResizeHandler
-                config={{
-                  displayModeBar: true,
-                  responsive: true,
-                }}
+                config={{ displayModeBar: true, responsive: true }}
               />
             </Box>
           ) : (
@@ -907,7 +791,7 @@ const Chart: React.FC<ChartProps> = ({
               }}
             >
               <Typography variant="h6">
-                No data available to display.
+                No AQI data available to display.
               </Typography>
             </Box>
           )}

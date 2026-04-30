@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { AQI_CATEGORIES } from '../../../../aqi';
 
 interface LegendProps {
   showSidebar: boolean;
@@ -37,73 +38,24 @@ const Legend: React.FC<LegendProps> = ({ showSidebar, chart }) => {
       }}
     >
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-        AQI-Legend
+        AQI Legend
       </Typography>
-      {/* Good */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            mr: 1,
-            background: '#2a9d8f',
-          }}
-        />
-        <Typography variant="body2">0-50 (Good)</Typography>
-      </Box>
-      {/* Moderate */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            mr: 1,
-            background: '#e9c46a',
-          }}
-        />
-        <Typography variant="body2">51-100 (Moderate)</Typography>
-      </Box>
-      {/* Unhealthy */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            mr: 1,
-            background: '#f4a261',
-          }}
-        />
-        <Typography variant="body2">101-150 (Unhealthy)</Typography>
-      </Box>
-      {/* Very Unhealthy */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            mr: 1,
-            background: '#d62828',
-          }}
-        />
-        <Typography variant="body2">151-200 (Very Unhealthy)</Typography>
-      </Box>
-      {/* Hazardous */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            mr: 1,
-            background: '#9d0208',
-          }}
-        />
-        <Typography variant="body2">201+ (Hazardous)</Typography>
-      </Box>
+      {AQI_CATEGORIES.map((category) => (
+        <Box key={category.key} sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              mr: 1,
+              background: category.color,
+            }}
+          />
+          <Typography variant="body2">
+            {category.range} ({category.label})
+          </Typography>
+        </Box>
+      ))}
     </Box>
   );
 };

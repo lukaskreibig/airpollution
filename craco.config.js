@@ -1,6 +1,12 @@
 module.exports = {
   webpack: {
     configure: (webpackConfig) => {
+      webpackConfig.resolve = webpackConfig.resolve || {};
+      webpackConfig.resolve.alias = {
+        ...(webpackConfig.resolve.alias || {}),
+        'plotly.js/dist/plotly': 'plotly.js-basic-dist-min',
+      };
+
       // Exclude mapbox-gl from Babel transforms
       webpackConfig.module.rules.forEach((rule) => {
         if (rule.oneOf) {

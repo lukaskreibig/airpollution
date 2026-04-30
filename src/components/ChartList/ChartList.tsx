@@ -1,34 +1,28 @@
-import React, { useEffect } from 'react';
-import { LatestResult, Country } from '../../react-app-env';
+import React from 'react';
+import { AirQualityStation } from '../../aqi';
 import Chart from './Chart/Chart';
 
 type Props = {
-  locations: LatestResult[];
+  locations: AirQualityStation[];
   chart: string;
-  country: string;
-  countriesList: Country[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
   onMapLoadEnd?: () => void;
+  onMapBoundsChange?: (bounds: string) => void;
 };
 
 const ChartList: React.FC<Props> = ({
   locations,
   chart,
-  country,
-  countriesList,
   showSidebar,
   setShowSidebar,
   onMapLoadEnd,
+  onMapBoundsChange,
 }) => {
-  useEffect(() => {
-    console.log('chart', chart);
-  }, [chart]);
-
   if (!locations.length) {
     return (
       <div className="charts" id="message">
-        No data found. Possibly no up-to-date data for this country.
+        No live AQI stations found for the current map area.
       </div>
     );
   }
@@ -38,11 +32,10 @@ const ChartList: React.FC<Props> = ({
       <Chart
         locations={locations}
         chart={chart}
-        country={country}
-        countriesList={countriesList}
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
         onMapLoadEnd={onMapLoadEnd}
+        onMapBoundsChange={onMapBoundsChange}
       />
     </div>
   );

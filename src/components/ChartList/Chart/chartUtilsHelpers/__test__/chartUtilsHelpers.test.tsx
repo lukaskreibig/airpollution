@@ -8,13 +8,13 @@ import { aqiColor, isValidMeasurement } from '../chartUtilsHelpers';
 describe('chartUtilsHelpers', () => {
   describe('aqiColor', () => {
     it('returns #bfbfbf if aqi < 0', () => {
-      expect(aqiColor(-1)).toBe('#bfbfbf');
+      expect(aqiColor(-1)).toBe('#7a869a');
     });
     it('returns #2a9d8f if aqi <= 50', () => {
-      expect(aqiColor(50)).toBe('#2a9d8f');
+      expect(aqiColor(50)).toBe('#009966');
     });
     it('returns #9d0208 if aqi > 200', () => {
-      expect(aqiColor(201)).toBe('#9d0208');
+      expect(aqiColor(201)).toBe('#660099');
     });
   });
 

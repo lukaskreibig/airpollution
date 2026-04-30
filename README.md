@@ -1,6 +1,6 @@
 # Map The Air - Air Quality Visualization Dashboard (Beta)
 
-An interactive web application for visualizing air quality data using **Plotly**, **Mapbox**, and **React**. This project allows users to explore air quality metrics such as PM2.5 and PM10 across various locations, providing rich visual insights and comparisons to WHO guidelines.
+An interactive web application for visualizing live Air Quality Index (AQI) data using **Plotly**, **Mapbox**, and **React**. The main map uses WAQI/AQICN station AQI values so users can quickly understand current air quality conditions and health categories.
 
 **Note:** This is a **Beta version**, and some features are still under development or subject to change based on user feedback.
 
@@ -30,7 +30,7 @@ An interactive web application for visualizing air quality data using **Plotly**
   Visualize air quality metrics across locations using Mapbox. Threshold-based coloring provides instant insights into air quality conditions.
 
 - **Mini Average Chart**  
-  A sleek, collapsible chart displays average air quality data with WHO guideline comparisons.
+  A compact chart displays average AQI for the currently loaded stations.
 
 - **Scatter Chart**  
   A compelling and different way of visualizing all the AQI values of a country.
@@ -61,7 +61,7 @@ Check out the live Beta here: <a href="https://www.maptheair.com/" target="_blan
 
 ### **How We Calculate AQI**
 
-Our application uses the latest **real-time data** fetched from the **OpenAQ API**. While the methodology aligns closely with the [official AQI calculation](https://www.airnow.gov/publications/air-quality-index/technical-assistance-document-for-reporting-the-daily-aqi/), slight differences exist due to real-time processing and simplified pollutant conversions for performance and user experience.
+The main application uses live AQI values from the **World Air Quality Index (WAQI/AQICN) API**. When pollutant concentration data is used as a fallback or for analysis, Map The Air labels it as an estimated AQI because true AQI calculations can depend on pollutant-specific averaging windows and source methodology.
 
 ---
 
@@ -96,7 +96,8 @@ Our application uses the latest **real-time data** fetched from the **OpenAQ API
 ### Backend and Data
 
 - **TypeScript**: Ensures type safety and reduces runtime errors by catching issues during development.
-- **OpenAQ API**: Fetches real-time air quality data from monitoring stations worldwide.
+- **WAQI/AQICN API**: Fetches live AQI station data for the interactive map.
+- **OpenAQ API**: Optional fallback/reference source for pollutant concentration data.
 
 ### Testing and Deployment
 
@@ -114,7 +115,7 @@ Our application uses the latest **real-time data** fetched from the **OpenAQ API
 
 ## 🌐 API Integration
 
-The application integrates with the **OpenAQ API** for fetching real-time air quality data.
+The application primarily integrates with the **WAQI/AQICN API** through a Vercel serverless proxy at `/api/waqi`. Configure `WAQI_TOKEN` in Vercel or local `.env` files; the token must not be exposed in client-side code.
 
 ---
 

@@ -125,10 +125,10 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             <br />
             <strong>Datenherkunft und -qualität:</strong> Die auf MapTheAir.com
             bereitgestellten Luftqualitätsdaten stammen primär von
-            Drittanbietern (z. B. OpenAQ) und werden ohne Gewähr bereitgestellt.
-            Eine Haftung für Richtigkeit, Vollständigkeit oder Aktualität dieser
-            Daten wird ausdrücklich ausgeschlossen. Die Nutzung erfolgt auf
-            eigene Gefahr.
+            Drittanbietern (z. B. WAQI/AQICN) und werden ohne Gewähr
+            bereitgestellt. Eine Haftung für Richtigkeit, Vollständigkeit oder
+            Aktualität dieser Daten wird ausdrücklich ausgeschlossen. Die
+            Nutzung erfolgt auf eigene Gefahr.
           </Typography>
           <Typography variant="body2" paragraph>
             <strong>Haftungsausschluss:</strong> Für Schäden, die aus der
@@ -158,7 +158,7 @@ export default function LegalModal({ open, onClose }: LegalModalProps) {
             <br />
             <strong>Data Origin and Quality:</strong> The air quality data
             provided on MapTheAir.com is primarily sourced from third parties
-            (e.g., OpenAQ) and is provided "as is" without any guarantee. We
+            (e.g., WAQI/AQICN) and is provided "as is" without any guarantee. We
             expressly exclude any liability for the accuracy, completeness, or
             timeliness of this data. Use is at your own risk.
           </Typography>

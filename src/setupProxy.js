@@ -1,9 +1,8 @@
 const { URL } = require('node:url');
 
 const OPENAQ_API_BASE = 'https://api.openaq.org';
-// Fallback preserves current behavior for local dev until the key is moved to env vars.
-const DEFAULT_OPENAQ_API_KEY =
-  '7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3';
+const WAQI_API_BASE = 'https://api.waqi.info';
+const DEFAULT_WAQI_BOUNDS = '-85,-180,85,180';
 const V2_TO_V3_PARAMETER_IDS = {
   pm10: 1,
   pm25: 2,
@@ -191,15 +190,50 @@ async function fetchV2LatestCompat(query, apiKey) {
 }
 
 module.exports = function setupProxy(app) {
+  app.get('/api/waqi', async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    try {
+      const token = process.env.WAQI_TOKEN || process.env.REACT_APP_WAQI_TOKEN;
+      if (!token) {
+        res.status(500).json({ error: 'WAQI_TOKEN is not configured.' });
+        return;
+      }
+
+      const apiUrl = new URL('/map/bounds/', WAQI_API_BASE);
+      apiUrl.searchParams.set(
+        'latlng',
+        firstValue(req.query.latlng, DEFAULT_WAQI_BOUNDS)
+      );
+      apiUrl.searchParams.set('token', token);
+
+      const response = await fetch(apiUrl.toString());
+      const contentType = response.headers.get('content-type');
+      const payload = await response.text();
+
+      if (contentType) {
+        res.setHeader('Content-Type', contentType);
+      }
+
+      res.status(response.status).send(payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: `Failed to fetch WAQI data: ${message}` });
+    }
+  });
+
   app.get('/api/fetchData', async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
       const { path = '', ...query } = req.query;
       const apiKey =
-        process.env.OPENAQ_API_KEY ||
-        process.env.REACT_APP_OPENAQ_API_KEY ||
-        DEFAULT_OPENAQ_API_KEY;
+        process.env.OPENAQ_API_KEY || process.env.REACT_APP_OPENAQ_API_KEY;
+
+      if (!apiKey) {
+        res.status(500).json({ error: 'OPENAQ_API_KEY is not configured.' });
+        return;
+      }
 
       if (path === '/v2/latest') {
         const compatResponse = await fetchV2LatestCompat(query, apiKey);

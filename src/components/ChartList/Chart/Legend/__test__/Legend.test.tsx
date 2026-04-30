@@ -11,15 +11,18 @@ import Legend from '../Legend';
 describe('Legend component', () => {
   it('does not render if chart !== "2"', () => {
     const { queryByText } = render(<Legend chart="1" showSidebar={false} />);
-    // "AQI-Legend" is the heading we see in the Legend
-    expect(queryByText(/AQI-Legend/i)).not.toBeInTheDocument();
+    expect(queryByText(/AQI Legend/i)).not.toBeInTheDocument();
   });
 
   it('renders the legend if chart="2"', () => {
     render(<Legend chart="2" showSidebar={false} />);
-    expect(screen.getByText(/AQI-Legend/i)).toBeInTheDocument();
+    expect(screen.getByText(/AQI Legend/i)).toBeInTheDocument();
     expect(screen.getByText(/0-50 \(Good\)/i)).toBeInTheDocument();
-    // etc. for the various lines
+    expect(
+      screen.getByText(/101-150 \(Unhealthy for Sensitive Groups\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/201-300 \(Very Unhealthy\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/301\+ \(Hazardous\)/i)).toBeInTheDocument();
   });
 
   it('applies left: 310px style if showSidebar is true', () => {

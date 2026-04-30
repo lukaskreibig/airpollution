@@ -20,10 +20,33 @@ jest.mock('react-joyride', () => ({
 jest.mock('mapbox-gl', () => {
   class FakeMap {
     constructor() {}
-    on() {}
+    on(event: string, _layerOrHandler?: unknown, maybeHandler?: unknown) {
+      const handler =
+        typeof _layerOrHandler === 'function' ? _layerOrHandler : maybeHandler;
+      if (event === 'load' && typeof handler === 'function') {
+        setTimeout(() => handler(), 0);
+      }
+    }
     flyTo() {}
     once() {}
     remove() {}
+    addSource() {}
+    addLayer() {}
+    addControl() {}
+    easeTo() {}
+    getZoom() {
+      return 2;
+    }
+    getBounds() {
+      return {
+        getSouthWest: () => ({ lat: -10, lng: -10 }),
+        getNorthEast: () => ({ lat: 10, lng: 10 }),
+      };
+    }
+    getCanvas() {
+      return { style: {} };
+    }
+    setFilter() {}
     isStyleLoaded() {
       return true;
     }
@@ -49,10 +72,18 @@ jest.mock('mapbox-gl', () => {
   }
   return {
     __esModule: true,
-    default: { Map: FakeMap, Popup: FakePopup },
+    default: {
+      Map: FakeMap,
+      Popup: FakePopup,
+      supported: () => true,
+      NavigationControl: jest.fn(),
+      ScaleControl: jest.fn(),
+    },
     Map: FakeMap,
     Popup: FakePopup,
     NavigationControl: jest.fn(),
+    ScaleControl: jest.fn(),
+    supported: () => true,
   };
 });
 
@@ -88,25 +119,22 @@ const makeJsonResponse = (body: unknown, status = 200): Response =>
 const defaultFetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
   async (input: RequestInfo | URL) => {
     const url = toUrl(input);
-    if (url.pathname !== '/api/fetchData') {
+    if (url.pathname !== '/api/waqi') {
       return makeJsonResponse({});
     }
 
-    const path = url.searchParams.get('path');
-    if (path === '/v2/latest') {
-      return makeJsonResponse({
-        results: [{ id: 1, parameter: 'pm25', value: 12 }],
-      });
-    }
-    if (path === '/v3/countries') {
-      return makeJsonResponse({
-        results: [{ code: 'DE', name: 'Germany' }],
-      });
-    }
-    if (path === '/v2/averages') {
-      return makeJsonResponse({ results: [] });
-    }
-    return makeJsonResponse({ results: [] });
+    return makeJsonResponse({
+      status: 'ok',
+      data: [
+        {
+          uid: 1,
+          aqi: 42,
+          lat: 52.52,
+          lon: 13.405,
+          station: { name: 'Berlin AQI Station', time: '2026-04-30T12:00:00Z' },
+        },
+      ],
+    });
   }
 ) as jest.MockedFunction<typeof fetch>;
 
@@ -121,24 +149,19 @@ afterAll(() => {
 
 test('Shows loading overlay text', async () => {
   render(<App />);
-  const loadingText = screen.getByText(/Loading data & map/i);
+  const loadingText = screen.getByText(/Loading AQI stations/i);
   expect(loadingText).toBeInTheDocument();
 });
 
 describe('Server Error Tests', () => {
-  test('Simulate error on /v3/countries', async () => {
-    defaultFetchMock.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = toUrl(input);
-      const path = url.searchParams.get('path');
-      if (path === '/v3/countries') {
-        return makeJsonResponse({}, 500);
-      }
-      return makeJsonResponse({ results: [] });
-    });
+  test('Simulate error on /api/waqi', async () => {
+    defaultFetchMock.mockImplementation(async () =>
+      makeJsonResponse({ error: 'WAQI unavailable' }, 500)
+    );
 
     render(<App />);
 
-    const errorText = await screen.findByText(/Error fetching data/i);
+    const errorText = await screen.findByText(/Error loading AQI data/i);
     expect(errorText).toBeInTheDocument();
   });
 });

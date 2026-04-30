@@ -1,5 +1,9 @@
-import { Layout, PlotData } from 'plotly.js';
+import type { Layout, PlotData } from 'plotly.js';
 import { LatestResult } from '../../../react-app-env';
+import {
+  aqiColor as standardAqiColor,
+  calculatePollutantAqi,
+} from '../../../aqi';
 
 /**
  * **AQI Breakpoints based on EPA-Guidelines**
@@ -9,13 +13,12 @@ const AQI_BREAKPOINTS: Record<
   Array<{ cLow: number; cHigh: number; iLow: number; iHigh: number }>
 > = {
   pm25: [
-    { cLow: 0.0, cHigh: 12.0, iLow: 0, iHigh: 50 },
-    { cLow: 12.1, cHigh: 35.4, iLow: 51, iHigh: 100 },
+    { cLow: 0.0, cHigh: 9.0, iLow: 0, iHigh: 50 },
+    { cLow: 9.1, cHigh: 35.4, iLow: 51, iHigh: 100 },
     { cLow: 35.5, cHigh: 55.4, iLow: 101, iHigh: 150 },
-    { cLow: 55.5, cHigh: 150.4, iLow: 151, iHigh: 200 },
-    { cLow: 150.5, cHigh: 250.4, iLow: 201, iHigh: 300 },
-    { cLow: 250.5, cHigh: 350.4, iLow: 301, iHigh: 400 },
-    { cLow: 350.5, cHigh: 500.4, iLow: 401, iHigh: 500 },
+    { cLow: 55.5, cHigh: 125.4, iLow: 151, iHigh: 200 },
+    { cLow: 125.5, cHigh: 225.4, iLow: 201, iHigh: 300 },
+    { cLow: 225.5, cHigh: 325.4, iLow: 301, iHigh: 500 },
   ],
   pm10: [
     { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },
@@ -74,6 +77,9 @@ function truncateValue(param: string, value: number): number {
 }
 
 export function computeSubAqi(param: string, val: number): number {
+  const calculated = calculatePollutantAqi({ parameter: param, value: val });
+  if (calculated !== null) return calculated;
+
   const pollutant = param.toLowerCase();
   const breakpoints = AQI_BREAKPOINTS[pollutant];
   if (!breakpoints) return -1;
@@ -293,12 +299,7 @@ const POLLUTANTS_TO_AVG = ['pm25', 'pm10', 'o3', 'co', 'so2', 'no2'];
  * Defines the color of the diagrams.
  */
 function barAqiColor(aqi: number): string {
-  if (aqi < 0) return '#bfbfbf';
-  if (aqi <= 50) return '#2a9d8f';
-  if (aqi <= 100) return '#e9c46a';
-  if (aqi <= 150) return '#f4a261';
-  if (aqi <= 200) return '#d62828';
-  return '#9d0208';
+  return standardAqiColor(aqi);
 }
 
 /**

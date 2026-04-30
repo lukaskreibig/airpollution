@@ -1,6 +1,4 @@
 const OPENAQ_API_BASE = 'https://api.openaq.org';
-const DEFAULT_OPENAQ_API_KEY =
-    '7509e7cd7258ba59a45d64c3d38526da848c98926c1f50bc1c1c19d4aa0a62e3';
 const V2_TO_V3_PARAMETER_IDS = {
     pm10: 1,
     pm25: 2,
@@ -176,11 +174,16 @@ async function fetchV2LatestCompat(query, apiKey) {
 }
 
 export default async function handler(req, res) {
-    const apiKey = process.env.OPENAQ_API_KEY || process.env.REACT_APP_OPENAQ_API_KEY || DEFAULT_OPENAQ_API_KEY;
+    const apiKey = process.env.OPENAQ_API_KEY || process.env.REACT_APP_OPENAQ_API_KEY;
 
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
+        if (!apiKey) {
+            res.status(500).json({ error: 'OPENAQ_API_KEY is not configured.' });
+            return;
+        }
+
         const { path = '', ...query } = req.query;
 
         if (path === '/v2/latest') {
