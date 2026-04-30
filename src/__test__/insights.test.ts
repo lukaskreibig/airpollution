@@ -33,6 +33,10 @@ describe('AQI insights', () => {
     expect(insights.worstStation?.name).toBe('Unhealthy Station');
     expect(insights.cleanestStation?.name).toBe('Good Station');
     expect(insights.unhealthyCount).toBe(1);
+    expect(insights.unhealthyPercent).toBe(50);
+    expect(insights.knownFreshnessCount).toBe(2);
+    expect(insights.freshStationCount).toBe(2);
+    expect(insights.dominantCategory?.count).toBe(1);
     expect(
       insights.categoryCounts.find((category) => category.key === 'good')?.count
     ).toBe(1);

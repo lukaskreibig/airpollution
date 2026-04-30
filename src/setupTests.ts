@@ -12,6 +12,19 @@ if (!window.URL.createObjectURL) {
   window.URL.createObjectURL = () => 'mocked-object-url';
 }
 
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
 /** Polyfill TextEncoder/TextDecoder for map rendering and other libs */
 if (typeof global.TextEncoder === 'undefined') {
   (global as any).TextEncoder = TextEncoder;

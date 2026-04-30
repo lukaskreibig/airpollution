@@ -16,9 +16,16 @@ export interface AqiInsights {
   averageAqi: number | null;
   worstStation: AirQualityStation | null;
   cleanestStation: AirQualityStation | null;
+  dominantCategory: CategoryCount | null;
   unhealthyCount: number;
+  unhealthyPercent: number;
   hazardousCount: number;
+  hazardousPercent: number;
+  knownFreshnessCount: number;
+  freshStationCount: number;
   staleCount: number;
+  unknownFreshnessCount: number;
+  freshnessPercent: number;
   latestUpdate?: string;
   latestUpdateTimestamp?: number;
   categoryCounts: CategoryCount[];
@@ -66,19 +73,37 @@ export function computeAqiInsights(
       percent: stationCount ? (count / stationCount) * 100 : 0,
     };
   });
+  const dominantCategory =
+    [...categoryCounts].sort((a, b) => b.count - a.count)[0] || null;
+  const knownFreshnessCount = stations.filter(
+    (station) => typeof station.updatedAtTimestamp === 'number'
+  ).length;
+  const staleCount = stations.filter(
+    (station) =>
+      typeof station.updatedAtTimestamp === 'number' &&
+      now - station.updatedAtTimestamp > STALE_AFTER_MS
+  ).length;
+  const freshStationCount = knownFreshnessCount - staleCount;
+  const unhealthyCount = stations.filter((station) => station.aqi > 100).length;
+  const hazardousCount = stations.filter((station) => station.aqi > 300).length;
 
   return {
     stationCount,
     averageAqi: stationCount ? Math.round(totalAqi / stationCount) : null,
     worstStation: sortedHigh[0] || null,
     cleanestStation: sortedLow[0] || null,
-    unhealthyCount: stations.filter((station) => station.aqi > 100).length,
-    hazardousCount: stations.filter((station) => station.aqi > 300).length,
-    staleCount: stations.filter(
-      (station) =>
-        typeof station.updatedAtTimestamp === 'number' &&
-        now - station.updatedAtTimestamp > STALE_AFTER_MS
-    ).length,
+    dominantCategory,
+    unhealthyCount,
+    unhealthyPercent: stationCount ? (unhealthyCount / stationCount) * 100 : 0,
+    hazardousCount,
+    hazardousPercent: stationCount ? (hazardousCount / stationCount) * 100 : 0,
+    knownFreshnessCount,
+    freshStationCount,
+    staleCount,
+    unknownFreshnessCount: stationCount - knownFreshnessCount,
+    freshnessPercent: knownFreshnessCount
+      ? (freshStationCount / knownFreshnessCount) * 100
+      : 0,
     latestUpdate: latestStation?.updatedAt,
     latestUpdateTimestamp: latestStation?.updatedAtTimestamp,
     categoryCounts,

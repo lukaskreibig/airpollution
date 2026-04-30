@@ -69,6 +69,28 @@ test.describe('MapTheAir App Basic Tests', () => {
     await expect(page.getByText('Air quality insights')).toBeVisible();
   });
 
+  test('keeps the view switch usable on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Insights' }).click();
+
+    await expect(page.locator('.insights-dashboard')).toBeVisible();
+  });
+
+  test('opens the station list as a mobile bottom sheet', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    await page.getByLabel('Open station list').click();
+
+    await page.waitForTimeout(400);
+    await expect(page.getByText('Berlin AQI Station')).toBeVisible();
+    const drawerBox = await page.locator('.MuiDrawer-paper').boundingBox();
+    expect(drawerBox?.y).toBeGreaterThan(150);
+    expect(drawerBox?.y).toBeLessThan(350);
+  });
+
   test('filters the station list by search query', async ({ page }) => {
     await page.getByLabel('Search').fill('Munich');
 

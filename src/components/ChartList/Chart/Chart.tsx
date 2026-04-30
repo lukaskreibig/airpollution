@@ -14,11 +14,13 @@ import {
   InputLabel,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   MenuItem,
   Select,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { CloseCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import maplibregl, { GeoJSONSource } from 'maplibre-gl';
@@ -31,6 +33,7 @@ import {
   formatAqi,
 } from '../../../aqi';
 import { computeAqiInsights } from '../../../insights';
+import { MapFocusTarget } from '../../../mapFocus';
 import { ViewMode } from '../../../viewMode';
 import InsightsDashboard from '../../InsightsDashboard/InsightsDashboard';
 import Logo from './Logo';
@@ -58,6 +61,7 @@ interface ChartProps {
   locations: AirQualityStation[];
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
+  focusTarget?: MapFocusTarget | null;
   onMapLoadEnd?: () => void;
   onMapBoundsChange?: (bounds: string) => void;
 }
@@ -108,10 +112,26 @@ function buildGeoJSON(
         aqi: station.aqi,
         label: formatAqi(station.aqi),
         color: aqiColor(station.aqi),
+        foreground: station.category.foreground,
         popupHTML: stationPopupHtml(station),
       },
     })),
   };
+}
+
+function clusterPopupHtml(feature: GeoJSON.Feature<GeoJSON.Point>): string {
+  const properties = feature.properties || {};
+  const stationCount = Number(properties.point_count || 0);
+  const worstAqi = Number(properties.maxAQI || 0);
+  const unhealthyCount = Number(properties.unhealthyCount || 0);
+
+  return `
+    <div style="font-size:14px;line-height:1.45;max-width:220px;">
+      <strong>${stationCount} stations</strong><br/>
+      Worst AQI in cluster: <b>${formatAqi(worstAqi)}</b><br/>
+      ${unhealthyCount} unhealthy or worse
+    </div>
+  `;
 }
 
 function getMapBoundsString(map: maplibregl.Map): string {
@@ -142,9 +162,11 @@ const Chart: React.FC<ChartProps> = ({
   locations,
   showSidebar,
   setShowSidebar,
+  focusTarget,
   onMapLoadEnd,
   onMapBoundsChange,
 }) => {
+  const isCompact = useMediaQuery('(max-width:700px)');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortMode, setSortMode] = useState<SortMode>('aqi');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -225,6 +247,11 @@ const Chart: React.FC<ChartProps> = ({
           clusterRadius: 36,
           clusterProperties: {
             sumAQI: ['+', ['to-number', ['get', 'aqi']]],
+            maxAQI: ['max', ['to-number', ['get', 'aqi']]],
+            unhealthyCount: [
+              '+',
+              ['case', ['>', ['to-number', ['get', 'aqi']], 100], 1, 0],
+            ],
           },
         });
 
@@ -236,7 +263,7 @@ const Chart: React.FC<ChartProps> = ({
           paint: {
             'circle-color': [
               'step',
-              ['/', ['get', 'sumAQI'], ['get', 'point_count']],
+              ['get', 'maxAQI'],
               AQI_CATEGORIES[0].color,
               51,
               AQI_CATEGORIES[1].color,
@@ -269,16 +296,27 @@ const Chart: React.FC<ChartProps> = ({
           source: 'locations-source',
           filter: ['has', 'point_count'],
           layout: {
-            'text-field': [
-              'to-string',
-              ['round', ['/', ['get', 'sumAQI'], ['get', 'point_count']]],
-            ],
+            'text-field': ['get', 'point_count_abbreviated'],
             'text-size': 12,
             'text-font': ['Noto Sans Bold'],
           },
           paint: {
-            'text-color': '#ffffff',
-            'text-halo-color': '#1f2933',
+            'text-color': [
+              'step',
+              ['get', 'maxAQI'],
+              AQI_CATEGORIES[0].foreground,
+              51,
+              AQI_CATEGORIES[1].foreground,
+              101,
+              AQI_CATEGORIES[2].foreground,
+              151,
+              AQI_CATEGORIES[3].foreground,
+              201,
+              AQI_CATEGORIES[4].foreground,
+              301,
+              AQI_CATEGORIES[5].foreground,
+            ],
+            'text-halo-color': '#ffffff',
             'text-halo-width': 1,
           },
         });
@@ -320,8 +358,13 @@ const Chart: React.FC<ChartProps> = ({
             'text-font': ['Noto Sans Bold'],
           },
           paint: {
-            'text-color': '#ffffff',
-            'text-halo-color': '#1f2933',
+            'text-color': ['get', 'foreground'],
+            'text-halo-color': [
+              'case',
+              ['==', ['get', 'foreground'], '#ffffff'],
+              '#1f2933',
+              '#ffffff',
+            ],
             'text-halo-width': 1,
           },
         });
@@ -343,6 +386,23 @@ const Chart: React.FC<ChartProps> = ({
           map.getCanvas().style.cursor = '';
           popup?.remove();
           setActiveStationId(null);
+        });
+
+        map.on('mouseenter', 'clusters', (event) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const feature = event.features?.[0];
+          if (!feature) return;
+          popup
+            ?.setLngLat(event.lngLat)
+            .setHTML(
+              clusterPopupHtml(feature as GeoJSON.Feature<GeoJSON.Point>)
+            )
+            .addTo(map);
+        });
+
+        map.on('mouseleave', 'clusters', () => {
+          map.getCanvas().style.cursor = '';
+          popup?.remove();
         });
 
         map.on('click', 'clusters', (event) => {
@@ -418,6 +478,17 @@ const Chart: React.FC<ChartProps> = ({
     ]);
   }, [activeStationId, mapStatus]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mapStatus !== 'ready' || !focusTarget) return;
+
+    map.easeTo({
+      center: [focusTarget.lon, focusTarget.lat],
+      zoom: focusTarget.zoom,
+      duration: 700,
+    });
+  }, [focusTarget, mapStatus]);
+
   const handleStationSelect = (station: AirQualityStation) => {
     setActiveStationId(station.id);
     const map = mapRef.current;
@@ -454,17 +525,27 @@ const Chart: React.FC<ChartProps> = ({
   return (
     <Box display="flex" sx={{ height: '100%' }}>
       <Drawer
-        variant="persistent"
-        anchor="left"
+        variant={isCompact ? 'temporary' : 'persistent'}
+        anchor={isCompact ? 'bottom' : 'left'}
         open={showSidebar}
+        ModalProps={{ keepMounted: true }}
         sx={{
           '& .MuiDrawer-paper': {
             width: { xs: '100%', sm: 300 },
+            height: { xs: '72dvh', sm: '100%' },
             boxSizing: 'border-box',
+            borderTopLeftRadius: { xs: 12, sm: 0 },
+            borderTopRightRadius: { xs: 12, sm: 0 },
           },
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2 }}>
+        <Box
+          sx={{
+            display: { xs: 'none', sm: 'flex' },
+            justifyContent: 'center',
+            pt: 2,
+          }}
+        >
           <Logo />
         </Box>
 
@@ -534,86 +615,90 @@ const Chart: React.FC<ChartProps> = ({
 
           <List dense sx={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
             {visibleStations.map((station) => (
-              <ListItem
-                key={station.id}
-                component="li"
-                onMouseEnter={() => setActiveStationId(station.id)}
-                onMouseLeave={() => setActiveStationId(null)}
-                onClick={() => handleStationSelect(station)}
-                sx={{
-                  backgroundColor: `${station.category.color}24`,
-                  borderLeft: `5px solid ${station.category.color}`,
-                  borderRadius: 1,
-                  mb: 1,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s, transform 0.2s',
-                  transform:
-                    activeStationId === station.id ? 'translateX(2px)' : 'none',
-                  '&:hover': {
-                    backgroundColor: `${station.category.color}3d`,
-                  },
-                }}
-                role="button"
-              >
-                <ListItemText
-                  secondaryTypographyProps={{ component: 'div' }}
-                  primary={
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto',
-                        gap: 1,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 700, lineHeight: 1.2 }}
-                      >
-                        {station.name}
-                      </Typography>
+              <ListItem key={station.id} disablePadding sx={{ mb: 1 }}>
+                <ListItemButton
+                  onMouseEnter={() => setActiveStationId(station.id)}
+                  onMouseLeave={() => setActiveStationId(null)}
+                  onClick={() => handleStationSelect(station)}
+                  aria-label={`${station.name} ${station.aqi} ${station.category.label}`}
+                  sx={{
+                    alignItems: 'stretch',
+                    backgroundColor: `${station.category.color}24`,
+                    borderLeft: `5px solid ${station.category.color}`,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s, transform 0.2s',
+                    transform:
+                      activeStationId === station.id
+                        ? 'translateX(2px)'
+                        : 'none',
+                    '&:hover': {
+                      backgroundColor: `${station.category.color}3d`,
+                    },
+                  }}
+                >
+                  <ListItemText
+                    secondaryTypographyProps={{ component: 'div' }}
+                    primary={
                       <Box
                         sx={{
-                          minWidth: 44,
-                          textAlign: 'center',
-                          px: 1,
-                          py: 0.4,
-                          borderRadius: 1,
-                          fontWeight: 700,
-                          color: station.category.foreground,
-                          backgroundColor: station.category.color,
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto',
+                          gap: 1,
+                          alignItems: 'center',
                         }}
                       >
-                        {station.aqi}
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Box sx={{ display: 'grid', gap: 0.25, mt: 0.5 }}>
-                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                        {station.category.label}
-                      </Typography>
-                      <Typography variant="caption">
-                        {station.category.healthMessage}
-                      </Typography>
-                      {station.updatedAt && (
-                        <Typography variant="caption" color="text.secondary">
-                          Updated: {station.updatedAt}
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, lineHeight: 1.2 }}
+                        >
+                          {station.name}
                         </Typography>
-                      )}
-                      <Typography variant="caption" color="text.secondary">
-                        Source: {station.source}
-                      </Typography>
-                    </Box>
-                  }
-                />
+                        <Box
+                          sx={{
+                            minWidth: 44,
+                            textAlign: 'center',
+                            px: 1,
+                            py: 0.4,
+                            borderRadius: 1,
+                            fontWeight: 700,
+                            color: station.category.foreground,
+                            backgroundColor: station.category.color,
+                          }}
+                        >
+                          {station.aqi}
+                        </Box>
+                      </Box>
+                    }
+                    secondary={
+                      <Box sx={{ display: 'grid', gap: 0.25, mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                          {station.category.label}
+                        </Typography>
+                        <Typography variant="caption">
+                          {station.category.healthMessage}
+                        </Typography>
+                        {station.updatedAt && (
+                          <Typography variant="caption" color="text.secondary">
+                            Updated: {station.updatedAt}
+                          </Typography>
+                        )}
+                        <Typography variant="caption" color="text.secondary">
+                          Source: {station.source}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItemButton>
               </ListItem>
             ))}
           </List>
         </Box>
       </Drawer>
 
-      {showSidebar && <Box sx={{ width: 300 }} />}
+      {showSidebar && (
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, width: 300 }} />
+      )}
 
       <Box
         className="charts"
@@ -624,8 +709,8 @@ const Chart: React.FC<ChartProps> = ({
             onClick={toggleSidebar}
             sx={{
               position: 'fixed',
-              top: 40,
-              left: 35,
+              top: { xs: 70, sm: 40 },
+              left: { xs: 16, sm: 35 },
               borderRadius: 2,
               borderStyle: 'solid',
               borderWidth: 0.5,
@@ -675,12 +760,13 @@ const Chart: React.FC<ChartProps> = ({
             className="aqi-summary"
             sx={{
               position: 'absolute',
-              right: 18,
-              bottom: 34,
+              right: { xs: 16, sm: 18 },
+              bottom: { xs: 22, sm: 34 },
               zIndex: 2,
               display: 'grid',
               gap: 1,
-              width: { xs: 230, sm: 280 },
+              width: { xs: 'calc(100% - 32px)', sm: 280 },
+              maxWidth: { xs: 360, sm: 280 },
               p: 1.5,
               borderRadius: 2,
               backgroundColor: 'rgba(255,255,255,0.92)',
@@ -689,7 +775,7 @@ const Chart: React.FC<ChartProps> = ({
             }}
           >
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Live AQI summary
+              Current area signal
             </Typography>
             <Box
               sx={{
@@ -698,12 +784,6 @@ const Chart: React.FC<ChartProps> = ({
                 gap: 1,
               }}
             >
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 900 }}>
-                  {formatAqi(insights.averageAqi)}
-                </Typography>
-                <Typography variant="caption">Average</Typography>
-              </Box>
               <Box>
                 <Typography
                   variant="h5"
@@ -716,6 +796,12 @@ const Chart: React.FC<ChartProps> = ({
                 </Typography>
                 <Typography variant="caption">Worst</Typography>
               </Box>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                  {Math.round(insights.unhealthyPercent)}%
+                </Typography>
+                <Typography variant="caption">Unhealthy+</Typography>
+              </Box>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
               <Chip
@@ -725,11 +811,11 @@ const Chart: React.FC<ChartProps> = ({
               />
               <Chip
                 size="small"
-                label={`${insights.unhealthyCount} unhealthy+`}
+                label={`${insights.freshStationCount}/${insights.knownFreshnessCount || insights.stationCount} fresh`}
                 sx={{
                   borderRadius: 1,
                   fontWeight: 700,
-                  backgroundColor: '#cc003324',
+                  backgroundColor: '#0f766e24',
                 }}
               />
             </Box>

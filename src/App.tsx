@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
-import { Box } from '@mui/material';
+import { Box, IconButton, Tooltip, useMediaQuery } from '@mui/material';
+import { AimOutlined } from '@ant-design/icons';
 import { Analytics } from '@vercel/analytics/react';
 
 import LoadingOverlay from './assets/LoadingOverlay';
@@ -8,19 +9,40 @@ import ChartList from './components/ChartList/ChartList';
 import Dropdown from './components/Dropdown/Dropdown';
 import LegalModal from './components/LegalModal';
 import { AirQualityStation, normalizeWaqiStations } from './aqi';
+import { MapFocusTarget } from './mapFocus';
 import { ViewMode } from './viewMode';
 
 const WORLD_BOUNDS = '-85,-180,85,180';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const BOUNDS_REFRESH_DEBOUNCE_MS = 600;
+const LOCAL_BOUNDS_RADIUS_DEGREES = 1.5;
+
+function getInitialSidebarOpen(): boolean {
+  if (typeof window === 'undefined') return true;
+  return !window.matchMedia('(max-width: 700px)').matches;
+}
+
+function boundsAround(lat: number, lon: number): string {
+  return [
+    lat - LOCAL_BOUNDS_RADIUS_DEGREES,
+    lon - LOCAL_BOUNDS_RADIUS_DEGREES,
+    lat + LOCAL_BOUNDS_RADIUS_DEGREES,
+    lon + LOCAL_BOUNDS_RADIUS_DEGREES,
+  ].join(',');
+}
 
 const App: React.FC = () => {
+  const isCompact = useMediaQuery('(max-width:700px)');
   const [stations, setStations] = useState<AirQualityStation[]>([]);
   const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('map');
-  const [showSidebar, setShowSidebar] = useState<boolean>(true);
+  const [showSidebar, setShowSidebar] = useState<boolean>(
+    getInitialSidebarOpen
+  );
+  const [focusTarget, setFocusTarget] = useState<MapFocusTarget | null>(null);
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
   const latestRequestId = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -103,6 +125,12 @@ const App: React.FC = () => {
     }
   }, [viewMode]);
 
+  useEffect(() => {
+    if (isCompact) {
+      setShowSidebar(false);
+    }
+  }, [isCompact]);
+
   const handleSelect = (value: string) => {
     if (value === 'map' || value === 'insights') {
       setViewMode(value);
@@ -120,6 +148,43 @@ const App: React.FC = () => {
     },
     [fetchWaqiData]
   );
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Location is not available in this browser.');
+      return;
+    }
+
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setViewMode('map');
+        if (isCompact) {
+          setShowSidebar(false);
+        }
+        setFocusTarget((previous) => ({
+          lat: latitude,
+          lon: longitude,
+          zoom: 8,
+          sequence: (previous?.sequence || 0) + 1,
+        }));
+        fetchWaqiData(boundsAround(latitude, longitude), true);
+      },
+      (geoError) => {
+        setLocationError(
+          geoError.code === geoError.PERMISSION_DENIED
+            ? 'Location permission was denied.'
+            : 'Could not determine your location.'
+        );
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 10 * 60 * 1000,
+        timeout: 10000,
+      }
+    );
+  };
 
   useEffect(
     () => () => {
@@ -150,11 +215,18 @@ const App: React.FC = () => {
         }}
       >
         <Box
-          style={{
-            position: 'absolute',
-            top: '16px',
-            left: showSidebar && viewMode === 'map' ? '320px' : '70px',
-            zIndex: 1,
+          className="app-controls"
+          sx={{
+            position: 'fixed',
+            top: { xs: 12, sm: 16 },
+            left: {
+              xs: 12,
+              sm: showSidebar && viewMode === 'map' ? 320 : 70,
+            },
+            zIndex: 1400,
+            display: 'flex',
+            gap: 1,
+            alignItems: 'center',
           }}
         >
           <Dropdown
@@ -163,6 +235,22 @@ const App: React.FC = () => {
             dropdown="View"
             className="chart-dropdown"
           />
+          <Tooltip title="Use my location">
+            <IconButton
+              onClick={handleUseMyLocation}
+              aria-label="Use my location"
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: 2,
+                backgroundColor: 'rgba(255,255,255,0.92)',
+                boxShadow: '0 8px 22px rgba(15, 23, 42, 0.12)',
+                '&:hover': { backgroundColor: '#ffffff' },
+              }}
+            >
+              <AimOutlined />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {error && !hasStations && (
@@ -197,12 +285,36 @@ const App: React.FC = () => {
           </Box>
         )}
 
+        {locationError && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: { xs: 64, sm: 70 },
+              left: {
+                xs: 12,
+                sm: showSidebar && viewMode === 'map' ? 320 : 70,
+              },
+              right: 20,
+              zIndex: 1400,
+              maxWidth: 420,
+              p: 1,
+              borderRadius: 1,
+              backgroundColor: 'rgba(255,255,255,0.94)',
+              color: '#7a2e0e',
+              fontSize: 13,
+            }}
+          >
+            {locationError}
+          </Box>
+        )}
+
         {dataLoaded && (!error || hasStations) && (
           <ChartList
             locations={stations}
             viewMode={viewMode}
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
+            focusTarget={focusTarget}
             onMapLoadEnd={() => setMapLoaded(true)}
             onMapBoundsChange={handleMapBoundsChange}
           />

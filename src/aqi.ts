@@ -60,7 +60,7 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     shortLabel: 'Good',
     range: '0-50',
     color: '#009966',
-    foreground: '#ffffff',
+    foreground: '#071f17',
     healthMessage: 'Air quality is satisfactory for most people.',
   },
   {

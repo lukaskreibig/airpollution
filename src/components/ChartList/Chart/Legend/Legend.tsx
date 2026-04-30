@@ -3,7 +3,7 @@
  * @desc Renders the AQI legend overlay in the bottom-left corner (or shifted if sidebar is open).
  */
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useMediaQuery } from '@mui/material';
 import { AQI_CATEGORIES } from '../../../../aqi';
 
 interface LegendProps {
@@ -15,6 +15,54 @@ interface LegendProps {
  * @desc Displays the colored AQI categories on the map.
  */
 const Legend: React.FC<LegendProps> = ({ showSidebar }) => {
+  const isCompact = useMediaQuery('(max-width:700px)');
+
+  if (isCompact) {
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 174,
+          backgroundColor: 'rgba(255,255,255,0.88)',
+          padding: '6px 8px',
+          borderRadius: 1.5,
+          zIndex: 1,
+          display: 'grid',
+          gap: 0.75,
+          boxShadow: '0 8px 22px rgba(15, 23, 42, 0.12)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Typography variant="caption" sx={{ fontWeight: 800 }}>
+          AQI scale
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)' }}>
+          {AQI_CATEGORIES.map((category) => (
+            <Box
+              key={category.key}
+              aria-label={`${category.range} ${category.label}`}
+              title={`${category.range} ${category.label}`}
+              sx={{
+                height: 10,
+                backgroundColor: category.color,
+                '&:first-of-type': {
+                  borderTopLeftRadius: 4,
+                  borderBottomLeftRadius: 4,
+                },
+                '&:last-of-type': {
+                  borderTopRightRadius: 4,
+                  borderBottomRightRadius: 4,
+                },
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{

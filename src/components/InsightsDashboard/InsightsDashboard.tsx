@@ -12,7 +12,13 @@ import {
   Typography,
 } from '@mui/material';
 
-import { AirQualityStation, aqiColor, formatAqi } from '../../aqi';
+import {
+  AirQualityStation,
+  AQI_CATEGORIES,
+  AqiCategoryKey,
+  aqiColor,
+  formatAqi,
+} from '../../aqi';
 import { computeAqiInsights } from '../../insights';
 
 interface InsightsDashboardProps {
@@ -24,6 +30,12 @@ interface MetricCardProps {
   value: string;
   helper: string;
   accent?: string;
+}
+
+type CategoryFilter = AqiCategoryKey | 'all';
+
+function formatPercent(value: number): string {
+  return `${Math.round(value)}%`;
 }
 
 function MetricCard({ label, value, helper, accent }: MetricCardProps) {
@@ -124,18 +136,30 @@ function StationRankList({
 
 const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
   const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
   const insights = useMemo(() => computeAqiInsights(stations), [stations]);
   const maxAqi = Math.max(...stations.map((station) => station.aqi), 1);
+  const riskCategory = insights.worstStation?.category;
+  const riskTitle = riskCategory
+    ? `${riskCategory.label} conditions are present`
+    : 'No live AQI stations loaded';
+  const riskCopy = insights.worstStation
+    ? `${insights.worstStation.name} is the highest loaded station at AQI ${insights.worstStation.aqi}. ${insights.unhealthyCount} of ${insights.stationCount} stations are unhealthy for sensitive groups or worse.`
+    : 'Move the map or use your location to load stations for a specific area.';
   const filteredStations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const byCategory =
+      activeCategory === 'all'
+        ? stations
+        : stations.filter((station) => station.category.key === activeCategory);
     const filtered = normalizedQuery
-      ? stations.filter((station) =>
+      ? byCategory.filter((station) =>
           station.name.toLowerCase().includes(normalizedQuery)
         )
-      : stations;
+      : byCategory;
 
     return [...filtered].sort((a, b) => b.aqi - a.aqi).slice(0, 50);
-  }, [query, stations]);
+  }, [activeCategory, query, stations]);
 
   return (
     <Box
@@ -172,6 +196,54 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
           </Typography>
         </Box>
 
+        <Paper
+          elevation={0}
+          sx={{
+            border: '1px solid rgba(17,24,39,0.1)',
+            borderLeft: `6px solid ${riskCategory?.color || '#7a869a'}`,
+            borderRadius: 2,
+            p: { xs: 2, md: 2.5 },
+            mb: 2,
+            backgroundColor: '#ffffff',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr auto' },
+            gap: 2,
+            alignItems: 'center',
+          }}
+        >
+          <Box>
+            <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+              Area health signal
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>
+              {riskTitle}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mt: 0.5, color: 'text.secondary' }}
+            >
+              {riskCopy}
+            </Typography>
+          </Box>
+          <Chip
+            label={
+              riskCategory
+                ? `Worst AQI ${formatAqi(insights.worstStation?.aqi)}`
+                : 'No AQI'
+            }
+            sx={{
+              justifySelf: { xs: 'start', md: 'end' },
+              borderRadius: 1,
+              px: 1,
+              height: 38,
+              fontSize: 16,
+              fontWeight: 900,
+              backgroundColor: riskCategory?.color || '#7a869a',
+              color: riskCategory?.foreground || '#ffffff',
+            }}
+          />
+        </Paper>
+
         <Box
           sx={{
             display: 'grid',
@@ -185,27 +257,28 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
           }}
         >
           <MetricCard
-            label="Stations"
-            value={String(insights.stationCount)}
-            helper="Live WAQI stations in view"
+            label="Unhealthy share"
+            value={formatPercent(insights.unhealthyPercent)}
+            helper={`${insights.unhealthyCount} of ${insights.stationCount} stations`}
+            accent="#cc0033"
+          />
+          <MetricCard
+            label="Dominant category"
+            value={insights.dominantCategory?.shortLabel || 'n/a'}
+            helper={`${insights.dominantCategory?.count || 0} loaded stations`}
+            accent={insights.dominantCategory?.color}
+          />
+          <MetricCard
+            label="Fresh data"
+            value={formatPercent(insights.freshnessPercent)}
+            helper={`${insights.staleCount} stale, ${insights.unknownFreshnessCount} unknown`}
+            accent="#0f766e"
           />
           <MetricCard
             label="Average AQI"
             value={formatAqi(insights.averageAqi)}
-            helper="Mean of loaded station AQI"
+            helper="Secondary context only"
             accent={aqiColor(insights.averageAqi)}
-          />
-          <MetricCard
-            label="Worst AQI"
-            value={formatAqi(insights.worstStation?.aqi)}
-            helper={insights.worstStation?.name || 'No station data'}
-            accent={insights.worstStation?.category.color}
-          />
-          <MetricCard
-            label="Unhealthy+"
-            value={String(insights.unhealthyCount)}
-            helper={`${insights.hazardousCount} hazardous stations`}
-            accent="#cc0033"
           />
         </Box>
 
@@ -228,7 +301,7 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
                 key={category.key}
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '210px 1fr 64px' },
+                  gridTemplateColumns: { xs: '1fr', sm: '210px 1fr 92px' },
                   gap: 1,
                   alignItems: 'center',
                 }}
@@ -259,7 +332,7 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
                   }}
                 />
                 <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                  {category.count}
+                  {category.count} · {formatPercent(category.percent)}
                 </Typography>
               </Box>
             ))}
@@ -318,6 +391,46 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
+          </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+            <Chip
+              label={`All ${stations.length}`}
+              clickable
+              onClick={() => setActiveCategory('all')}
+              color={activeCategory === 'all' ? 'primary' : 'default'}
+              sx={{ borderRadius: 1, fontWeight: 800 }}
+            />
+            {AQI_CATEGORIES.map((category) => {
+              const count =
+                insights.categoryCounts.find(
+                  (item) => item.key === category.key
+                )?.count || 0;
+
+              return (
+                <Chip
+                  key={category.key}
+                  label={`${category.shortLabel} ${count}`}
+                  clickable
+                  onClick={() => setActiveCategory(category.key)}
+                  variant={
+                    activeCategory === category.key ? 'filled' : 'outlined'
+                  }
+                  sx={{
+                    borderRadius: 1,
+                    fontWeight: 800,
+                    backgroundColor:
+                      activeCategory === category.key
+                        ? category.color
+                        : 'transparent',
+                    color:
+                      activeCategory === category.key
+                        ? category.foreground
+                        : '#1f2933',
+                    borderColor: category.color,
+                  }}
+                />
+              );
+            })}
           </Box>
           <Divider sx={{ mb: 1 }} />
           <List dense disablePadding>

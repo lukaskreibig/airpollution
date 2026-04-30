@@ -1,5 +1,6 @@
 import React from 'react';
 import { AirQualityStation } from '../../aqi';
+import { MapFocusTarget } from '../../mapFocus';
 import { ViewMode } from '../../viewMode';
 import Chart from './Chart/Chart';
 
@@ -8,6 +9,7 @@ type Props = {
   viewMode: ViewMode;
   showSidebar: boolean;
   setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
+  focusTarget?: MapFocusTarget | null;
   onMapLoadEnd?: () => void;
   onMapBoundsChange?: (bounds: string) => void;
 };
@@ -17,6 +19,7 @@ const ChartList: React.FC<Props> = ({
   viewMode,
   showSidebar,
   setShowSidebar,
+  focusTarget,
   onMapLoadEnd,
   onMapBoundsChange,
 }) => {
@@ -35,6 +38,7 @@ const ChartList: React.FC<Props> = ({
         viewMode={viewMode}
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
+        focusTarget={focusTarget}
         onMapLoadEnd={onMapLoadEnd}
         onMapBoundsChange={onMapBoundsChange}
       />
