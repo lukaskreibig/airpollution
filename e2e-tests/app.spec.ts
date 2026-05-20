@@ -69,6 +69,33 @@ test.describe('MapTheAir App Basic Tests', () => {
     await expect(page.getByText('Air quality insights')).toBeVisible();
   });
 
+  test('insights tabs switch visible content and scroll to the bottom', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: 'Insights' }).click();
+
+    await page.getByRole('tab', { name: 'Hotspots' }).click();
+    await expect(page.getByText('Highest AQI stations')).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Data quality' }).click();
+    await expect(page.getByText('Data quality and coverage')).toBeVisible();
+
+    const scrollState = await page.locator('.insights-dashboard').evaluate(
+      (element) => {
+        element.scrollTop = element.scrollHeight;
+        return {
+          bottomGap:
+            element.scrollHeight - element.clientHeight - element.scrollTop,
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+        };
+      }
+    );
+
+    expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+    expect(scrollState.bottomGap).toBeLessThanOrEqual(1);
+  });
+
   test('keeps the view switch usable on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');

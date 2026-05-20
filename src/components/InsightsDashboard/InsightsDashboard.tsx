@@ -910,6 +910,7 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
         width: '100%',
         height: '100%',
         minHeight: 0,
+        boxSizing: 'border-box',
         overflowY: 'auto',
         overflowX: 'hidden',
         backgroundColor: '#f7f8fa',
@@ -1001,38 +1002,6 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
 
         <Box
           sx={{
-            position: 'sticky',
-            top: { xs: 64, md: 72 },
-            zIndex: 3,
-            mb: 2,
-            py: 0.5,
-            backgroundColor: 'rgba(247,248,250,0.92)',
-            backdropFilter: 'blur(10px)',
-          }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: InsightTab) => setActiveTab(value)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              minHeight: 44,
-              '& .MuiTab-root': {
-                minHeight: 44,
-                borderRadius: 1,
-                textTransform: 'none',
-                fontWeight: 900,
-              },
-            }}
-          >
-            {tabLabels.map((tab) => (
-              <Tab key={tab.value} value={tab.value} label={tab.label} />
-            ))}
-          </Tabs>
-        </Box>
-
-        <Box
-          sx={{
             display: 'grid',
             gridTemplateColumns: {
               xs: '1fr',
@@ -1073,6 +1042,33 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
             helper={`Above AQI ${EXTREME_AQI_THRESHOLD}; review as unvalidated outliers`}
             accent="#7e0023"
           />
+        </Box>
+
+        <Box
+          sx={{
+            mb: 2,
+            py: 0.5,
+          }}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={(_event, value: InsightTab) => setActiveTab(value)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
+                minHeight: 44,
+                borderRadius: 1,
+                textTransform: 'none',
+                fontWeight: 900,
+              },
+            }}
+          >
+            {tabLabels.map((tab) => (
+              <Tab key={tab.value} value={tab.value} label={tab.label} />
+            ))}
+          </Tabs>
         </Box>
 
         {activeTab === 'overview' && (
