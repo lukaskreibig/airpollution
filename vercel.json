@@ -1,4 +1,5 @@
 {
   "buildCommand": "yarn build",
+  "devCommand": "yarn start --port $PORT",
   "outputDirectory": "dist"
 }
