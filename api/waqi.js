@@ -1,6 +1,7 @@
 const WAQI_API_BASE = 'https://api.waqi.info';
 const DEFAULT_BOUNDS = '-85,-180,85,180';
 const CACHE_TTL_MS = 60 * 1000;
+const DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
 const waqiCache = new Map();
 
 function firstValue(value, fallback = '') {
@@ -9,15 +10,42 @@ function firstValue(value, fallback = '') {
 }
 
 function buildWaqiUrl(query, token) {
+  const rawUid = firstValue(query.uid);
+  if (rawUid) {
+    const uid = normalizeStationUid(rawUid);
+    if (!uid) {
+      throw httpError(400, 'Invalid WAQI station uid.');
+    }
+
+    const stationPath = /^\d+$/.test(uid) ? `@${uid}` : uid;
+    const url = new URL(`/feed/${stationPath}/`, WAQI_API_BASE);
+    url.searchParams.set('token', token);
+    return {
+      cacheKey: `station:${uid}`,
+      ttl: DETAIL_CACHE_TTL_MS,
+      url,
+    };
+  }
+
   const latlng = normalizeLatLng(firstValue(query.latlng, DEFAULT_BOUNDS));
   const url = new URL('/map/bounds/', WAQI_API_BASE);
   url.searchParams.set('latlng', latlng);
   url.searchParams.set('token', token);
-  return url;
+  return {
+    cacheKey: `bounds:${latlng}`,
+    ttl: CACHE_TTL_MS,
+    url,
+  };
 }
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function httpError(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
 }
 
 function normalizeLatLng(raw) {
@@ -39,6 +67,12 @@ function normalizeLatLng(raw) {
     .join(',');
 }
 
+function normalizeStationUid(raw = '') {
+  const uid = String(raw).trim();
+  if (!uid) return '';
+  return /^[a-zA-Z0-9_-]{1,40}$/.test(uid) ? uid : '';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -49,8 +83,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    const apiUrl = buildWaqiUrl(req.query, token);
-    const cacheKey = apiUrl.searchParams.get('latlng') || DEFAULT_BOUNDS;
+    const request = buildWaqiUrl(req.query, token);
+    const cacheKey = request.cacheKey;
     const cached = waqiCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       res.setHeader('Content-Type', cached.contentType);
@@ -59,7 +93,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const response = await fetch(apiUrl.toString());
+    const response = await fetch(request.url.toString());
     const payload = await response.text();
 
     if (!response.ok) {
@@ -73,7 +107,7 @@ export default async function handler(req, res) {
     }
     waqiCache.set(cacheKey, {
       contentType: contentType || 'application/json',
-      expiresAt: Date.now() + CACHE_TTL_MS,
+      expiresAt: Date.now() + request.ttl,
       payload,
     });
     res.setHeader('X-MapTheAir-Cache', 'MISS');
@@ -81,6 +115,12 @@ export default async function handler(req, res) {
     res.status(200).send(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: `Failed to fetch WAQI data: ${message}` });
+    const statusCode = Number.isInteger(error.statusCode)
+      ? error.statusCode
+      : 500;
+    res.status(statusCode).json({
+      error:
+        statusCode === 500 ? `Failed to fetch WAQI data: ${message}` : message,
+    });
   }
 }

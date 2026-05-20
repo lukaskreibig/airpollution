@@ -1,6 +1,7 @@
 import {
   calculatePollutantAqi,
   getAqiCategory,
+  normalizeWaqiStationDetail,
   normalizeWaqiStations,
 } from '../aqi';
 
@@ -42,8 +43,64 @@ describe('AQI domain helpers', () => {
       lat: 52.52,
       lon: 13.405,
       aqi: 42,
+      providerId: '1',
       source: 'WAQI',
     });
+  });
+
+  it('normalizes WAQI station detail pollutants, forecast, and attribution', () => {
+    const detail = normalizeWaqiStationDetail({
+      status: 'ok',
+      data: {
+        aqi: 82,
+        idx: 1437,
+        attributions: [{ name: 'WAQI', url: 'https://waqi.info/' }],
+        city: {
+          geo: [31.2, 121.4],
+          name: 'Shanghai',
+          url: 'https://aqicn.org/city/shanghai',
+        },
+        dominentpol: 'pm25',
+        iaqi: {
+          pm25: { v: 82 },
+          pm10: { v: 30 },
+          h: { v: 88 },
+          t: { v: 26 },
+        },
+        time: { v: 1779296400 },
+        forecast: {
+          daily: {
+            pm25: [{ day: '2026-05-20', min: 141, avg: 186, max: 252 }],
+            uvi: [{ day: '2026-05-20', min: 0, avg: 1, max: 5 }],
+          },
+        },
+      },
+    });
+
+    expect(detail).toMatchObject({
+      stationId: '1437',
+      name: 'Shanghai',
+      aqi: 82,
+      primaryPollutant: 'pm25',
+      primaryPollutantLabel: 'PM2.5',
+      sourceUrl: 'https://aqicn.org/city/shanghai',
+    });
+    expect(detail?.pollutants.map((pollutant) => pollutant.key)).toEqual([
+      'pm25',
+      'pm10',
+    ]);
+    expect(detail?.pollutants[0]).toMatchObject({
+      label: 'PM2.5',
+      value: 82,
+      isPrimary: true,
+    });
+    expect(detail?.forecast).toHaveLength(1);
+    expect(detail?.forecast[0]).toMatchObject({
+      pollutant: 'pm25',
+      avg: 186,
+      max: 252,
+    });
+    expect(detail?.attributions[0].name).toBe('WAQI');
   });
 
   it('uses current EPA PM2.5 breakpoints for estimated OpenAQ fallback AQI', () => {

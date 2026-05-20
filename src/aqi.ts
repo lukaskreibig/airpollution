@@ -24,6 +24,7 @@ export interface AirQualityStation {
   lon: number;
   aqi: number;
   category: AqiCategory;
+  providerId?: string;
   updatedAt?: string;
   updatedAtTimestamp?: number;
   source: 'WAQI' | 'OpenAQ';
@@ -46,12 +47,67 @@ export interface PollutantMeasurement {
   unit?: string;
 }
 
+export type AqiPollutantKey = 'pm25' | 'pm10' | 'o3' | 'no2' | 'co' | 'so2';
+
+export interface WaqiPollutantInsight {
+  key: AqiPollutantKey;
+  label: string;
+  value: number;
+  category: AqiCategory;
+  isPrimary: boolean;
+}
+
+export interface WaqiForecastDay {
+  pollutant: AqiPollutantKey;
+  label: string;
+  day: string;
+  min: number | null;
+  avg: number | null;
+  max: number | null;
+  category: AqiCategory;
+}
+
+export interface WaqiAttribution {
+  name: string;
+  url?: string;
+}
+
+export interface WaqiStationDetail {
+  stationId: string;
+  name: string;
+  aqi: number;
+  category: AqiCategory;
+  lat?: number;
+  lon?: number;
+  updatedAt?: string;
+  updatedAtTimestamp?: number;
+  primaryPollutant?: AqiPollutantKey;
+  primaryPollutantLabel?: string;
+  pollutants: WaqiPollutantInsight[];
+  forecast: WaqiForecastDay[];
+  attributions: WaqiAttribution[];
+  sourceUrl?: string;
+}
+
 interface Breakpoint {
   cLow: number;
   cHigh: number;
   iLow: number;
   iHigh: number;
 }
+
+const AQI_POLLUTANTS: Array<{
+  key: AqiPollutantKey;
+  aliases: string[];
+  label: string;
+}> = [
+  { key: 'pm25', aliases: ['pm25', 'pm2.5'], label: 'PM2.5' },
+  { key: 'pm10', aliases: ['pm10'], label: 'PM10' },
+  { key: 'o3', aliases: ['o3', 'ozone'], label: 'Ozone' },
+  { key: 'no2', aliases: ['no2'], label: 'NO2' },
+  { key: 'co', aliases: ['co'], label: 'CO' },
+  { key: 'so2', aliases: ['so2'], label: 'SO2' },
+];
 
 export const AQI_CATEGORIES: AqiCategory[] = [
   {
@@ -181,7 +237,15 @@ function toFiniteNumber(value: unknown): number | null {
 }
 
 function normalizeParameter(parameter: string): string {
-  return parameter.toLowerCase().replace('.', '').replace('_', '');
+  return parameter.toLowerCase().replace(/[\s._-]/g, '');
+}
+
+function getPollutantDefinition(parameter: string | undefined) {
+  if (!parameter) return undefined;
+  const normalized = normalizeParameter(parameter);
+  return AQI_POLLUTANTS.find((pollutant) =>
+    pollutant.aliases.some((alias) => normalizeParameter(alias) === normalized)
+  );
 }
 
 function truncateForAqi(parameter: string, value: number): number {
@@ -253,7 +317,9 @@ export function normalizeWaqiStation(
   if (aqi === null || lat === null || lon === null) return null;
 
   const name = station.station?.name?.trim() || `Station ${index + 1}`;
-  const uid = station.uid ?? `${lat.toFixed(5)}-${lon.toFixed(5)}-${index}`;
+  const providerId =
+    station.uid === undefined ? undefined : String(station.uid);
+  const uid = providerId ?? `${lat.toFixed(5)}-${lon.toFixed(5)}-${index}`;
 
   return {
     id: `waqi-${uid}`,
@@ -262,6 +328,7 @@ export function normalizeWaqiStation(
     lon,
     aqi,
     category: getAqiCategory(aqi),
+    providerId,
     updatedAt: formatStationTime(station.station?.time),
     updatedAtTimestamp: parseStationTimestamp(station.station?.time),
     source: 'WAQI',
@@ -280,6 +347,143 @@ export function normalizeWaqiStations(raw: unknown): AirQualityStation[] {
   return (raw as { data: WaqiMapStation[] }).data
     .map((station, index) => normalizeWaqiStation(station, index))
     .filter((station): station is AirQualityStation => station !== null);
+}
+
+export function pollutantLabel(parameter: string | undefined): string {
+  return getPollutantDefinition(parameter)?.label || parameter || 'Unknown';
+}
+
+function readWaqiTime(data: {
+  time?: { iso?: string; s?: string; v?: number | string };
+}) {
+  const unixTimestamp = toFiniteNumber(data.time?.v);
+  if (unixTimestamp !== null) {
+    return {
+      updatedAt: formatStationTime(
+        new Date(unixTimestamp * 1000).toISOString()
+      ),
+      updatedAtTimestamp: unixTimestamp * 1000,
+    };
+  }
+
+  const rawTime = data.time?.iso || data.time?.s;
+  return {
+    updatedAt: formatStationTime(rawTime),
+    updatedAtTimestamp: parseStationTimestamp(rawTime),
+  };
+}
+
+export function normalizeWaqiStationDetail(
+  raw: unknown
+): WaqiStationDetail | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const response = raw as { status?: string; data?: unknown };
+  if (response.status && response.status !== 'ok') return null;
+  if (!response.data || typeof response.data !== 'object') return null;
+
+  const data = response.data as {
+    aqi?: unknown;
+    idx?: unknown;
+    attributions?: Array<{ name?: string; url?: string }>;
+    city?: {
+      geo?: unknown[];
+      name?: string;
+      url?: string;
+    };
+    dominentpol?: string;
+    iaqi?: Record<string, { v?: unknown }>;
+    time?: { iso?: string; s?: string; v?: number | string };
+    forecast?: {
+      daily?: Record<
+        string,
+        Array<{ day?: string; min?: unknown; avg?: unknown; max?: unknown }>
+      >;
+    };
+  };
+
+  const aqi = parseAqi(data.aqi);
+  if (aqi === null) return null;
+
+  const primaryDefinition = getPollutantDefinition(data.dominentpol);
+  const time = readWaqiTime(data);
+  const lat = toFiniteNumber(data.city?.geo?.[0]);
+  const lon = toFiniteNumber(data.city?.geo?.[1]);
+  const stationId =
+    data.idx === undefined || data.idx === null ? '' : String(data.idx).trim();
+
+  const pollutants = Object.entries(data.iaqi || {})
+    .map(([key, value]) => {
+      const definition = getPollutantDefinition(key);
+      const pollutantAqi = parseAqi(value?.v);
+      if (!definition || pollutantAqi === null) return null;
+
+      return {
+        key: definition.key,
+        label: definition.label,
+        value: pollutantAqi,
+        category: getAqiCategory(pollutantAqi),
+        isPrimary: primaryDefinition?.key === definition.key,
+      };
+    })
+    .filter(
+      (pollutant): pollutant is WaqiPollutantInsight => pollutant !== null
+    )
+    .sort((a, b) => {
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+      return b.value - a.value || a.label.localeCompare(b.label);
+    });
+
+  const forecast = Object.entries(data.forecast?.daily || {}).flatMap(
+    ([parameter, days]) => {
+      const definition = getPollutantDefinition(parameter);
+      if (!definition) return [];
+
+      return days
+        .map((day) => {
+          const avg = parseAqi(day.avg);
+          const max = parseAqi(day.max);
+          const min = parseAqi(day.min);
+          if (!day.day || (avg === null && max === null && min === null)) {
+            return null;
+          }
+
+          return {
+            pollutant: definition.key,
+            label: definition.label,
+            day: day.day,
+            min,
+            avg,
+            max,
+            category: getAqiCategory(avg ?? max ?? min),
+          };
+        })
+        .filter((day): day is WaqiForecastDay => day !== null);
+    }
+  );
+
+  return {
+    stationId,
+    name: data.city?.name?.trim() || 'Selected station',
+    aqi,
+    category: getAqiCategory(aqi),
+    lat: lat ?? undefined,
+    lon: lon ?? undefined,
+    updatedAt: time.updatedAt,
+    updatedAtTimestamp: time.updatedAtTimestamp,
+    primaryPollutant: primaryDefinition?.key,
+    primaryPollutantLabel: primaryDefinition?.label,
+    pollutants,
+    forecast: forecast.sort(
+      (a, b) => a.day.localeCompare(b.day) || a.label.localeCompare(b.label)
+    ),
+    attributions: (data.attributions || [])
+      .map((attribution) => ({
+        name: attribution.name?.trim() || '',
+        url: attribution.url,
+      }))
+      .filter((attribution) => attribution.name),
+    sourceUrl: data.city?.url,
+  };
 }
 
 export function calculatePollutantAqi(
