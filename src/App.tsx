@@ -201,7 +201,15 @@ const App: React.FC = () => {
   const hasStations = stations.length > 0;
 
   return (
-    <div className="App" style={{ height: '100vh', position: 'relative' }}>
+    <div
+      className="App"
+      style={{
+        height: '100dvh',
+        minHeight: 0,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
       <LoadingOverlay
         loading={loadingOverlayActive}
         message="Loading AQI stations..."
@@ -212,6 +220,8 @@ const App: React.FC = () => {
           opacity: loadingOverlayActive ? 0.5 : 1,
           transition: 'opacity 0.3s ease-in-out',
           height: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         <Box

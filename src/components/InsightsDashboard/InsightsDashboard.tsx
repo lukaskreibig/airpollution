@@ -909,14 +909,18 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
       sx={{
         width: '100%',
         height: '100%',
+        maxHeight: '100%',
         minHeight: 0,
         boxSizing: 'border-box',
         overflowY: 'auto',
         overflowX: 'hidden',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+        scrollPaddingBottom: { xs: 160, md: 96 },
         backgroundColor: '#f7f8fa',
         px: { xs: 2, md: 4 },
         pt: { xs: 8, md: 9 },
-        pb: { xs: 12, md: 9 },
+        pb: { xs: 4, md: 3 },
       }}
     >
       <Box sx={{ maxWidth: 1320, mx: 'auto' }}>
@@ -1281,6 +1285,12 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
             </Paper>
           </Box>
         )}
+
+        <Box
+          aria-hidden="true"
+          className="insights-bottom-spacer"
+          sx={{ height: { xs: 128, md: 88 } }}
+        />
       </Box>
     </Box>
   );
