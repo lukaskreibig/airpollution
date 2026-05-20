@@ -79,7 +79,7 @@ function stationPopupHtml(station: AirQualityStation): string {
   return `
     <div style="font-size:14px;line-height:1.45;max-width:240px;">
       <strong>${escapeHtml(station.name)}</strong><br/>
-      AQI: <span style="color:${station.category.color};font-weight:bold;">${station.aqi}</span><br/>
+      AQI: <span style="color:#111827;font-weight:bold;">${station.aqi}</span><br/>
       <span>${escapeHtml(station.category.label)}</span><br/>
       <span style="font-size:12px;color:#555;">${escapeHtml(station.category.healthMessage)}</span><br/>
       ${
@@ -112,7 +112,6 @@ function buildGeoJSON(
         aqi: station.aqi,
         label: formatAqi(station.aqi),
         color: aqiColor(station.aqi),
-        foreground: station.category.foreground,
         popupHTML: stationPopupHtml(station),
       },
     })),
@@ -301,21 +300,7 @@ const Chart: React.FC<ChartProps> = ({
             'text-font': ['Noto Sans Bold'],
           },
           paint: {
-            'text-color': [
-              'step',
-              ['get', 'maxAQI'],
-              AQI_CATEGORIES[0].foreground,
-              51,
-              AQI_CATEGORIES[1].foreground,
-              101,
-              AQI_CATEGORIES[2].foreground,
-              151,
-              AQI_CATEGORIES[3].foreground,
-              201,
-              AQI_CATEGORIES[4].foreground,
-              301,
-              AQI_CATEGORIES[5].foreground,
-            ],
+            'text-color': '#111827',
             'text-halo-color': '#ffffff',
             'text-halo-width': 1,
           },
@@ -358,13 +343,8 @@ const Chart: React.FC<ChartProps> = ({
             'text-font': ['Noto Sans Bold'],
           },
           paint: {
-            'text-color': ['get', 'foreground'],
-            'text-halo-color': [
-              'case',
-              ['==', ['get', 'foreground'], '#ffffff'],
-              '#1f2933',
-              '#ffffff',
-            ],
+            'text-color': '#111827',
+            'text-halo-color': '#ffffff',
             'text-halo-width': 1,
           },
         });
@@ -662,7 +642,7 @@ const Chart: React.FC<ChartProps> = ({
                             py: 0.4,
                             borderRadius: 1,
                             fontWeight: 700,
-                            color: station.category.foreground,
+                            color: '#111827',
                             backgroundColor: station.category.color,
                           }}
                         >
@@ -789,7 +769,7 @@ const Chart: React.FC<ChartProps> = ({
                   variant="h5"
                   sx={{
                     fontWeight: 900,
-                    color: insights.worstStation?.category.color,
+                    color: '#111827',
                   }}
                 >
                   {formatAqi(insights.worstStation?.aqi)}

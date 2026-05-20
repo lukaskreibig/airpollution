@@ -147,7 +147,7 @@ function AqiChip({
         borderRadius: 1,
         minWidth: 52,
         backgroundColor: colorCategory.color,
-        color: colorCategory.foreground,
+        color: '#111827',
         fontWeight: 900,
       }}
     />
@@ -1006,7 +1006,7 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
             gridTemplateColumns: {
               xs: '1fr',
               sm: 'repeat(2, 1fr)',
-              xl: 'repeat(5, 1fr)',
+              lg: 'repeat(4, 1fr)',
             },
             gap: 2,
             mb: 2,
@@ -1035,12 +1035,6 @@ const InsightsDashboard: React.FC<InsightsDashboardProps> = ({ stations }) => {
             value={formatPercent(insights.freshnessPercent)}
             helper={`${insights.staleCount} stale, ${insights.unknownFreshnessCount} unknown`}
             accent="#0f766e"
-          />
-          <MetricCard
-            label="Extreme readings"
-            value={String(insights.extremeCount)}
-            helper={`Above AQI ${EXTREME_AQI_THRESHOLD}; review as unvalidated outliers`}
-            accent="#7e0023"
           />
         </Box>
 
