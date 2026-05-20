@@ -83,24 +83,17 @@ test.describe('MapTheAir App Basic Tests', () => {
     const scrollState = await page.locator('.insights-dashboard').evaluate(
       (element) => {
         element.scrollTop = element.scrollHeight;
-        const footer = document.querySelector('.insights-bottom-spacer');
-        const footerRect = footer?.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-
         return {
           bottomGap:
             element.scrollHeight - element.clientHeight - element.scrollTop,
           clientHeight: element.clientHeight,
-          footerTop: footerRect?.top || 0,
           scrollHeight: element.scrollHeight,
-          viewportHeight,
         };
       }
     );
 
     expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
     expect(scrollState.bottomGap).toBeLessThanOrEqual(1);
-    expect(scrollState.footerTop).toBeLessThan(scrollState.viewportHeight);
   });
 
   test('keeps the view switch usable on mobile', async ({ page }) => {

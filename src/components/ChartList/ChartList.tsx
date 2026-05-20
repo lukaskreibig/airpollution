@@ -32,15 +32,7 @@ const ChartList: React.FC<Props> = ({
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: 0,
-        flex: 1,
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ width: '100%', height: '100%', flex: 1 }}>
       <Chart
         locations={locations}
         viewMode={viewMode}
