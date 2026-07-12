@@ -1,26 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import './App.css';
-import { Box, IconButton, Tooltip, useMediaQuery } from '@mui/material';
-import { AimOutlined } from '@ant-design/icons';
 import { Analytics } from '@vercel/analytics/react';
 
-import LoadingOverlay from './assets/LoadingOverlay';
-import ChartList from './components/ChartList/ChartList';
-import Dropdown from './components/Dropdown/Dropdown';
-import LegalModal from './components/LegalModal';
+import './theme.css';
 import { AirQualityStation, normalizeWaqiStations } from './aqi';
+import { computeAqiInsights } from './insights';
 import { MapFocusTarget } from './mapFocus';
 import { ViewMode } from './viewMode';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { useStationDetail } from './hooks/useStationDetail';
+import LoadingScreen from './components/LoadingScreen';
+import TopBar from './components/TopBar';
+import LegalModal from './components/LegalModal';
+import MapView from './components/MapView/MapView';
+import StationRail from './components/MapView/StationRail';
+import StationDetail from './components/StationDetail/StationDetail';
+import InsightsView from './components/Insights/InsightsView';
 
 const WORLD_BOUNDS = '-85,-180,85,180';
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 const BOUNDS_REFRESH_DEBOUNCE_MS = 600;
 const LOCAL_BOUNDS_RADIUS_DEGREES = 1.5;
-
-function getInitialSidebarOpen(): boolean {
-  if (typeof window === 'undefined') return true;
-  return !window.matchMedia('(max-width: 700px)').matches;
-}
 
 function boundsAround(lat: number, lon: number): string {
   return [
@@ -32,23 +31,32 @@ function boundsAround(lat: number, lon: number): string {
 }
 
 const App: React.FC = () => {
-  const isCompact = useMediaQuery('(max-width:700px)');
+  const isCompact = useMediaQuery('(max-width: 700px)');
   const [stations, setStations] = useState<AirQualityStation[]>([]);
   const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('map');
-  const [showSidebar, setShowSidebar] = useState<boolean>(
-    getInitialSidebarOpen
-  );
+  const [railOpen, setRailOpen] = useState<boolean>(false);
+  const [railTouched, setRailTouched] = useState<boolean>(false);
+  const [detailOpen, setDetailOpen] = useState<boolean>(false);
+  const [selectedStation, setSelectedStation] =
+    useState<AirQualityStation | null>(null);
   const [focusTarget, setFocusTarget] = useState<MapFocusTarget | null>(null);
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
+
   const latestRequestId = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const boundsRefreshTimeoutRef = useRef<number | null>(null);
 
   const baseUrl = process.env.VITE_WAQI_API_BASE_URL || '/api/waqi';
+  const detailState = useStationDetail(selectedStation?.providerId);
+
+  /* Rail follows the viewport until the user takes over. */
+  useEffect(() => {
+    if (!railTouched) setRailOpen(!isCompact);
+  }, [isCompact, railTouched]);
 
   const fetchWaqiData = useCallback(
     async (bounds: string = WORLD_BOUNDS, showInitialLoading = false) => {
@@ -113,29 +121,21 @@ const App: React.FC = () => {
     };
   }, [fetchWaqiData]);
 
+  /* Default spotlight: the most polluted representative station. */
   useEffect(() => {
-    if (viewMode !== 'map' && dataLoaded) {
-      setMapLoaded(true);
+    if (!selectedStation && stations.length) {
+      const insights = computeAqiInsights(stations);
+      setSelectedStation(
+        insights.representativeWorstStation || insights.worstStation
+      );
     }
-  }, [dataLoaded, viewMode]);
+  }, [stations, selectedStation]);
 
   useEffect(() => {
-    if (viewMode === 'map') {
-      setMapLoaded(false);
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
-    if (isCompact) {
-      setShowSidebar(false);
-    }
-  }, [isCompact]);
-
-  const handleSelect = (value: string) => {
-    if (value === 'map' || value === 'insights') {
-      setViewMode(value);
-    }
-  };
+    if (!locationError) return undefined;
+    const timeout = window.setTimeout(() => setLocationError(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [locationError]);
 
   const handleMapBoundsChange = useCallback(
     (bounds: string) => {
@@ -149,7 +149,48 @@ const App: React.FC = () => {
     [fetchWaqiData]
   );
 
-  const handleUseMyLocation = () => {
+  useEffect(
+    () => () => {
+      if (boundsRefreshTimeoutRef.current) {
+        window.clearTimeout(boundsRefreshTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  const flyTo = useCallback((lat: number, lon: number, zoom: number) => {
+    setFocusTarget((previous) => ({
+      lat,
+      lon,
+      zoom,
+      sequence: (previous?.sequence || 0) + 1,
+    }));
+  }, []);
+
+  const openStationDetail = useCallback(
+    (station: AirQualityStation, options?: { fly?: boolean }) => {
+      setSelectedStation(station);
+      setDetailOpen(true);
+      if (options?.fly) {
+        flyTo(station.lat, station.lon, 9);
+      }
+      if (isCompact) {
+        setRailOpen(false);
+        setRailTouched(true);
+      }
+    },
+    [flyTo, isCompact]
+  );
+
+  const handleShowOnMap = useCallback(
+    (station: AirQualityStation) => {
+      setViewMode('map');
+      openStationDetail(station, { fly: true });
+    },
+    [openStationDetail]
+  );
+
+  const handleUseMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationError('Location is not available in this browser.');
       return;
@@ -160,15 +201,7 @@ const App: React.FC = () => {
       (position) => {
         const { latitude, longitude } = position.coords;
         setViewMode('map');
-        if (isCompact) {
-          setShowSidebar(false);
-        }
-        setFocusTarget((previous) => ({
-          lat: latitude,
-          lon: longitude,
-          zoom: 8,
-          sequence: (previous?.sequence || 0) + 1,
-        }));
+        flyTo(latitude, longitude, 8);
         fetchWaqiData(boundsAround(latitude, longitude), true);
       },
       (geoError) => {
@@ -184,183 +217,109 @@ const App: React.FC = () => {
         timeout: 10000,
       }
     );
-  };
+  }, [fetchWaqiData, flyTo]);
 
-  useEffect(
-    () => () => {
-      if (boundsRefreshTimeoutRef.current) {
-        window.clearTimeout(boundsRefreshTimeoutRef.current);
-      }
-    },
-    []
-  );
-
-  const loadingOverlayActive =
-    !dataLoaded || (viewMode === 'map' && !mapLoaded);
-  const linkVisible = dataLoaded && (mapLoaded || viewMode !== 'map');
   const hasStations = stations.length > 0;
+  const loadingActive = !dataLoaded || !mapLoaded;
+  const chromeVisible = dataLoaded && (mapLoaded || viewMode !== 'map');
 
   return (
-    <div className="App" style={{ height: '100vh', position: 'relative' }}>
-      <LoadingOverlay
-        loading={loadingOverlayActive}
-        message="Loading AQI stations..."
-      />
-      <Box
-        style={{
-          position: 'relative',
-          opacity: loadingOverlayActive ? 0.5 : 1,
-          transition: 'opacity 0.3s ease-in-out',
-          height: '100%',
+    <div className="app">
+      <LoadingScreen loading={loadingActive} />
+
+      <TopBar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        stationCount={stations.length}
+        railOpen={railOpen}
+        onToggleRail={() => {
+          setRailTouched(true);
+          setRailOpen((prev) => !prev);
         }}
-      >
-        <Box
-          className="app-controls"
-          sx={{
-            position: 'fixed',
-            top: { xs: 12, sm: 16 },
-            left: {
-              xs: 12,
-              sm: showSidebar && viewMode === 'map' ? 320 : 70,
-            },
-            zIndex: 1400,
-            display: 'flex',
-            gap: 1,
-            alignItems: 'center',
+        onUseMyLocation={handleUseMyLocation}
+      />
+
+      <div className="view-layer" data-hidden={viewMode !== 'map'}>
+        <MapView
+          stations={stations}
+          focusTarget={focusTarget}
+          selectedStationId={detailOpen ? selectedStation?.id || null : null}
+          onSelectStation={(station) => openStationDetail(station)}
+          onMapLoadEnd={() => setMapLoaded(true)}
+          onBoundsChange={handleMapBoundsChange}
+        />
+
+        <StationRail
+          open={railOpen && viewMode === 'map'}
+          stations={stations}
+          selectedStationId={selectedStation?.id || null}
+          onSelectStation={(station) =>
+            openStationDetail(station, { fly: true })
+          }
+          onClose={() => {
+            setRailTouched(true);
+            setRailOpen(false);
           }}
-        >
-          <Dropdown
-            handleSelect={handleSelect}
-            dataValue={viewMode}
-            dropdown="View"
-            className="chart-dropdown"
+        />
+
+        <StationDetail
+          open={detailOpen && viewMode === 'map'}
+          station={selectedStation}
+          detailState={detailState}
+          onClose={() => setDetailOpen(false)}
+        />
+
+        {dataLoaded && !hasStations && !error && (
+          <div className="state-msg">
+            No live AQI stations found for the current map area.
+          </div>
+        )}
+
+        {dataLoaded && !hasStations && error && (
+          <div className="state-msg">{`Error loading AQI data: ${error}`}</div>
+        )}
+      </div>
+
+      {viewMode === 'insights' && (
+        <div className="view-layer">
+          <InsightsView
+            stations={stations}
+            selectedStation={selectedStation}
+            detailState={detailState}
+            onSelectStation={(station) => setSelectedStation(station)}
+            onShowOnMap={handleShowOnMap}
           />
-          <Tooltip title="Use my location">
-            <IconButton
-              onClick={handleUseMyLocation}
-              aria-label="Use my location"
-              sx={{
-                width: 42,
-                height: 42,
-                borderRadius: 2,
-                backgroundColor: 'rgba(255,255,255,0.92)',
-                boxShadow: '0 8px 22px rgba(15, 23, 42, 0.12)',
-                '&:hover': { backgroundColor: '#ffffff' },
-              }}
-            >
-              <AimOutlined />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        </div>
+      )}
 
-        {error && !hasStations && (
-          <Box className="charts" id="message">
-            {`Error loading AQI data: ${error}`}
-          </Box>
-        )}
-
-        {!error && !dataLoaded && (
-          <Box className="charts" id="message">
-            Loading live AQI data for the first time. This might take a while.
-          </Box>
-        )}
-
-        {error && hasStations && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 70,
-              left: showSidebar && viewMode === 'map' ? 320 : 70,
-              right: 20,
-              zIndex: 2,
-              maxWidth: 520,
-              p: 1,
-              borderRadius: 1,
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              color: '#7a2e0e',
-              fontSize: 13,
-            }}
-          >
-            {`Could not refresh AQI data: ${error}. Showing last loaded stations.`}
-          </Box>
-        )}
-
-        {locationError && (
-          <Box
-            sx={{
-              position: 'fixed',
-              top: { xs: 64, sm: 70 },
-              left: {
-                xs: 12,
-                sm: showSidebar && viewMode === 'map' ? 320 : 70,
-              },
-              right: 20,
-              zIndex: 1400,
-              maxWidth: 420,
-              p: 1,
-              borderRadius: 1,
-              backgroundColor: 'rgba(255,255,255,0.94)',
-              color: '#7a2e0e',
-              fontSize: 13,
-            }}
-          >
-            {locationError}
-          </Box>
-        )}
-
-        {dataLoaded && (!error || hasStations) && (
-          <ChartList
-            locations={stations}
-            viewMode={viewMode}
-            showSidebar={showSidebar}
-            setShowSidebar={setShowSidebar}
-            focusTarget={focusTarget}
-            onMapLoadEnd={() => setMapLoaded(true)}
-            onMapBoundsChange={handleMapBoundsChange}
-          />
-        )}
-      </Box>
-
-      {linkVisible && (
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: '-2px',
-            right: '22px',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: '4px',
-            fontSize: '12px',
-            color: 'rgb(0 0 0 / 75%)',
-            backgroundColor: 'rgba(255,255,255,0.72)',
-            padding: '4px 6px',
-            borderRadius: '4px',
-          }}
-        >
-          <Box
-            onClick={() => setIsLegalOpen(true)}
-            sx={{
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              marginRight: '10px',
-            }}
-          >
-            Legal & Privacy
-          </Box>
-          <Box>
+      {chromeVisible && (
+        <div className="credits">
+          <button type="button" onClick={() => setIsLegalOpen(true)}>
+            Legal &amp; Privacy
+          </button>
+          <span>
             AQI data courtesy of{' '}
             <a
               href="https://aqicn.org/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ textDecoration: 'underline', color: '#555' }}
             >
               WAQI
             </a>
-          </Box>
-        </Box>
+          </span>
+        </div>
+      )}
+
+      {error && hasStations && (
+        <div className="notice" role="status">
+          {`Could not refresh AQI data: ${error}. Showing last loaded stations.`}
+        </div>
+      )}
+
+      {locationError && (
+        <div className="notice" role="status">
+          {locationError}
+        </div>
       )}
 
       <Analytics />

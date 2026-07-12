@@ -33,11 +33,6 @@ export default defineConfig(({ mode }) => {
                 priority: 4,
               },
               {
-                name: 'ui',
-                test: /node_modules[\\/](@mui|@emotion|@ant-design)/,
-                priority: 3,
-              },
-              {
                 name: 'react',
                 test: /node_modules[\\/](react|react-dom)/,
                 priority: 2,

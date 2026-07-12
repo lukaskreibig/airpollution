@@ -109,14 +109,16 @@ const AQI_POLLUTANTS: Array<{
   { key: 'so2', aliases: ['so2'], label: 'SO2' },
 ];
 
+/* Dark-theme-optimized AQI spectrum: hues track the EPA scale but are
+   lifted in luminance so they glow against the night basemap. */
 export const AQI_CATEGORIES: AqiCategory[] = [
   {
     key: 'good',
     label: 'Good',
     shortLabel: 'Good',
     range: '0-50',
-    color: '#009966',
-    foreground: '#071f17',
+    color: '#45d6a1',
+    foreground: '#081018',
     healthMessage: 'Air quality is satisfactory for most people.',
   },
   {
@@ -124,8 +126,8 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     label: 'Moderate',
     shortLabel: 'Moderate',
     range: '51-100',
-    color: '#ffde33',
-    foreground: '#1f2933',
+    color: '#f5d445',
+    foreground: '#081018',
     healthMessage: 'Unusually sensitive people may consider reducing exposure.',
   },
   {
@@ -133,8 +135,8 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     label: 'Unhealthy for Sensitive Groups',
     shortLabel: 'Sensitive groups',
     range: '101-150',
-    color: '#ff9933',
-    foreground: '#1f2933',
+    color: '#f79b4c',
+    foreground: '#081018',
     healthMessage: 'Sensitive groups should reduce prolonged outdoor exertion.',
   },
   {
@@ -142,8 +144,8 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     label: 'Unhealthy',
     shortLabel: 'Unhealthy',
     range: '151-200',
-    color: '#cc0033',
-    foreground: '#ffffff',
+    color: '#f4626f',
+    foreground: '#081018',
     healthMessage: 'Everyone may begin to experience health effects.',
   },
   {
@@ -151,8 +153,8 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     label: 'Very Unhealthy',
     shortLabel: 'Very unhealthy',
     range: '201-300',
-    color: '#660099',
-    foreground: '#ffffff',
+    color: '#b07ef2',
+    foreground: '#081018',
     healthMessage: 'Health alert: avoid prolonged outdoor exertion.',
   },
   {
@@ -160,7 +162,7 @@ export const AQI_CATEGORIES: AqiCategory[] = [
     label: 'Hazardous',
     shortLabel: 'Hazardous',
     range: '301+',
-    color: '#7e0023',
+    color: '#cf3657',
     foreground: '#ffffff',
     healthMessage: 'Health warning: avoid outdoor exertion.',
   },
@@ -171,7 +173,7 @@ export const UNKNOWN_AQI_CATEGORY: AqiCategory = {
   label: 'Unknown',
   shortLabel: 'Unknown',
   range: 'n/a',
-  color: '#7a869a',
+  color: '#64748b',
   foreground: '#ffffff',
   healthMessage: 'Current AQI is not available for this station.',
 };
